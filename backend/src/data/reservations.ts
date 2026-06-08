@@ -1,0 +1,72 @@
+import type { Reservation } from "../types/reservation.js";
+
+export const mockReservations: Reservation[] = [
+  {
+    id: "reservation-1",
+    offerId: "offer-1",
+    businessId: "business-espiga",
+    userId: "user-client-1",
+    storeName: "PANADERÍA LA ESPIGA",
+    offerTitle: "Mystery Box Panadería",
+    confirmationCode: "#FS-A4B",
+    customerName: "Mateo Cliente",
+    customerPhone: "+54 9 362 1234567",
+    pickupTime: "22:00 hs",
+    status: "pending",
+    date: "3 de Mayo, 2026",
+    month: "2026-05",
+    address: "Av. San Martín 123",
+    amount: 1500
+  },
+  {
+    id: "reservation-2",
+    offerId: "offer-2",
+    businessId: "business-delicias",
+    userId: "user-client-1",
+    storeName: "CAFÉ & DELICIAS",
+    offerTitle: "Productos próximos a vencer",
+    confirmationCode: "#FS-C2D",
+    customerName: "Mateo Cliente",
+    customerPhone: "+54 9 362 1234567",
+    pickupTime: "21:00 hs",
+    status: "confirmed_paid",
+    date: "2 de Mayo, 2026",
+    month: "2026-05",
+    address: "Av. Alberdi 456",
+    amount: 2200
+  },
+  {
+    id: "reservation-3",
+    offerId: "offer-3",
+    businessId: "business-rotiseria",
+    userId: "user-client-1",
+    storeName: "ROTISERÍA DEL NORTE",
+    offerTitle: "Rotisería del día",
+    confirmationCode: "#FS-E8F",
+    customerName: "Mateo Cliente",
+    customerPhone: "+54 9 362 1234567",
+    pickupTime: "22:30 hs",
+    status: "picked_up",
+    date: "15 de Abril, 2026",
+    month: "2026-04",
+    address: "Av. Italia 789",
+    amount: 2900
+  },
+  {
+    id: "reservation-4",
+    offerId: "offer-1",
+    businessId: "business-espiga",
+    userId: "user-client-1",
+    storeName: "PANADERÍA LA ESPIGA",
+    offerTitle: "Mystery Box Panadería",
+    confirmationCode: "#FS-K9M",
+    customerName: "Mateo Cliente",
+    customerPhone: "+54 9 362 1234567",
+    pickupTime: "22:00 hs",
+    status: "cancelled",
+    date: "1 de Mayo, 2026",
+    month: "2026-05",
+    address: "Av. San Martín 123",
+    amount: 1500
+  }
+];
