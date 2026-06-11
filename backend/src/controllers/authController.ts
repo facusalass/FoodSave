@@ -8,20 +8,20 @@ export function loginController(request: Request, response: Response) {
   };
 
   if (!email || !password) {
-    response.status(400).json({ message: "Email y contraseña son requeridos." });
+    response.status(400).json({success: false, error: { message: "Email y contraseña son requeridos." }});
     return;
   }
 
   const session = login(email, password);
 
   if (!session) {
-    response.status(401).json({ message: "Credenciales inválidas." });
+    response.status(401).json({ success: false, error: { message: "Credenciales invalidas." } });
     return;
   }
 
-  response.json(session);
+  response.json({ success: true, data: session });
 }
 
 export function meController(request: Request, response: Response) {
-  response.json({ user: request.user });
+  response.json({ success:true, data:{ user: request.user} });
 }

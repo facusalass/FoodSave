@@ -12,14 +12,14 @@ export function requireAuth(
     : null;
 
   if (!token) {
-    response.status(401).json({ message: "Token requerido." });
+    response.status(401).json({ success: false, error: { message: "No estas autorizado" } });
     return;
   }
 
   const user = getUserFromToken(token);
 
   if (!user) {
-    response.status(401).json({ message: "Token inválido." });
+    response.status(401).json({success: false, error: { message: "Sesion expirada o token invalido" }});
     return;
   }
 

@@ -20,7 +20,7 @@ app.use(
 app.use(express.json());
 
 app.get("/health", (_request, response) => {
-  response.json({ status: "ok", service: "foodsave-api" });
+  response.json({"success":true,"data":{ status: "ok", service: "foodsave-api"} });
 });
 
 app.use("/auth", authRoutes);

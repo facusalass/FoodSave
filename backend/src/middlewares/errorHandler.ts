@@ -1,9 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 
 export function notFoundHandler(request: Request, response: Response) {
-  response.status(404).json({
-    message: `Ruta no encontrada: ${request.method} ${request.originalUrl}`
-  });
+  response.status(404).json({ "success": false, error:{
+    message: `Ruta no encontrada: ${request.method} ${request.originalUrl}`}});
 }
 
 export function errorHandler(
@@ -15,5 +14,5 @@ export function errorHandler(
   const message =
     error instanceof Error ? error.message : "Error interno del servidor.";
 
-  response.status(500).json({ message });
+  response.status(500).json({ "success": false, error:{ message} });
 }
