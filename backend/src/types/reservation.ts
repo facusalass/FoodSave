@@ -6,18 +6,11 @@ export type ReservationStatus =
 
 export type Reservation = {
   id: string;
-  offerId: string;
-  businessId: string;
-  userId: string;
-  storeName: string;
-  offerTitle: string;
+  offerId: string;    
+  businessId: string;  
+  userId: string;      
+  quantity: number;    
+  totalPrice: number;  
   confirmationCode: string;
-  customerName: string;
-  customerPhone: string;
-  pickupTime: string;
-  status: ReservationStatus;
-  date: string;
-  month: string;
-  address: string;
-  amount: number;
+  createdAt: string;  
 };
