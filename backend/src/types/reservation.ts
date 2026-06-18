@@ -6,11 +6,12 @@ export type ReservationStatus =
 
 export type Reservation = {
   id: string;
-  offerId: string;    
+  offerId: string;     
   businessId: string;  
   userId: string;      
   quantity: number;    
   totalPrice: number;  
   confirmationCode: string;
-  createdAt: string;  
+  status: ReservationStatus; 
+  createdAt: string;   
 };

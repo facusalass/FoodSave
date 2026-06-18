@@ -23,7 +23,8 @@ export type Business = {
     ownerName: string;
     cvu: string;
     alias: string;};
-  createdAt: string;   // Clave para métricas de facturación y antigüedad SaaS
+  createdAt: string; 
+  address: string;  // Clave para métricas de facturación y antigüedad SaaS
 };
 
 export type PublicUser = Omit<User, "password">;
