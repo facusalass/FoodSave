@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -9,7 +10,7 @@ import {
 import { colors, radii, spacing } from "../constants/theme";
 
 type TextInputFieldProps = TextInputProps & {
-  label: string;
+  label?: string;
   error?: string | null;
   icon?: ReactNode;
 };
@@ -18,17 +19,36 @@ export function TextInputField({
   label,
   error,
   icon,
+  onBlur,
+  onFocus,
   style,
   ...props
 }: TextInputFieldProps) {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <View
+        style={[
+          styles.inputWrapper,
+          isFocused ? styles.inputFocused : null,
+          error ? styles.inputError : null
+        ]}
+      >
         {icon}
         <TextInput
           placeholderTextColor={colors.mutedText}
+          onBlur={(event) => {
+            setIsFocused(false);
+            onBlur?.(event);
+          }}
+          onFocus={(event) => {
+            setIsFocused(true);
+            onFocus?.(event);
+          }}
           style={[styles.input, style]}
+          underlineColorAndroid="transparent"
           {...props}
         />
       </View>
@@ -54,6 +74,9 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: colors.danger
+  },
+  inputFocused: {
+    borderColor: colors.primary
   },
   inputWrapper: {
     alignItems: "center",

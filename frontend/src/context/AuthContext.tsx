@@ -13,6 +13,7 @@ import {
 import type { AuthSession } from "../types/auth";
 import {
   clearStoredSession,
+  isValidAuthSession,
   loadStoredSession,
   saveStoredSession
 } from "../utils/sessionStorage";
@@ -45,6 +46,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
         const user = await getMe(storedSession.token);
         const nextSession = { token: storedSession.token, user };
+
+        if (!isValidAuthSession(nextSession)) {
+          await clearStoredSession();
+          return;
+        }
+
         await saveStoredSession(nextSession);
 
         if (isMounted) {
@@ -74,13 +81,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
       session,
       async login(email, password) {
         const nextSession = await loginWithApi({ email, password });
+
+        if (!isValidAuthSession(nextSession)) {
+          throw new Error("No pudimos iniciar sesión.");
+        }
+
         await saveStoredSession(nextSession);
         setSession(nextSession);
         return nextSession;
       },
       async logout() {
-        await clearStoredSession();
         setSession(null);
+        await clearStoredSession();
       }
     }),
     [isLoading, session]

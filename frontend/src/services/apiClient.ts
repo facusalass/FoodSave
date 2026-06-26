@@ -20,21 +20,24 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${options.token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers
+    });
+  } catch {
+    throw new Error(
+      "No pudimos conectar con el servidor. Verificá que el backend esté encendido y que tu celular esté en la misma WiFi que la PC."
+    );
+  }
+
   const rawBody = await response.text();
   const body = parseJson(rawBody);
 
   if (!response.ok) {
-    const message =
-      typeof body === "object" &&
-      body !== null &&
-      "message" in body &&
-      typeof body.message === "string"
-        ? body.message
-        : "No pudimos completar la solicitud.";
+    const message = getErrorMessage(body, response.status);
 
     throw new Error(message);
   }
@@ -52,4 +55,39 @@ function parseJson(rawBody: string) {
   } catch {
     return { message: rawBody };
   }
+}
+
+function getErrorMessage(body: unknown, status: number) {
+  const message = readErrorMessage(body);
+
+  if (status === 401 && message?.toLowerCase().includes("credenciales")) {
+    return "Correo o contraseña incorrectos.";
+  }
+
+  return message ?? "No pudimos completar la solicitud.";
+}
+
+function readErrorMessage(body: unknown) {
+  if (typeof body !== "object" || body === null) {
+    return null;
+  }
+
+  if (
+    "message" in body &&
+    typeof body.message === "string"
+  ) {
+    return body.message;
+  }
+
+  if (
+    "error" in body &&
+    typeof body.error === "object" &&
+    body.error !== null &&
+    "message" in body.error &&
+    typeof body.error.message === "string"
+  ) {
+    return body.error.message;
+  }
+
+  return null;
 }

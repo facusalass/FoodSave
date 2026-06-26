@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Bell, Search } from "lucide-react-native";
+import { Search } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,6 +13,7 @@ import { Header } from "../../src/components/Header";
 import { OfferCard } from "../../src/components/OfferCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
+import { useAuth } from "../../src/context/AuthContext";
 import { getOffers } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
 
@@ -20,6 +21,7 @@ const categories = ["Panadería", "Rotisería", "Vegetariano"];
 
 export default function ClientHomeScreen() {
   const router = useRouter();
+  const { logout } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,12 +54,21 @@ export default function ClientHomeScreen() {
     return offers.filter((offer) => offer.category === activeCategory);
   }, [activeCategory, offers]);
 
+  async function handleLogout() {
+    await logout();
+    router.replace("/(auth)/login");
+  }
+
   return (
     <ScreenContainer>
       <Header
         rightAction={
-          <TouchableOpacity activeOpacity={0.85} style={styles.iconButton}>
-            <Bell color={colors.text} size={20} />
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleLogout}
+            style={styles.logoutButton}
+          >
+            <Text style={styles.logoutText}>Salir</Text>
           </TouchableOpacity>
         }
         subtitle="Resistencia, Chaco"
@@ -143,16 +154,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800"
   },
-  iconButton: {
-    alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: "center",
-    width: 42
-  },
   list: {
     gap: spacing.md
   },
@@ -164,6 +165,19 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.mutedText,
     fontSize: 14
+  },
+  logoutButton: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  logoutText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "800"
   },
   searchBox: {
     alignItems: "center",

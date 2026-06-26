@@ -16,8 +16,12 @@ export default function ClientLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  if (session.user.role !== "client") {
+  if (session.user.role === "business") {
     return <Redirect href="/(business)/dashboard" />;
+  }
+
+  if (session.user.role !== "client") {
+    return <Redirect href="/(auth)/login" />;
   }
 
   return (

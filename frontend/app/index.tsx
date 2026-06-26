@@ -13,9 +13,13 @@ export default function IndexRoute() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  if (session.user.role === "client") {
+    return <Redirect href="/(client)/home" />;
+  }
+
   if (session.user.role === "business") {
     return <Redirect href="/(business)/dashboard" />;
   }
 
-  return <Redirect href="/(client)/home" />;
+  return <Redirect href="/(auth)/login" />;
 }

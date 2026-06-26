@@ -12,7 +12,14 @@ export async function loadStoredSession(): Promise<AuthSession | null> {
   }
 
   try {
-    return JSON.parse(rawSession) as AuthSession;
+    const session = JSON.parse(rawSession) as unknown;
+
+    if (!isValidAuthSession(session)) {
+      await clearStoredSession();
+      return null;
+    }
+
+    return session;
   } catch {
     await clearStoredSession();
     return null;
@@ -47,4 +54,31 @@ async function writeValue(value: string) {
   }
 
   await SecureStore.setItemAsync(SESSION_KEY, value);
+}
+
+export function isValidAuthSession(session: unknown): session is AuthSession {
+  if (typeof session !== "object" || session === null) {
+    return false;
+  }
+
+  if (!("token" in session) || typeof session.token !== "string") {
+    return false;
+  }
+
+  if (!session.token) {
+    return false;
+  }
+
+  if (!("user" in session) || typeof session.user !== "object" || session.user === null) {
+    return false;
+  }
+
+  const { user } = session;
+
+  return (
+    "id" in user &&
+    typeof user.id === "string" &&
+    "role" in user &&
+    (user.role === "client" || user.role === "business")
+  );
 }
