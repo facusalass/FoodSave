@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
+import { SplashLoading } from "../../src/components/SplashLoading";
 import { TextInputField } from "../../src/components/TextInputField";
 import { colors, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -23,11 +24,15 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!isLoading && session?.user.role === "client") {
+  if (isLoading) {
+    return <SplashLoading />;
+  }
+
+  if (session?.user.role === "client") {
     return <Redirect href="/(client)/home" />;
   }
 
-  if (!isLoading && session?.user.role === "business") {
+  if (session?.user.role === "business") {
     return <Redirect href="/(business)/dashboard" />;
   }
 

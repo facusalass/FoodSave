@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
 import { Search } from "lucide-react-native";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
+import { SplashLoading } from "../../src/components/SplashLoading";
 import { colors } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 
@@ -8,11 +9,7 @@ export default function ClientLayout() {
   const { session, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <SplashLoading />;
   }
 
   if (!session) {
@@ -51,12 +48,6 @@ export default function ClientLayout() {
 }
 
 const styles = StyleSheet.create({
-  loading: {
-    alignItems: "center",
-    backgroundColor: colors.background,
-    flex: 1,
-    justifyContent: "center"
-  },
   tabBar: {
     backgroundColor: colors.card,
     borderTopColor: colors.border,

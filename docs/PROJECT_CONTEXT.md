@@ -44,6 +44,47 @@ No se implementan pagos integrados, base de datos, autenticación JWT compleja, 
 - `GET /reservations`
 - `PATCH /reservations/:id/status`
 
+## Como probar con Expo Go
+
+1. Instalar Expo Go en el celular desde App Store o Google Play.
+2. Conectar la PC y el celular a la misma red WiFi.
+3. Levantar el backend:
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+4. Configurar la URL de la API para el frontend. Para web puede usarse:
+
+```bash
+EXPO_PUBLIC_API_URL=http://localhost:4000
+```
+
+Para Expo Go en el celular, `localhost` apunta al celular, no a la PC. Usar la IP local de la PC:
+
+```bash
+EXPO_PUBLIC_API_URL=http://IP_DE_MI_PC:4000
+```
+
+La URL esta centralizada en `frontend/src/config/api.ts` y tambien puede declararse en `frontend/.env`.
+
+5. Levantar el frontend:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+6. Escanear el QR que muestra Expo con Expo Go.
+
+## Flujo inicial mobile
+
+- Al abrir la app se muestra una pantalla inicial de carga con la marca FoodSave mientras `AuthContext` restaura la sesion guardada desde SecureStore.
+- Cuando termina la restauracion, la app envia a login si no hay sesion, al home cliente si el rol es `client`, o al dashboard comercio si el rol es `business`.
+
 ## Decisiones visuales
 
 - Paleta basada en Figma:

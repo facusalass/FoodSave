@@ -25,6 +25,7 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const MIN_SPLASH_DURATION_MS = 1000;
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -32,18 +33,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let isMounted = true;
+    const minimumSplashDelay = wait(MIN_SPLASH_DURATION_MS);
 
     async function restoreSession() {
-      const storedSession = await loadStoredSession();
-
-      if (!storedSession) {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-        return;
-      }
-
       try {
+        const storedSession = await loadStoredSession();
+
+        if (!storedSession) {
+          return;
+        }
+
         const user = await getMe(storedSession.token);
         const nextSession = { token: storedSession.token, user };
         await saveStoredSession(nextSession);
@@ -54,6 +53,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       } catch {
         await clearStoredSession();
       } finally {
+        await minimumSplashDelay;
+
         if (isMounted) {
           setIsLoading(false);
         }
@@ -86,6 +87,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function wait(milliseconds: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
 export function useAuth() {
