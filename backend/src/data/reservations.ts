@@ -1,14 +1,22 @@
 import type { Reservation } from "../types/reservation.js";
 
-
 export const mockReservations: Reservation[] = [
   {
     id: "reservation-1",
     offerId: "offer-1",
     businessId: "business-espiga",
     userId: "user-client-1",
+    storeName: "Panadería La Espiga",
+    offerTitle: "Mystery Box",
     confirmationCode: "#FS-A4B",
+    customerName: "Mateo Cliente",
+    customerPhone: "+54 9 362 1234567",
+    pickupTime: "22:00 hs",
     status: "pending",
+    date: "3 de Mayo, 2026",
+    month: "Mayo 2026",
+    address: "Av. San Martín 123",
+    amount: 1500,
     quantity: 1,
     totalPrice: 1500,
     createdAt: "2026-05-03T18:00:00.000Z"
@@ -18,10 +26,19 @@ export const mockReservations: Reservation[] = [
     offerId: "offer-2",
     businessId: "business-delicias",
     userId: "user-client-1",
+    storeName: "Café & Delicias",
+    offerTitle: "Mystery Box",
     confirmationCode: "#FS-C2D",
+    customerName: "Mateo Cliente",
+    customerPhone: "+54 9 362 1234567",
+    pickupTime: "21:00 hs",
     status: "confirmed_paid",
+    date: "2 de Mayo, 2026",
+    month: "Mayo 2026",
+    address: "Av. Alberdi 456",
+    amount: 1200,
     quantity: 1,
-    totalPrice: 2200,
+    totalPrice: 1200,
     createdAt: "2026-05-02T16:30:00.000Z"
   },
   {
@@ -29,10 +46,19 @@ export const mockReservations: Reservation[] = [
     offerId: "offer-3",
     businessId: "business-rotiseria",
     userId: "user-client-1",
+    storeName: "Pizzería Napolitana",
+    offerTitle: "Pizza del día + bebida",
     confirmationCode: "#FS-E8F",
+    customerName: "Mateo Cliente",
+    customerPhone: "+54 9 362 1234567",
+    pickupTime: "22:30 hs",
     status: "picked_up",
+    date: "15 de Abril, 2026",
+    month: "Abril 2026",
+    address: "Av. Italia 860",
+    amount: 4000,
     quantity: 2,
-    totalPrice: 5800, // Ajustado a 2900 x 2
+    totalPrice: 4000,
     createdAt: "2026-04-15T19:00:00.000Z"
   },
   {
@@ -40,8 +66,17 @@ export const mockReservations: Reservation[] = [
     offerId: "offer-1",
     businessId: "business-espiga",
     userId: "user-client-1",
+    storeName: "Panadería La Espiga",
+    offerTitle: "Mystery Box",
     confirmationCode: "#FS-K9M",
+    customerName: "Mateo Cliente",
+    customerPhone: "+54 9 362 1234567",
+    pickupTime: "22:00 hs",
     status: "cancelled",
+    date: "1 de Mayo, 2026",
+    month: "Mayo 2026",
+    address: "Av. San Martín 123",
+    amount: 1500,
     quantity: 1,
     totalPrice: 1500,
     createdAt: "2026-05-01T10:15:00.000Z"

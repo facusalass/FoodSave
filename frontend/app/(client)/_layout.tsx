@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from "expo-router";
-import { Search } from "lucide-react-native";
+import { PackageCheck, Search, User } from "lucide-react-native";
 import { StyleSheet } from "react-native";
 import { SplashLoading } from "../../src/components/SplashLoading";
 import { colors } from "../../src/constants/theme";
@@ -39,6 +39,22 @@ export default function ClientLayout() {
         options={{
           title: "Explorar",
           tabBarIcon: ({ color, size }) => <Search color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="reservations"
+        options={{
+          title: "Mis reservas",
+          tabBarIcon: ({ color, size }) => (
+            <PackageCheck color={color} size={size} />
+          )
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Perfil",
+          tabBarIcon: ({ color, size }) => <User color={color} size={size} />
         }}
       />
       <Tabs.Screen

@@ -1,4 +1,4 @@
-import { Clock, MapPin, PackageCheck } from "lucide-react-native";
+import { Clock } from "lucide-react-native";
 import {
   Image,
   StyleSheet,
@@ -17,106 +17,90 @@ type OfferCardProps = {
 
 export function OfferCard({ offer, onPress }: OfferCardProps) {
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.card}>
+    <View style={styles.card}>
       <Image source={{ uri: offer.imageUrl }} style={styles.image} />
       <View style={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.titleBlock}>
-            <Text numberOfLines={1} style={styles.store}>
-              {offer.storeName}
-            </Text>
-            <Text numberOfLines={2} style={styles.description}>
-              {offer.description}
-            </Text>
-          </View>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {offer.type === "mystery_box" ? "Mystery Box" : offer.category}
-            </Text>
-          </View>
-        </View>
+        <Text numberOfLines={2} style={styles.store}>
+          {offer.storeName.toUpperCase()}
+        </Text>
+        <Text numberOfLines={1} style={styles.description}>
+          {offer.description}
+        </Text>
 
-        <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <Clock color={colors.mutedText} size={15} />
-            <Text style={styles.metaText}>{offer.pickupWindow}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <PackageCheck color={colors.mutedText} size={15} />
-            <Text style={styles.metaText}>{offer.stock} disponibles</Text>
-          </View>
+        <View style={styles.priceRow}>
+          <Text style={styles.oldPrice}>{formatCurrency(offer.oldPrice)}</Text>
+          <Text style={styles.newPrice}>{formatCurrency(offer.newPrice)}</Text>
         </View>
 
         <View style={styles.footer}>
           <View style={styles.metaItem}>
-            <MapPin color={colors.mutedText} size={15} />
-            <Text numberOfLines={1} style={styles.metaText}>
-              {offer.city}
-            </Text>
+            <Clock color={colors.mutedText} size={15} />
+            <Text style={styles.metaText}>{offer.pickupWindow}</Text>
           </View>
-          <View style={styles.priceBlock}>
-            <Text style={styles.oldPrice}>{formatCurrency(offer.oldPrice)}</Text>
-            <Text style={styles.newPrice}>{formatCurrency(offer.newPrice)}</Text>
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onPress}
+            style={styles.ctaButton}
+          >
+            <Text style={styles.ctaText}>Ver oferta</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  badge: {
-    backgroundColor: "#14B8A61A",
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs
-  },
-  badgeText: {
-    color: colors.secondaryDark,
-    fontSize: 12,
-    fontWeight: "800"
-  },
   card: {
+    alignItems: "center",
     backgroundColor: colors.card,
     borderColor: colors.border,
     borderRadius: radii.lg,
     borderWidth: 1,
-    overflow: "hidden"
+    flexDirection: "row",
+    gap: spacing.md,
+    minHeight: 132,
+    padding: spacing.sm
   },
   content: {
-    gap: spacing.md,
-    padding: spacing.md
+    flex: 1,
+    gap: spacing.xs
+  },
+  ctaButton: {
+    alignItems: "center",
+    borderColor: colors.secondary,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    minHeight: 28,
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm
+  },
+  ctaText: {
+    color: colors.secondaryDark,
+    fontSize: 12,
+    fontWeight: "800"
   },
   description: {
     color: colors.mutedText,
     fontSize: 14,
-    lineHeight: 19
+    lineHeight: 18
   },
   footer: {
-    alignItems: "flex-end",
+    alignItems: "center",
     flexDirection: "row",
-    justifyContent: "space-between"
-  },
-  header: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    gap: spacing.sm,
     justifyContent: "space-between"
   },
   image: {
     backgroundColor: colors.border,
-    height: 142,
-    width: "100%"
+    borderRadius: radii.md,
+    height: 94,
+    width: 94
   },
   metaItem: {
     alignItems: "center",
     flexDirection: "row",
     flexShrink: 1,
     gap: spacing.xs
-  },
-  metaRow: {
-    flexDirection: "row",
-    gap: spacing.md
   },
   metaText: {
     color: colors.mutedText,
@@ -135,16 +119,15 @@ const styles = StyleSheet.create({
     textAlign: "right",
     textDecorationLine: "line-through"
   },
-  priceBlock: {
-    alignItems: "flex-end"
+  priceRow: {
+    alignItems: "baseline",
+    flexDirection: "row",
+    gap: spacing.sm
   },
   store: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "900"
-  },
-  titleBlock: {
-    flex: 1,
-    gap: spacing.xs
+    fontSize: 17,
+    fontWeight: "900",
+    lineHeight: 20
   }
 });

@@ -2,7 +2,8 @@ export type OfferType = "mystery_box" | "standard";
 
 export type Offer = {
   id: string;
-  businessId: string; 
+  businessId: string;
+  storeName: string;
   title: string;
   description: string;
   category: string;
@@ -13,7 +14,9 @@ export type Offer = {
   pickupWindow: string;
   pickupLimit: string;
   allergens: string[];
+  address: string;
+  city: string;
   imageUrl: string;
-  createdAt: string;   
+  createdAt: string;
   estimatedWeightInKg?: number;
 };

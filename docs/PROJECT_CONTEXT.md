@@ -113,6 +113,16 @@ npx expo start -c
 - La sesion se guarda localmente y se restaura al abrir la app; si no hay sesion valida o falla `/auth/me`, se limpia la sesion local y se vuelve al login.
 - Hay logout visible en home cliente y dashboard comercio para limpiar la sesion y volver al login.
 
+## Fase 2 Cliente MVP
+
+- El flujo cliente usa Expo Router Tabs en `frontend/app/(client)/_layout.tsx`.
+- Tabs visibles: `Explorar` (`home.tsx`), `Mis reservas` (`reservations.tsx`) y `Perfil` (`profile.tsx`).
+- El detalle de oferta vive en `frontend/app/(client)/offer/[id].tsx` y queda oculto en la barra inferior.
+- `Explorar` consume `GET /offers` mediante `frontend/src/services/offerService.ts`; las ofertas mock principales viven en el backend.
+- `Mis reservas` consume `GET /reservations` mediante `frontend/src/services/reservationService.ts` usando el token de sesion.
+- El menu lateral cliente esta en `ClientSideMenu` y deja disponible `Cerrar sesion`; Favoritos y Ayuda quedan como placeholders visuales por ahora.
+- `Perfil` es MVP visual/local: muestra datos de sesion y campos de contacto, sin persistencia real ni endpoint de perfil todavia.
+
 ## Decisiones visuales
 
 - Paleta basada en Figma:
