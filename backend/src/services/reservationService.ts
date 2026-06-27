@@ -14,6 +14,7 @@ export type ReservationWithDetails = Reservation & {
   pickupTime: string;
   date: string;
   month: string;
+  paymentInfo: { cvu: string; alias: string };
 };
 
 const allowedStatuses: ReservationStatus[] = [
@@ -42,6 +43,9 @@ function enrichReservation(reservation: Reservation): ReservationWithDetails {
     address: business?.address ?? "",
     offerTitle: offer?.title ?? "Oferta no encontrada",
     pickupTime: offer?.pickupLimit ?? "",
+    paymentInfo: business?.paymentInfo
+      ? { cvu: business.paymentInfo.cvu, alias: business.paymentInfo.alias }
+      : { cvu: "", alias: "" },
     date: createdAt.toLocaleDateString("es-AR", {
       day: "numeric",
       month: "long",

@@ -1,8 +1,14 @@
 import type { Request, Response } from "express";
+import type { OfferType } from "../types/offer.js";
 import { findOfferById, listOffers } from "../services/offerService.js";
 
-export function listOffersController(_request: Request, response: Response) {
-  const offers = listOffers();
+export function listOffersController(request: Request, response: Response) {
+  const { category, type } = request.query as {
+    category?: string;
+    type?: OfferType;
+  };
+
+  const offers = listOffers({ category, type });
   response.json({ success: true, data: { offers } });
 }
 

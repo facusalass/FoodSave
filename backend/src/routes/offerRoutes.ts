@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   getOfferController,
   listOffersController
-} from "../controllers/offerController.js";
+} from "../controllers/offerPublicController.js";
 
 export const offerRoutes = Router();
 
