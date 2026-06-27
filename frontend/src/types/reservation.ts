@@ -9,6 +9,8 @@ export type Reservation = {
   offerId: string;
   businessId: string;
   userId: string;
+  quantity: number;
+  totalPrice: number;
   storeName: string;
   offerTitle: string;
   confirmationCode: string;
@@ -19,5 +21,8 @@ export type Reservation = {
   date: string;
   month: string;
   address: string;
-  amount: number;
+  paymentInfo?: {
+    cvu: string;
+    alias: string;
+  };
 };

@@ -4,6 +4,8 @@ export type Offer = {
   id: string;
   businessId: string;
   storeName: string;
+  storeAddress: string;
+  logoUrl?: string;
   title: string;
   description: string;
   category: string;
@@ -14,7 +16,7 @@ export type Offer = {
   pickupWindow: string;
   pickupLimit: string;
   allergens: string[];
-  address: string;
-  city: string;
+  address?: string;
+  city?: string;
   imageUrl: string;
 };

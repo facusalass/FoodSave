@@ -12,7 +12,7 @@ FoodSave es una app móvil para reducir el desperdicio de comida en Resistencia,
 ## Alcance de esta fase
 
 - Monorepo con `frontend`, `backend` y `docs`.
-- Frontend mobile con Expo, React Native, TypeScript y Expo Router.
+- Frontend mobile con Expo SDK 54, React Native, TypeScript y Expo Router.
 - Backend REST con Node.js, Express y TypeScript.
 - Login funcional simple con usuarios mockeados.
 - Sesión persistente localmente en el frontend.
@@ -41,8 +41,17 @@ No se implementan pagos integrados, base de datos, autenticación JWT compleja, 
 - `GET /auth/me`
 - `GET /offers`
 - `GET /offers/:id`
+- `POST /reservations`
 - `GET /reservations`
 - `PATCH /reservations/:id/status`
+
+## Contrato de API
+
+- Todas las respuestas exitosas siguen el formato `{ success: true, data: ... }`.
+- Todas las respuestas de error siguen el formato `{ success: false, error: { message: "..." } }`.
+- El frontend centraliza la lectura de este contrato en `frontend/src/services/apiClient.ts`; los services reciben directamente `data`.
+- Las rutas protegidas envian el token desde la sesion con `Authorization: Bearer <token>`.
+- Si el backend no responde, el frontend muestra un mensaje amigable en espanol y no expone errores tecnicos como `Failed to fetch`.
 
 ## Como probar con Expo Go
 
@@ -120,8 +129,13 @@ npx expo start -c
 - El detalle de oferta vive en `frontend/app/(client)/offer/[id].tsx` y queda oculto en la barra inferior.
 - `Explorar` consume `GET /offers` mediante `frontend/src/services/offerService.ts`; las ofertas mock principales viven en el backend.
 - `Mis reservas` consume `GET /reservations` mediante `frontend/src/services/reservationService.ts` usando el token de sesion.
+- El detalle de oferta permite crear una reserva mock con `POST /reservations`; la reserva queda en estado `pending`, descuenta un cupo de la oferta y luego aparece en `Mis reservas`.
 - El menu lateral cliente esta en `ClientSideMenu` y deja disponible `Cerrar sesion`; Favoritos y Ayuda quedan como placeholders visuales por ahora.
 - `Perfil` es MVP visual/local: muestra datos de sesion y campos de contacto, sin persistencia real ni endpoint de perfil todavia.
+
+## Compatibilidad Expo
+
+- El frontend queda fijado en Expo SDK 54 para compatibilidad con Expo Go disponible en Android.
 
 ## Decisiones visuales
 

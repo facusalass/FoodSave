@@ -1,6 +1,6 @@
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -29,14 +29,15 @@ export default function ClientReservationsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadReservations() {
+  const loadReservations = useCallback(async () => {
       if (!session) {
         setIsLoading(false);
         return;
       }
 
       try {
+        setError(null);
+        setIsLoading(true);
         const nextReservations = await getReservations(session.token);
         setReservations(nextReservations);
       } catch (loadError) {
@@ -48,10 +49,13 @@ export default function ClientReservationsScreen() {
       } finally {
         setIsLoading(false);
       }
-    }
-
-    loadReservations();
   }, [session]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadReservations();
+    }, [loadReservations])
+  );
 
   const visibleMonth = useMemo(() => {
     return reservations[0]?.month ?? "Mayo 2026";

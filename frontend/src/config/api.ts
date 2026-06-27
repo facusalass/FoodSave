@@ -1,9 +1,15 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
+declare const process: {
+  env?: {
+    EXPO_PUBLIC_API_URL?: string;
+  };
+};
+
 const API_PORT = "4000";
 const LOCAL_API_URL = `http://localhost:${API_PORT}`;
-const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+const configuredApiUrl = process.env?.EXPO_PUBLIC_API_URL?.trim();
 
 export const API_BASE_URL = getApiBaseUrl();
 

@@ -4,6 +4,20 @@ type RequestOptions = RequestInit & {
   token?: string;
 };
 
+type ApiSuccess<T> = {
+  success: true;
+  data: T;
+};
+
+type ApiFailure = {
+  success: false;
+  error: {
+    message: string;
+  };
+};
+
+type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
+
 export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {}
@@ -34,7 +48,7 @@ export async function apiRequest<T>(
   }
 
   const rawBody = await response.text();
-  const body = parseJson(rawBody);
+  const body = parseJson<ApiResponse<T>>(rawBody);
 
   if (!response.ok) {
     const message = getErrorMessage(body, response.status);
@@ -42,18 +56,26 @@ export async function apiRequest<T>(
     throw new Error(message);
   }
 
-  return body as T;
+  if (isApiFailure(body)) {
+    throw new Error(readApiErrorMessage(body));
+  }
+
+  if (isApiSuccess(body)) {
+    return body.data;
+  }
+
+  throw new Error("No pudimos interpretar la respuesta del servidor.");
 }
 
-function parseJson(rawBody: string) {
+function parseJson<T>(rawBody: string): T | null {
   if (!rawBody) {
     return null;
   }
 
   try {
-    return JSON.parse(rawBody);
+    return JSON.parse(rawBody) as T;
   } catch {
-    return { message: rawBody };
+    return null;
   }
 }
 
@@ -68,26 +90,40 @@ function getErrorMessage(body: unknown, status: number) {
 }
 
 function readErrorMessage(body: unknown) {
-  if (typeof body !== "object" || body === null) {
+  if (!isApiFailure(body)) {
     return null;
   }
 
+  return readApiErrorMessage(body);
+}
+
+function isApiSuccess<T>(body: unknown): body is ApiSuccess<T> {
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    "success" in body &&
+    body.success === true &&
+    "data" in body
+  );
+}
+
+function isApiFailure(body: unknown): body is ApiFailure {
   if (
-    "message" in body &&
-    typeof body.message === "string"
+    typeof body !== "object" ||
+    body === null ||
+    !("success" in body) ||
+    body.success !== false ||
+    !("error" in body) ||
+    typeof body.error !== "object" ||
+    body.error === null ||
+    !("message" in body.error)
   ) {
-    return body.message;
+    return false;
   }
 
-  if (
-    "error" in body &&
-    typeof body.error === "object" &&
-    body.error !== null &&
-    "message" in body.error &&
-    typeof body.error.message === "string"
-  ) {
-    return body.error.message;
-  }
+  return typeof body.error.message === "string";
+}
 
-  return null;
+function readApiErrorMessage(body: ApiFailure) {
+  return body.error.message;
 }

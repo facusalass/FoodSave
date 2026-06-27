@@ -137,7 +137,7 @@ function MenuItem({
 
 const styles = StyleSheet.create({
   backdrop: {
-    ...StyleSheet.absoluteFill
+    ...StyleSheet.absoluteFillObject
   },
   closeButton: {
     alignItems: "center",

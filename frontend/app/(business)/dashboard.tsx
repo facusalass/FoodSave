@@ -57,7 +57,7 @@ export default function BusinessDashboardScreen() {
     () =>
       reservations
         .filter((reservation) => reservation.status === "picked_up")
-        .reduce((total, reservation) => total + reservation.amount, 0),
+        .reduce((total, reservation) => total + reservation.totalPrice, 0),
     [reservations]
   );
 

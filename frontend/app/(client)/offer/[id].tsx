@@ -1,6 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, Clock, MapPin, PackageCheck } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Clock,
+  MapPin,
+  PackageCheck
+} from "lucide-react-native";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -13,20 +19,28 @@ import { EmptyState } from "../../../src/components/EmptyState";
 import { PrimaryButton } from "../../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../../src/constants/theme";
+import { useAuth } from "../../../src/context/AuthContext";
 import { getOfferById } from "../../../src/services/offerService";
+import { createReservation } from "../../../src/services/reservationService";
 import type { Offer } from "../../../src/types/offer";
+import type { Reservation } from "../../../src/types/reservation";
 import { formatCurrency } from "../../../src/utils/formatCurrency";
 
 export default function OfferDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { session } = useAuth();
   const [offer, setOffer] = useState<Offer | null>(null);
+  const [reservation, setReservation] = useState<Reservation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isReserving, setIsReserving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reserveError, setReserveError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadOffer() {
       if (!id) {
+        setIsLoading(false);
         return;
       }
 
@@ -47,6 +61,43 @@ export default function OfferDetailScreen() {
     loadOffer();
   }, [id]);
 
+  async function handleReserve() {
+    if (!session) {
+      setReserveError("Necesitas iniciar sesion para reservar.");
+      return;
+    }
+
+    if (!offer) {
+      setReserveError("La oferta solicitada no esta disponible.");
+      return;
+    }
+
+    if (offer.stock < 1) {
+      setReserveError("Esta oferta ya no tiene cupos disponibles.");
+      return;
+    }
+
+    try {
+      setReserveError(null);
+      setIsReserving(true);
+      const nextReservation = await createReservation(session.token, offer.id);
+      setReservation(nextReservation);
+      setOffer((currentOffer) =>
+        currentOffer
+          ? { ...currentOffer, stock: Math.max(currentOffer.stock - 1, 0) }
+          : currentOffer
+      );
+    } catch (reserveErrorValue) {
+      const message =
+        reserveErrorValue instanceof Error
+          ? reserveErrorValue.message
+          : "No pudimos crear la reserva.";
+      setReserveError(message);
+    } finally {
+      setIsReserving(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <ScreenContainer>
@@ -62,7 +113,7 @@ export default function OfferDetailScreen() {
     return (
       <ScreenContainer>
         <EmptyState
-          description={error ?? "La oferta solicitada no está disponible."}
+          description={error ?? "La oferta solicitada no esta disponible."}
           title="No encontramos esta oferta"
         />
       </ScreenContainer>
@@ -94,32 +145,75 @@ export default function OfferDetailScreen() {
       <View style={styles.infoGrid}>
         <InfoItem
           icon={<PackageCheck color={colors.secondary} size={19} />}
-          label="Stock"
+          label="Cupos disponibles"
           value={`${offer.stock} disponibles`}
         />
         <InfoItem
           icon={<Clock color={colors.secondary} size={19} />}
-          label="Límite de retiro"
-          value={offer.pickupLimit}
+          label="Horario de retiro"
+          value={offer.pickupWindow}
         />
         <InfoItem
           icon={<MapPin color={colors.secondary} size={19} />}
-          label="Ubicación"
-          value={`${offer.address}, ${offer.city}`}
+          label="Direccion"
+          value={getOfferAddress(offer)}
         />
       </View>
 
       <View style={styles.allergensCard}>
-        <Text style={styles.infoLabel}>Alérgenos</Text>
-        <Text style={styles.infoValue}>{offer.allergens.join(", ")}</Text>
+        <Text style={styles.infoLabel}>Alergenos</Text>
+        <Text style={styles.infoValue}>
+          {offer.allergens.length > 0
+            ? offer.allergens.join(", ")
+            : "Consultar en el local"}
+        </Text>
       </View>
 
+      {reservation ? (
+        <View style={styles.confirmationCard}>
+          <CheckCircle color={colors.secondaryDark} size={22} />
+          <View style={styles.confirmationTextBlock}>
+            <Text style={styles.confirmationTitle}>Reserva creada</Text>
+            <Text style={styles.confirmationText}>
+              Codigo {reservation.confirmationCode}. Tu reserva quedo pendiente
+              de confirmacion.
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      {reserveError ? <Text style={styles.errorText}>{reserveError}</Text> : null}
+
       <PrimaryButton
-        label="RESERVAR"
-        onPress={() => undefined}
+        disabled={offer.stock < 1 || Boolean(reservation)}
+        isLoading={isReserving}
+        label={
+          reservation
+            ? "RESERVA CREADA"
+            : offer.stock < 1
+              ? "SIN CUPOS"
+              : "RESERVAR"
+        }
+        onPress={handleReserve}
       />
+
+      {reservation ? (
+        <PrimaryButton
+          label="IR A MIS RESERVAS"
+          onPress={() => router.push("/(client)/reservations")}
+          variant="outline"
+        />
+      ) : null}
     </ScreenContainer>
   );
+}
+
+function getOfferAddress(offer: Offer) {
+  if (offer.storeAddress) {
+    return offer.storeAddress;
+  }
+
+  return [offer.address, offer.city].filter(Boolean).join(", ");
 }
 
 function InfoItem({
@@ -127,7 +221,7 @@ function InfoItem({
   label,
   value
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
 }) {
@@ -176,10 +270,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900"
   },
+  confirmationCard: {
+    alignItems: "flex-start",
+    backgroundColor: "#14B8A61A",
+    borderColor: "#14B8A666",
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md
+  },
+  confirmationText: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20
+  },
+  confirmationTextBlock: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  confirmationTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "900"
+  },
   description: {
     color: colors.mutedText,
     fontSize: 15,
     lineHeight: 22,
+    marginBottom: spacing.md
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: "700",
     marginBottom: spacing.md
   },
   image: {
