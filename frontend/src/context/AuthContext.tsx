@@ -8,9 +8,10 @@ import {
 } from "react";
 import {
   getMe,
-  login as loginWithApi
+  login as loginWithApi,
+  register as registerWithApi
 } from "../services/authService";
-import type { AuthSession } from "../types/auth";
+import type { AuthSession, RegisterCredentials } from "../types/auth";
 import {
   clearStoredSession,
   isValidAuthSession,
@@ -22,6 +23,7 @@ type AuthContextValue = {
   isLoading: boolean;
   session: AuthSession | null;
   login: (email: string, password: string) => Promise<AuthSession>;
+  register: (credentials: RegisterCredentials) => Promise<AuthSession>;
   logout: () => Promise<void>;
 };
 
@@ -84,6 +86,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
         if (!isValidAuthSession(nextSession)) {
           throw new Error("No pudimos iniciar sesión.");
+        }
+
+        await saveStoredSession(nextSession);
+        setSession(nextSession);
+        return nextSession;
+      },
+      async register(credentials) {
+        const nextSession = await registerWithApi(credentials);
+
+        if (!isValidAuthSession(nextSession)) {
+          throw new Error("No pudimos crear la cuenta.");
         }
 
         await saveStoredSession(nextSession);

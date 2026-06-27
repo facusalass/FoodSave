@@ -7,6 +7,7 @@ import {
   type ClientMenuRoute
 } from "../../src/components/ClientSideMenu";
 import { ClientTopBar } from "../../src/components/ClientTopBar";
+import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -123,6 +124,12 @@ export default function ClientProfileScreen() {
           value="Ej: Av. San Martin 123"
         />
       </View>
+
+      <PrimaryButton
+        label="CERRAR SESION"
+        onPress={handleLogout}
+        variant="outline"
+      />
     </ScreenContainer>
   );
 }

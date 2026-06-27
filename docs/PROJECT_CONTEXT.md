@@ -38,6 +38,7 @@ No se implementan pagos integrados, base de datos, autenticación JWT compleja, 
 ## Endpoints iniciales
 
 - `POST /auth/login`
+- `POST /auth/register`
 - `GET /auth/me`
 - `GET /offers`
 - `GET /offers/:id`
@@ -121,6 +122,14 @@ npx expo start -c
 - Si el backend rechaza credenciales con formato valido, la app muestra `Correo o contrasena incorrectos.`
 - La sesion se guarda localmente y se restaura al abrir la app; si no hay sesion valida o falla `/auth/me`, se limpia la sesion local y se vuelve al login.
 - Hay logout visible en home cliente y dashboard comercio para limpiar la sesion y volver al login.
+
+## Registro de usuarios cliente
+
+- La ruta mobile de registro es `frontend/app/(auth)/register.tsx`.
+- El registro usa `POST /auth/register` con `name`, `phone`, `email` y `password`.
+- Por ahora crea usuarios mock con rol `client` en memoria del backend y devuelve token mock para autologin.
+- Google sigue siendo visual/no-op desde mobile.
+- No hay registro mobile de comercios en esta fase.
 
 ## Fase 2 Cliente MVP
 

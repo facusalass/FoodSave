@@ -18,3 +18,10 @@ export type LoginCredentials = {
   email: string;
   password: string;
 };
+
+export type RegisterCredentials = {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+};

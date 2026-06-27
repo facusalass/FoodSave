@@ -1,5 +1,10 @@
 import { apiRequest } from "./apiClient";
-import type { AuthSession, LoginCredentials, User } from "../types/auth";
+import type {
+  AuthSession,
+  LoginCredentials,
+  RegisterCredentials,
+  User
+} from "../types/auth";
 
 export async function login(credentials: LoginCredentials) {
   return apiRequest<AuthSession>("/auth/login", {
@@ -14,4 +19,11 @@ export async function getMe(token: string) {
   });
 
   return response.user;
+}
+
+export async function register(credentials: RegisterCredentials) {
+  return apiRequest<AuthSession>("/auth/register", {
+    body: JSON.stringify(credentials),
+    method: "POST"
+  });
 }

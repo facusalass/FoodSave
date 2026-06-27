@@ -1,5 +1,9 @@
 import type { Request, Response } from "express";
-import { googleLogin, login, register } from "../services/authService.js";
+import {
+  googleLogin,
+  login,
+  registerClient
+} from "../services/authService.js";
 
 export function loginController(request: Request, response: Response) {
   const { email, password } = request.body as {
@@ -23,41 +27,62 @@ export function loginController(request: Request, response: Response) {
 }
 
 export function registerController(request: Request, response: Response) {
-  const { email, password, name, role, businessName, businessAddress, businessCategory } = request.body as {
+  const { email, password, name, phone } = request.body as {
     email?: string;
     password?: string;
     name?: string;
-    role?: string;
-    businessName?: string;
-    businessAddress?: string;
-    businessCategory?: string;
+    phone?: string;
   };
 
-  if (!email || !password || !name || !role) {
+  if (!name?.trim()) {
     response.status(400).json({
       success: false,
-      error: { message: "email, password, name y role son requeridos." }
+      error: { message: "El nombre y apellido son requeridos." }
     });
     return;
   }
 
-  if (role !== "client" && role !== "business") {
+  if (!phone?.trim()) {
     response.status(400).json({
       success: false,
-      error: { message: "role debe ser 'client' o 'business'." }
+      error: { message: "El telefono es requerido." }
     });
     return;
   }
 
-  const result = register({
-    email,
-    password,
-    name,
-    role,
-    businessName,
-    businessAddress,
-    businessCategory
-  });
+  if (!email?.trim()) {
+    response.status(400).json({
+      success: false,
+      error: { message: "El correo electronico es requerido." }
+    });
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    response.status(400).json({
+      success: false,
+      error: { message: "Ingresa un correo electronico valido." }
+    });
+    return;
+  }
+
+  if (!password) {
+    response.status(400).json({
+      success: false,
+      error: { message: "La contrasena es requerida." }
+    });
+    return;
+  }
+
+  if (password.length < 6) {
+    response.status(400).json({
+      success: false,
+      error: { message: "La contrasena debe tener al menos 6 caracteres." }
+    });
+    return;
+  }
+
+  const result = registerClient({ email, password, name, phone });
 
   if ("error" in result) {
     response.status(409).json({ success: false, error: { message: result.error } });
@@ -105,4 +130,8 @@ export function googleLoginController(request: Request, response: Response) {
 
 export function meController(request: Request, response: Response) {
   response.json({ success:true, data:{ user: request.user} });
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }

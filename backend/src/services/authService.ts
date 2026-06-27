@@ -71,6 +71,39 @@ export function register(params: {
   };
 }
 
+export function registerClient(params: {
+  email: string;
+  password: string;
+  name: string;
+  phone: string;
+}): AuthSession & { user: PublicUser } | { error: string } {
+  const email = params.email.trim().toLowerCase();
+  const exists = mockUsers.find((u) => u.email.toLowerCase() === email);
+
+  if (exists) {
+    return { error: "Ya existe una cuenta con ese correo." };
+  }
+
+  const now = new Date().toISOString();
+  const userId = `user-${Date.now()}`;
+  const newUser: User = {
+    id: userId,
+    name: params.name.trim(),
+    email,
+    password: params.password,
+    role: "client",
+    phone: params.phone.trim(),
+    createdAt: now
+  };
+
+  mockUsers.push(newUser);
+
+  return {
+    token: tokenForUser(userId),
+    user: toPublicUser(newUser)
+  };
+}
+
 export function login(email: string, password: string): AuthSession | null {
   const normalizedEmail = email.trim().toLowerCase();
   const user = mockUsers.find(

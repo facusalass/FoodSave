@@ -162,7 +162,12 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          <Text style={styles.createAccount}>CREAR CUENTA NUEVA</Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push("/(auth)/register")}
+          >
+            <Text style={styles.createAccount}>CREAR CUENTA NUEVA</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </ScreenContainer>
