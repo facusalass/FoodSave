@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  createReservation,
   listReservationsForUser,
   updateReservationStatus
 } from "../services/reservationService.js";
@@ -10,11 +11,15 @@ export function listReservationsController(
   response: Response
 ) {
   if (!request.user) {
-    response.status(401).json({ message: "Usuario no autenticado." });
+    response.status(401).json({
+      success: false,
+      error: { message: "Usuario no autenticado." }
+    });
     return;
   }
 
-  response.json({ reservations: listReservationsForUser(request.user) });
+  const reservations = listReservationsForUser(request.user);
+  response.json({ success: true, data: { reservations } });
 }
 
 export function updateReservationStatusController(
@@ -22,21 +27,30 @@ export function updateReservationStatusController(
   response: Response
 ) {
   if (!request.user) {
-    response.status(401).json({ message: "Usuario no autenticado." });
+    response.status(401).json({
+      success: false,
+      error: { message: "Usuario no autenticado." }
+    });
     return;
   }
 
   const { status } = request.body as { status?: ReservationStatus };
 
   if (!status) {
-    response.status(400).json({ message: "Estado requerido." });
+    response.status(400).json({
+      success: false,
+      error: { message: "Estado requerido." }
+    });
     return;
   }
 
   const reservationId = request.params.id;
 
   if (!reservationId || Array.isArray(reservationId)) {
-    response.status(400).json({ message: "ID de reserva inválido." });
+    response.status(400).json({
+      success: false,
+      error: { message: "ID de reserva inválido." }
+    });
     return;
   }
 
@@ -48,10 +62,59 @@ export function updateReservationStatusController(
 
   if (!reservation) {
     response.status(404).json({
-      message: "Reserva no encontrada o cambio de estado no permitido."
+      success: false,
+      error: {
+        message: "Reserva no encontrada o cambio de estado no permitido."
+      }
     });
     return;
   }
 
-  response.json({ reservation });
+  response.json({ success: true, data: { reservation } });
+}
+
+export function createReservationController(
+  request: Request,
+  response: Response
+) {
+  if (!request.user) {
+    response.status(401).json({
+      success: false,
+      error: { message: "Usuario no autenticado." }
+    });
+    return;
+  }
+
+  const { offerId, quantity } = request.body as {
+    offerId?: string;
+    quantity?: number;
+  };
+
+  if (!offerId || typeof offerId !== "string") {
+    response.status(400).json({
+      success: false,
+      error: { message: "offerId es requerido." }
+    });
+    return;
+  }
+
+  if (!quantity || typeof quantity !== "number" || quantity < 1) {
+    response.status(400).json({
+      success: false,
+      error: { message: "quantity debe ser un número mayor a 0." }
+    });
+    return;
+  }
+
+  const result = createReservation(offerId, request.user.id, quantity);
+
+  if ("error" in result) {
+    response.status(400).json({
+      success: false,
+      error: { message: result.error }
+    });
+    return;
+  }
+
+  response.status(201).json({ success: true, data: { reservation: result } });
 }

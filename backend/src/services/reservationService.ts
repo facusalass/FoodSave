@@ -1,10 +1,20 @@
 import { mockOffers } from "../data/offers.js";
 import { mockReservations } from "../data/reservations.js";
+import { mockBusinesses, mockUsers } from "../data/users.js";
 import type { PublicUser } from "../types/auth.js";
-import type {
-  Reservation,
-  ReservationStatus
-} from "../types/reservation.js";
+import type { Reservation, ReservationStatus } from "../types/reservation.js";
+import type { Offer } from "../types/offer.js";
+
+export type ReservationWithDetails = Reservation & {
+  customerName: string;
+  customerPhone: string;
+  storeName: string;
+  address: string;
+  offerTitle: string;
+  pickupTime: string;
+  date: string;
+  month: string;
+};
 
 const allowedStatuses: ReservationStatus[] = [
   "pending",
@@ -13,21 +23,58 @@ const allowedStatuses: ReservationStatus[] = [
   "cancelled"
 ];
 
-export function listReservationsForUser(user: PublicUser): Reservation[] {
+function findOffer(offerId: string): Offer | undefined {
+  return mockOffers.find((o) => o.id === offerId);
+}
+
+function enrichReservation(reservation: Reservation): ReservationWithDetails {
+  const offer = findOffer(reservation.offerId);
+  const business = mockBusinesses.find((b) => b.id === reservation.businessId);
+  const user = mockUsers.find((u) => u.id === reservation.userId);
+
+  const createdAt = new Date(reservation.createdAt);
+
+  return {
+    ...reservation,
+    customerName: user?.name ?? "Usuario no encontrado",
+    customerPhone: user?.phone ?? "",
+    storeName: business?.name ?? "Comercio no encontrado",
+    address: business?.address ?? "",
+    offerTitle: offer?.title ?? "Oferta no encontrada",
+    pickupTime: offer?.pickupLimit ?? "",
+    date: createdAt.toLocaleDateString("es-AR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }),
+    month: createdAt.toLocaleDateString("es-AR", {
+      month: "long",
+      year: "numeric"
+    })
+  };
+}
+
+export function listReservationsForUser(user: PublicUser): ReservationWithDetails[] {
+  let filtered: Reservation[];
+
   if (user.role === "business") {
-    return mockReservations.filter(
+    filtered = mockReservations.filter(
       (reservation) => reservation.businessId === user.businessId
+    );
+  } else {
+    filtered = mockReservations.filter(
+      (reservation) => reservation.userId === user.id
     );
   }
 
-  return mockReservations.filter((reservation) => reservation.userId === user.id);
+  return filtered.map(enrichReservation);
 }
 
 export function updateReservationStatus(
   reservationId: string,
   status: ReservationStatus,
   user: PublicUser
-): Reservation | null {
+): ReservationWithDetails | null {
   if (!allowedStatuses.includes(status)) {
     return null;
   }
@@ -45,15 +92,15 @@ export function updateReservationStatus(
   }
 
   reservation.status = status;
-  return reservation;
+  return enrichReservation(reservation);
 }
 
 export function createReservation(
   offerId: string,
   userId: string,
   quantity: number
-): Reservation | { error: string } {
-  const offer = mockOffers.find((candidate) => candidate.id === offerId);
+): ReservationWithDetails | { error: string } {
+  const offer = findOffer(offerId);
 
   if (!offer) {
     return { error: "Oferta no encontrada" };
@@ -71,29 +118,13 @@ export function createReservation(
     offerId: offer.id,
     businessId: offer.businessId,
     userId,
-    storeName: offer.storeName,
-    offerTitle: offer.title,
-    confirmationCode: `#FS-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-    customerName: "Cliente FoodSave",
-    customerPhone: "",
-    pickupTime: offer.pickupLimit,
-    status: "pending",
-    date: now.toLocaleDateString("es-AR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    }),
-    month: now.toLocaleDateString("es-AR", {
-      month: "long",
-      year: "numeric"
-    }),
-    address: offer.address,
-    amount: offer.newPrice * quantity,
     quantity,
     totalPrice: offer.newPrice * quantity,
+    confirmationCode: `#FS-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+    status: "pending",
     createdAt: now.toISOString()
   };
 
   mockReservations.push(newReservation);
-  return newReservation;
+  return enrichReservation(newReservation);
 }
