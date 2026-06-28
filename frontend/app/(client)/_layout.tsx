@@ -69,6 +69,12 @@ export default function ClientLayout() {
           href: null
         }}
       />
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          href: null
+        }}
+      />
     </Tabs>
   );
 }

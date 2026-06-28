@@ -155,6 +155,16 @@ npx expo start -c
 - Si `expiresAt` ya paso, el frontend muestra la reserva como expirada de forma visual. No hay job real de backend ni base de datos que cancele reservas todavia.
 - El comercio debe validar manualmente el pago y cambiar el estado a `confirmed_paid`; no hay Mercado Pago ni pagos reales integrados.
 
+## Favoritos cliente
+
+- El frontend cliente queda preparado para Favoritos en `frontend/app/(client)/favorites.tsx`.
+- La seccion se abre desde el menu hamburguesa; `favorites` queda oculto en tabs y no aparece en la barra inferior.
+- Home y detalle de oferta muestran un corazon para agregar o quitar favoritos.
+- El frontend consume los endpoints esperados `GET /favorites`, `POST /favorites/:offerId` y `DELETE /favorites/:offerId` mediante `frontend/src/services/favoriteService.ts`.
+- Pendiente para Facu/backend: implementar `/favorites` como endpoints protegidos para rol `client`, usando `Authorization: Bearer <token>` y el contrato estandar `{ success, data/error }`.
+- Backend debe persistir favoritos mock por `userId + offerId`, evitar duplicados, validar oferta inexistente y devolver en `GET /favorites` ofertas enriquecidas con el mismo formato que `GET /offers`.
+- Mientras `/favorites` no exista, el frontend muestra mensajes amigables y no rompe Home, detalle ni navegacion cliente.
+
 ## Compatibilidad Expo
 
 - El frontend queda fijado en Expo SDK 54 para compatibilidad con Expo Go disponible en Android.

@@ -1,4 +1,4 @@
-import { Clock } from "lucide-react-native";
+import { Clock, Heart } from "lucide-react-native";
 import {
   Image,
   StyleSheet,
@@ -12,17 +12,46 @@ import { formatCurrency } from "../utils/formatCurrency";
 
 type OfferCardProps = {
   offer: Offer;
+  isFavorite?: boolean;
   onPress: () => void;
+  onFavoritePress?: () => void;
 };
 
-export function OfferCard({ offer, onPress }: OfferCardProps) {
+export function OfferCard({
+  offer,
+  isFavorite = false,
+  onFavoritePress,
+  onPress
+}: OfferCardProps) {
   return (
     <View style={styles.card}>
       <Image source={{ uri: offer.imageUrl }} style={styles.image} />
       <View style={styles.content}>
-        <Text numberOfLines={2} style={styles.store}>
-          {offer.storeName.toUpperCase()}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text numberOfLines={2} style={styles.store}>
+            {offer.storeName.toUpperCase()}
+          </Text>
+          {onFavoritePress ? (
+            <TouchableOpacity
+              accessibilityLabel={
+                isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
+              }
+              accessibilityRole="button"
+              activeOpacity={0.8}
+              onPress={onFavoritePress}
+              style={[
+                styles.favoriteButton,
+                isFavorite ? styles.favoriteButtonActive : null
+              ]}
+            >
+              <Heart
+                color={isFavorite ? colors.primary : colors.mutedText}
+                fill={isFavorite ? colors.primary : "transparent"}
+                size={18}
+              />
+            </TouchableOpacity>
+          ) : null}
+        </View>
         <Text numberOfLines={1} style={styles.description}>
           {offer.description}
         </Text>
@@ -90,6 +119,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between"
   },
+  favoriteButton: {
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: "center",
+    width: 34
+  },
+  favoriteButtonActive: {
+    backgroundColor: "#FF6B351A",
+    borderColor: "#FF6B3555"
+  },
   image: {
     backgroundColor: colors.border,
     borderRadius: radii.md,
@@ -126,8 +169,14 @@ const styles = StyleSheet.create({
   },
   store: {
     color: colors.text,
+    flex: 1,
     fontSize: 17,
     fontWeight: "900",
     lineHeight: 20
+  },
+  titleRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.sm
   }
 });

@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
   Clock,
+  Heart,
   MapPin,
   PackageCheck
 } from "lucide-react-native";
@@ -19,6 +20,11 @@ import { PrimaryButton } from "../../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../../src/constants/theme";
 import { useAuth } from "../../../src/context/AuthContext";
+import {
+  addFavorite,
+  getFavorites,
+  removeFavorite
+} from "../../../src/services/favoriteService";
 import { getOfferById } from "../../../src/services/offerService";
 import { createReservation } from "../../../src/services/reservationService";
 import type { Offer } from "../../../src/types/offer";
@@ -31,7 +37,9 @@ export default function OfferDetailScreen() {
   const [offer, setOffer] = useState<Offer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [favoriteError, setFavoriteError] = useState<string | null>(null);
   const [reserveError, setReserveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,6 +52,19 @@ export default function OfferDetailScreen() {
       try {
         const nextOffer = await getOfferById(id);
         setOffer(nextOffer);
+
+        if (session) {
+          try {
+            const favorites = await getFavorites(session.token);
+            setIsFavorite(
+              favorites.some((favorite) => favorite.id === nextOffer.id)
+            );
+          } catch {
+            setFavoriteError(
+              "No pudimos cargar favoritos por ahora. La oferta sigue disponible."
+            );
+          }
+        }
       } catch (loadError) {
         const message =
           loadError instanceof Error
@@ -56,7 +77,7 @@ export default function OfferDetailScreen() {
     }
 
     loadOffer();
-  }, [id]);
+  }, [id, session]);
 
   async function handleReserve() {
     if (!session) {
@@ -93,6 +114,34 @@ export default function OfferDetailScreen() {
     }
   }
 
+  async function handleFavoritePress() {
+    if (!session) {
+      setFavoriteError("Necesitas iniciar sesion para guardar favoritos.");
+      return;
+    }
+
+    if (!offer) {
+      return;
+    }
+
+    const nextIsFavorite = !isFavorite;
+    setFavoriteError(null);
+    setIsFavorite(nextIsFavorite);
+
+    try {
+      if (nextIsFavorite) {
+        await addFavorite(session.token, offer.id);
+      } else {
+        await removeFavorite(session.token, offer.id);
+      }
+    } catch {
+      setIsFavorite(!nextIsFavorite);
+      setFavoriteError(
+        "No pudimos actualizar favoritos. Intentá de nuevo cuando el backend esté listo."
+      );
+    }
+  }
+
   if (isLoading) {
     return (
       <ScreenContainer>
@@ -117,9 +166,31 @@ export default function OfferDetailScreen() {
 
   return (
     <ScreenContainer>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <ArrowLeft color={colors.text} size={20} />
-      </TouchableOpacity>
+      <View style={styles.topActions}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <ArrowLeft color={colors.text} size={20} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityLabel={
+            isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
+          }
+          accessibilityRole="button"
+          activeOpacity={0.85}
+          onPress={() => {
+            void handleFavoritePress();
+          }}
+          style={[
+            styles.favoriteButton,
+            isFavorite ? styles.favoriteButtonActive : null
+          ]}
+        >
+          <Heart
+            color={isFavorite ? colors.primary : colors.mutedText}
+            fill={isFavorite ? colors.primary : "transparent"}
+            size={22}
+          />
+        </TouchableOpacity>
+      </View>
 
       <Image source={{ uri: offer.imageUrl }} style={styles.image} />
       <View style={styles.badge}>
@@ -164,6 +235,9 @@ export default function OfferDetailScreen() {
         </Text>
       </View>
 
+      {favoriteError ? (
+        <Text style={styles.favoriteError}>{favoriteError}</Text>
+      ) : null}
       {reserveError ? <Text style={styles.errorText}>{reserveError}</Text> : null}
 
       <PrimaryButton
@@ -222,8 +296,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 42,
     justifyContent: "center",
-    marginBottom: spacing.md,
     width: 42
+  },
+  favoriteButton: {
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42
+  },
+  favoriteButtonActive: {
+    backgroundColor: "#FF6B351A",
+    borderColor: "#FF6B3555"
+  },
+  favoriteError: {
+    color: colors.mutedText,
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: spacing.md
   },
   badge: {
     alignSelf: "flex-start",
@@ -321,5 +414,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "900",
     marginBottom: spacing.sm
+  },
+  topActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.md
   }
 });

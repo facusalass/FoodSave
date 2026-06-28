@@ -22,6 +22,7 @@ import { colors, spacing } from "../constants/theme";
 export type ClientMenuRoute =
   | "/(client)/home"
   | "/(client)/reservations"
+  | "/(client)/favorites"
   | "/(client)/profile";
 
 type ClientSideMenuProps = {
@@ -80,8 +81,7 @@ export function ClientSideMenu({
             <MenuItem
               icon={<Star color={colors.text} size={21} />}
               label="Favoritos"
-              muted
-              onPress={onClose}
+              onPress={() => onNavigate("/(client)/favorites")}
             />
             <MenuItem
               icon={<User color={colors.text} size={21} />}

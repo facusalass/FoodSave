@@ -19,26 +19,45 @@ import { OfferCard } from "../../src/components/OfferCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import {
+  addFavorite,
+  getFavorites,
+  removeFavorite
+} from "../../src/services/favoriteService";
 import { getOffers } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
+import { getFavoriteIds, toggleFavoriteId } from "../../src/utils/favorites";
 
 const categories = ["Panaderia", "Rotiseria", "SuperMercado", "Mystery Box"];
 
 export default function ClientHomeScreen() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, session } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [favoriteError, setFavoriteError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadOffers() {
       try {
         const nextOffers = await getOffers();
         setOffers(nextOffers);
+
+        if (session) {
+          try {
+            const favorites = await getFavorites(session.token);
+            setFavoriteIds(getFavoriteIds(favorites));
+          } catch {
+            setFavoriteError(
+              "No pudimos cargar tus favoritos por ahora. Las ofertas siguen disponibles."
+            );
+          }
+        }
       } catch (loadError) {
         const message =
           loadError instanceof Error
@@ -51,7 +70,7 @@ export default function ClientHomeScreen() {
     }
 
     loadOffers();
-  }, []);
+  }, [session]);
 
   const filteredOffers = useMemo(() => {
     const normalizedSearch = normalize(searchQuery);
@@ -78,6 +97,34 @@ export default function ClientHomeScreen() {
     await logout();
     setIsMenuVisible(false);
     router.replace("/(auth)/login");
+  }
+
+  async function handleFavoritePress(offer: Offer) {
+    if (!session) {
+      setFavoriteError("Necesitas iniciar sesion para guardar favoritos.");
+      return;
+    }
+
+    const nextIsFavorite = !favoriteIds.has(offer.id);
+    setFavoriteError(null);
+    setFavoriteIds((currentFavoriteIds) =>
+      toggleFavoriteId(currentFavoriteIds, offer.id, nextIsFavorite)
+    );
+
+    try {
+      if (nextIsFavorite) {
+        await addFavorite(session.token, offer.id);
+      } else {
+        await removeFavorite(session.token, offer.id);
+      }
+    } catch {
+      setFavoriteIds((currentFavoriteIds) =>
+        toggleFavoriteId(currentFavoriteIds, offer.id, !nextIsFavorite)
+      );
+      setFavoriteError(
+        "No pudimos actualizar favoritos. Intentá de nuevo cuando el backend esté listo."
+      );
+    }
   }
 
   return (
@@ -142,6 +189,9 @@ export default function ClientHomeScreen() {
       </View>
 
       <Text style={styles.sectionTitle}>Ofertas Cercanas</Text>
+      {favoriteError ? (
+        <Text style={styles.favoriteError}>{favoriteError}</Text>
+      ) : null}
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
@@ -156,8 +206,12 @@ export default function ClientHomeScreen() {
         <View style={styles.list}>
           {filteredOffers.map((offer) => (
             <OfferCard
+              isFavorite={favoriteIds.has(offer.id)}
               key={offer.id}
               offer={offer}
+              onFavoritePress={() => {
+                void handleFavoritePress(offer);
+              }}
               onPress={() => router.push(`/(client)/offer/${offer.id}`)}
             />
           ))}
@@ -245,6 +299,11 @@ const styles = StyleSheet.create({
   },
   filtersBlock: {
     gap: spacing.md
+  },
+  favoriteError: {
+    color: colors.mutedText,
+    fontSize: 13,
+    fontWeight: "700"
   },
   list: {
     gap: spacing.md
