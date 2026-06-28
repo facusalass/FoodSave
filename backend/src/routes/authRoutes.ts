@@ -5,11 +5,11 @@ import {
   meController,
   registerController
 } from "../controllers/authController.js";
-import { requireAuth } from "../middlewares/authMiddleware.js";
+import { isAuth } from "../middlewares/isAuth.js";
 
 export const authRoutes = Router();
 
 authRoutes.post("/google", googleLoginController);
 authRoutes.post("/register", registerController);
 authRoutes.post("/login", loginController);
-authRoutes.get("/me", requireAuth, meController);
+authRoutes.get("/me", isAuth, meController);

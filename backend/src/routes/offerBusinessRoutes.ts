@@ -4,10 +4,10 @@ import {
   deleteOfferController,
   updateOfferController
 } from "../controllers/offerBusinessController.js";
-import { requireAuth } from "../middlewares/authMiddleware.js";
+import { isBusinessOwner } from "../middlewares/isBusinessOwner.js";
 
 export const offerBusinessRoutes = Router();
 
-offerBusinessRoutes.post("/", requireAuth, createOfferController);
-offerBusinessRoutes.put("/:id", requireAuth, updateOfferController);
-offerBusinessRoutes.delete("/:id", requireAuth, deleteOfferController);
+offerBusinessRoutes.post("/", isBusinessOwner, createOfferController);
+offerBusinessRoutes.put("/:id", isBusinessOwner, updateOfferController);
+offerBusinessRoutes.delete("/:id", isBusinessOwner, deleteOfferController);

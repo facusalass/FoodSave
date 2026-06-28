@@ -9,6 +9,7 @@ import { authRoutes } from "./routes/authRoutes.js";
 import { offerRoutes } from "./routes/offerRoutes.js";
 import { reservationRoutes } from "./routes/reservationRoutes.js";
 import { offerBusinessRoutes } from "./routes/offerBusinessRoutes.js";
+import { favoriteRoutes } from "./routes/favoriteRoutes.js";
 import { statisticsRoutes } from "./routes/statisticsRoutes.js";
 
 export const app = express();
@@ -28,6 +29,7 @@ app.get("/health", (_request, response) => {
 app.use("/auth", authRoutes);
 app.use("/offers", offerRoutes);
 app.use("/reservations", reservationRoutes);
+app.use("/favorites", favoriteRoutes);
 app.use("/business/offers", offerBusinessRoutes);
 app.use("/business", statisticsRoutes);
 

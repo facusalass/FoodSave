@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getBusinessStatsController } from "../controllers/statisticsController.js";
-import { requireAuth } from "../middlewares/authMiddleware.js";
+import { isBusinessOwner } from "../middlewares/isBusinessOwner.js";
 
 export const statisticsRoutes = Router();
 
-statisticsRoutes.get("/stats", requireAuth, getBusinessStatsController);
+statisticsRoutes.get("/stats", isBusinessOwner, getBusinessStatsController);

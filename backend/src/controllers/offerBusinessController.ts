@@ -2,28 +2,11 @@ import type { Request, Response } from "express";
 import {
   createOffer,
   deleteOffer,
-  findOfferById,
   updateOffer
 } from "../services/offerService.js";
 import type { OfferType } from "../types/offer.js";
 
 export function createOfferController(request: Request, response: Response) {
-  if (!request.user) {
-    response.status(401).json({
-      success: false,
-      error: { message: "Usuario no autenticado." }
-    });
-    return;
-  }
-
-  if (request.user.role !== "business" || !request.user.businessId) {
-    response.status(403).json({
-      success: false,
-      error: { message: "Solo los comercios pueden crear ofertas." }
-    });
-    return;
-  }
-
   const {
     title,
     description,
@@ -83,29 +66,13 @@ export function createOfferController(request: Request, response: Response) {
       imageUrl: imageUrl ?? "",
       estimatedWeightInKg
     },
-    request.user.businessId
+    request.user!.businessId!
   );
 
   response.status(201).json({ success: true, data: { offer } });
 }
 
 export function updateOfferController(request: Request, response: Response) {
-  if (!request.user) {
-    response.status(401).json({
-      success: false,
-      error: { message: "Usuario no autenticado." }
-    });
-    return;
-  }
-
-  if (request.user.role !== "business" || !request.user.businessId) {
-    response.status(403).json({
-      success: false,
-      error: { message: "Solo los comercios pueden modificar ofertas." }
-    });
-    return;
-  }
-
   const offerId = request.params.id;
 
   if (!offerId || Array.isArray(offerId)) {
@@ -130,7 +97,7 @@ export function updateOfferController(request: Request, response: Response) {
     pickupLimit?: string;
   };
 
-  const offer = updateOffer(offerId, request.user.businessId, {
+  const offer = updateOffer(offerId, request.user!.businessId!, {
     oldPrice,
     newPrice,
     stock,
@@ -150,22 +117,6 @@ export function updateOfferController(request: Request, response: Response) {
 }
 
 export function deleteOfferController(request: Request, response: Response) {
-  if (!request.user) {
-    response.status(401).json({
-      success: false,
-      error: { message: "Usuario no autenticado." }
-    });
-    return;
-  }
-
-  if (request.user.role !== "business" || !request.user.businessId) {
-    response.status(403).json({
-      success: false,
-      error: { message: "Solo los comercios pueden eliminar ofertas." }
-    });
-    return;
-  }
-
   const offerId = request.params.id;
 
   if (!offerId || Array.isArray(offerId)) {
@@ -176,7 +127,7 @@ export function deleteOfferController(request: Request, response: Response) {
     return;
   }
 
-  const deleted = deleteOffer(offerId, request.user.businessId);
+  const deleted = deleteOffer(offerId, request.user!.businessId!);
 
   if (!deleted) {
     response.status(404).json({

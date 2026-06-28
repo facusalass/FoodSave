@@ -10,15 +10,7 @@ export function listReservationsController(
   request: Request,
   response: Response
 ) {
-  if (!request.user) {
-    response.status(401).json({
-      success: false,
-      error: { message: "Usuario no autenticado." }
-    });
-    return;
-  }
-
-  const reservations = listReservationsForUser(request.user);
+  const reservations = listReservationsForUser(request.user!);
   response.json({ success: true, data: { reservations } });
 }
 
@@ -26,14 +18,6 @@ export function updateReservationStatusController(
   request: Request,
   response: Response
 ) {
-  if (!request.user) {
-    response.status(401).json({
-      success: false,
-      error: { message: "Usuario no autenticado." }
-    });
-    return;
-  }
-
   const { status } = request.body as { status?: ReservationStatus };
 
   if (!status) {
@@ -57,7 +41,7 @@ export function updateReservationStatusController(
   const reservation = updateReservationStatus(
     reservationId,
     status,
-    request.user
+    request.user!
   );
 
   if (!reservation) {
@@ -77,14 +61,6 @@ export function createReservationController(
   request: Request,
   response: Response
 ) {
-  if (!request.user) {
-    response.status(401).json({
-      success: false,
-      error: { message: "Usuario no autenticado." }
-    });
-    return;
-  }
-
   const { offerId, quantity } = request.body as {
     offerId?: string;
     quantity?: number;
@@ -106,7 +82,7 @@ export function createReservationController(
     return;
   }
 
-  const result = createReservation(offerId, request.user.id, quantity);
+  const result = createReservation(offerId, request.user!.id, quantity);
 
   if ("error" in result) {
     response.status(400).json({

@@ -4,14 +4,14 @@ import {
   listReservationsController,
   updateReservationStatusController
 } from "../controllers/reservationController.js";
-import { requireAuth } from "../middlewares/authMiddleware.js";
+import { isAuth } from "../middlewares/isAuth.js";
 
 export const reservationRoutes = Router();
 
-reservationRoutes.post("/", requireAuth, createReservationController);
-reservationRoutes.get("/", requireAuth, listReservationsController);
+reservationRoutes.post("/", isAuth, createReservationController);
+reservationRoutes.get("/", isAuth, listReservationsController);
 reservationRoutes.patch(
   "/:id/status",
-  requireAuth,
+  isAuth,
   updateReservationStatusController
 );
