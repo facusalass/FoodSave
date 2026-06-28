@@ -11,7 +11,9 @@ export type Reservation = {
   userId: string;
   quantity: number;
   totalPrice: number;
+  code?: string;
   confirmationCode: string;
+  expiresAt?: string;
   status: ReservationStatus;
   createdAt: string;
 };

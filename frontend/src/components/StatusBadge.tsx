@@ -4,6 +4,7 @@ import type { ReservationStatus } from "../types/reservation";
 
 type StatusBadgeProps = {
   status: ReservationStatus;
+  label?: string;
 };
 
 const statusConfig: Record<
@@ -32,7 +33,7 @@ const statusConfig: Record<
   }
 };
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status, label }: StatusBadgeProps) {
   const config = statusConfig[status];
 
   return (
@@ -44,7 +45,9 @@ export function StatusBadge({ status }: StatusBadgeProps) {
         }
       ]}
     >
-      <Text style={[styles.label, { color: config.color }]}>{config.label}</Text>
+      <Text style={[styles.label, { color: config.color }]}>
+        {label ?? config.label}
+      </Text>
     </View>
   );
 }

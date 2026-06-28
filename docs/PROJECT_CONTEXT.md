@@ -142,6 +142,19 @@ npx expo start -c
 - El menu lateral cliente esta en `ClientSideMenu` y deja disponible `Cerrar sesion`; Favoritos y Ayuda quedan como placeholders visuales por ahora.
 - `Perfil` es MVP visual/local: muestra datos de sesion y campos de contacto, sin persistencia real ni endpoint de perfil todavia.
 
+## Flujo de reserva y confirmacion de pago
+
+- El cliente crea reservas desde el detalle de oferta usando `POST /reservations`.
+- La reserva se crea con estado inicial `pending`; en la UI cliente se muestra como `Pendiente de pago`.
+- El backend mock devuelve la reserva completa con `code`, `confirmationCode`, `expiresAt`, `paymentAlias`/`bankAlias` y `whatsappPhone` si existe.
+- Despues de reservar, el frontend navega a `frontend/app/(client)/reservation-confirmed.tsx`, una pantalla oculta en tabs.
+- La pantalla de reserva creada muestra codigo, comercio, oferta, horario de retiro, alias bancario y un temporizador visual de 15 minutos basado en `expiresAt`.
+- El boton `Avisar pago por WhatsApp` abre WhatsApp con un mensaje prearmado para el comercio; no envia comprobantes ni confirma pagos automaticamente.
+- En `Mis reservas`, las reservas `pending` con `expiresAt` vigente muestran alias, tiempo restante, accion para avisar pago por WhatsApp y accion para cancelar.
+- La cancelacion cliente usa el endpoint existente `PATCH /reservations/:id/status` solo para reservas propias en estado `pending`, cambiandolas a `cancelled`.
+- Si `expiresAt` ya paso, el frontend muestra la reserva como expirada de forma visual. No hay job real de backend ni base de datos que cancele reservas todavia.
+- El comercio debe validar manualmente el pago y cambiar el estado a `confirmed_paid`; no hay Mercado Pago ni pagos reales integrados.
+
 ## Compatibilidad Expo
 
 - El frontend queda fijado en Expo SDK 54 para compatibilidad con Expo Go disponible en Android.

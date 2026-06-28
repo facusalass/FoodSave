@@ -11,9 +11,11 @@ export type Reservation = {
   userId: string;
   quantity: number;
   totalPrice: number;
+  code?: string;
   storeName: string;
   offerTitle: string;
   confirmationCode: string;
+  expiresAt?: string;
   customerName: string;
   customerPhone: string;
   pickupTime: string;
@@ -21,6 +23,9 @@ export type Reservation = {
   date: string;
   month: string;
   address: string;
+  paymentAlias?: string;
+  bankAlias?: string;
+  whatsappPhone?: string;
   paymentInfo?: {
     cvu: string;
     alias: string;

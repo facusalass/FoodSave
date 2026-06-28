@@ -63,6 +63,12 @@ export default function ClientLayout() {
           href: null
         }}
       />
+      <Tabs.Screen
+        name="reservation-confirmed"
+        options={{
+          href: null
+        }}
+      />
     </Tabs>
   );
 }

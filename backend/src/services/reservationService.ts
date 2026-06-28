@@ -6,6 +6,7 @@ import type { Reservation, ReservationStatus } from "../types/reservation.js";
 import type { Offer } from "../types/offer.js";
 
 export type ReservationWithDetails = Reservation & {
+  code: string;
   customerName: string;
   customerPhone: string;
   storeName: string;
@@ -14,6 +15,9 @@ export type ReservationWithDetails = Reservation & {
   pickupTime: string;
   date: string;
   month: string;
+  paymentAlias: string;
+  bankAlias: string;
+  whatsappPhone: string;
   paymentInfo: { cvu: string; alias: string };
 };
 
@@ -28,21 +32,49 @@ function findOffer(offerId: string): Offer | undefined {
   return mockOffers.find((o) => o.id === offerId);
 }
 
+function normalizeReservationCode(reservation: Pick<Reservation, "code" | "confirmationCode">) {
+  return (
+    reservation.code ??
+    reservation.confirmationCode.replace(/^#/, "") ??
+    ""
+  );
+}
+
+function generateReservationCode() {
+  let code = "";
+
+  do {
+    code = `FS-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+  } while (
+    mockReservations.some(
+      (reservation) => normalizeReservationCode(reservation) === code
+    )
+  );
+
+  return code;
+}
+
 function enrichReservation(reservation: Reservation): ReservationWithDetails {
   const offer = findOffer(reservation.offerId);
   const business = mockBusinesses.find((b) => b.id === reservation.businessId);
   const user = mockUsers.find((u) => u.id === reservation.userId);
+  const businessOwner = mockUsers.find((u) => u.id === business?.ownerId);
+  const paymentAlias = business?.paymentInfo.alias ?? "";
 
   const createdAt = new Date(reservation.createdAt);
 
   return {
     ...reservation,
+    code: normalizeReservationCode(reservation),
     customerName: user?.name ?? "Usuario no encontrado",
     customerPhone: user?.phone ?? "",
     storeName: business?.name ?? "Comercio no encontrado",
     address: business?.address ?? "",
     offerTitle: offer?.title ?? "Oferta no encontrada",
     pickupTime: offer?.pickupLimit ?? "",
+    paymentAlias,
+    bankAlias: paymentAlias,
+    whatsappPhone: businessOwner?.phone ?? "",
     paymentInfo: business?.paymentInfo
       ? { cvu: business.paymentInfo.cvu, alias: business.paymentInfo.alias }
       : { cvu: "", alias: "" },
@@ -91,6 +123,19 @@ export function updateReservationStatus(
     return null;
   }
 
+  if (user.role === "client") {
+    if (
+      status !== "cancelled" ||
+      reservation.userId !== user.id ||
+      reservation.status !== "pending"
+    ) {
+      return null;
+    }
+
+    reservation.status = status;
+    return enrichReservation(reservation);
+  }
+
   if (user.role !== "business" || reservation.businessId !== user.businessId) {
     return null;
   }
@@ -117,6 +162,8 @@ export function createReservation(
   offer.stock -= quantity;
 
   const now = new Date();
+  const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
+  const code = generateReservationCode();
   const newReservation: Reservation = {
     id: `res-${Date.now()}`,
     offerId: offer.id,
@@ -124,7 +171,9 @@ export function createReservation(
     userId,
     quantity,
     totalPrice: offer.newPrice * quantity,
-    confirmationCode: `#FS-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+    code,
+    confirmationCode: `#${code}`,
+    expiresAt: expiresAt.toISOString(),
     status: "pending",
     createdAt: now.toISOString()
   };

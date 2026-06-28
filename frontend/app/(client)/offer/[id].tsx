@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
-  CheckCircle,
   Clock,
   MapPin,
   PackageCheck
@@ -23,7 +22,6 @@ import { useAuth } from "../../../src/context/AuthContext";
 import { getOfferById } from "../../../src/services/offerService";
 import { createReservation } from "../../../src/services/reservationService";
 import type { Offer } from "../../../src/types/offer";
-import type { Reservation } from "../../../src/types/reservation";
 import { formatCurrency } from "../../../src/utils/formatCurrency";
 
 export default function OfferDetailScreen() {
@@ -31,7 +29,6 @@ export default function OfferDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
   const [offer, setOffer] = useState<Offer | null>(null);
-  const [reservation, setReservation] = useState<Reservation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,12 +78,10 @@ export default function OfferDetailScreen() {
       setReserveError(null);
       setIsReserving(true);
       const nextReservation = await createReservation(session.token, offer.id);
-      setReservation(nextReservation);
-      setOffer((currentOffer) =>
-        currentOffer
-          ? { ...currentOffer, stock: Math.max(currentOffer.stock - 1, 0) }
-          : currentOffer
-      );
+      router.replace({
+        pathname: "/(client)/reservation-confirmed",
+        params: { reservationId: nextReservation.id }
+      });
     } catch (reserveErrorValue) {
       const message =
         reserveErrorValue instanceof Error
@@ -169,41 +164,14 @@ export default function OfferDetailScreen() {
         </Text>
       </View>
 
-      {reservation ? (
-        <View style={styles.confirmationCard}>
-          <CheckCircle color={colors.secondaryDark} size={22} />
-          <View style={styles.confirmationTextBlock}>
-            <Text style={styles.confirmationTitle}>Reserva creada</Text>
-            <Text style={styles.confirmationText}>
-              Codigo {reservation.confirmationCode}. Tu reserva quedo pendiente
-              de confirmacion.
-            </Text>
-          </View>
-        </View>
-      ) : null}
-
       {reserveError ? <Text style={styles.errorText}>{reserveError}</Text> : null}
 
       <PrimaryButton
-        disabled={offer.stock < 1 || Boolean(reservation)}
+        disabled={offer.stock < 1}
         isLoading={isReserving}
-        label={
-          reservation
-            ? "RESERVA CREADA"
-            : offer.stock < 1
-              ? "SIN CUPOS"
-              : "RESERVAR"
-        }
+        label={offer.stock < 1 ? "SIN CUPOS" : "RESERVAR"}
         onPress={handleReserve}
       />
-
-      {reservation ? (
-        <PrimaryButton
-          label="IR A MIS RESERVAS"
-          onPress={() => router.push("/(client)/reservations")}
-          variant="outline"
-        />
-      ) : null}
     </ScreenContainer>
   );
 }
@@ -268,31 +236,6 @@ const styles = StyleSheet.create({
   badgeText: {
     color: colors.secondaryDark,
     fontSize: 12,
-    fontWeight: "900"
-  },
-  confirmationCard: {
-    alignItems: "flex-start",
-    backgroundColor: "#14B8A61A",
-    borderColor: "#14B8A666",
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    marginBottom: spacing.md,
-    padding: spacing.md
-  },
-  confirmationText: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 20
-  },
-  confirmationTextBlock: {
-    flex: 1,
-    gap: spacing.xs
-  },
-  confirmationTitle: {
-    color: colors.text,
-    fontSize: 15,
     fontWeight: "900"
   },
   description: {
