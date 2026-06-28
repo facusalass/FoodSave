@@ -165,6 +165,14 @@ npx expo start -c
 - Backend debe persistir favoritos mock por `userId + offerId`, evitar duplicados, validar oferta inexistente y devolver en `GET /favorites` ofertas enriquecidas con el mismo formato que `GET /offers`.
 - Mientras `/favorites` no exista, el frontend muestra mensajes amigables y no rompe Home, detalle ni navegacion cliente.
 
+## Ayuda cliente
+
+- La ruta mobile de ayuda es `frontend/app/(client)/help.tsx`.
+- La seccion se abre desde el menu hamburguesa; `help` queda oculto en tabs y no aparece en la barra inferior.
+- Incluye explicacion breve de FoodSave, pasos de uso, link a la landing publica para sumar comercios, preguntas frecuentes y contacto mock.
+- La URL de landing se centraliza en `frontend/src/config/links.ts` como `LANDING_URL`, con soporte para `EXPO_PUBLIC_LANDING_URL`.
+- No usa backend, endpoints ni chat real por ahora.
+
 ## Compatibilidad Expo
 
 - El frontend queda fijado en Expo SDK 54 para compatibilidad con Expo Go disponible en Android.

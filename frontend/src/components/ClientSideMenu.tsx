@@ -23,6 +23,7 @@ export type ClientMenuRoute =
   | "/(client)/home"
   | "/(client)/reservations"
   | "/(client)/favorites"
+  | "/(client)/help"
   | "/(client)/profile";
 
 type ClientSideMenuProps = {
@@ -91,8 +92,7 @@ export function ClientSideMenu({
             <MenuItem
               icon={<CircleHelp color={colors.text} size={21} />}
               label="Ayuda"
-              muted
-              onPress={onClose}
+              onPress={() => onNavigate("/(client)/help")}
             />
           </View>
 

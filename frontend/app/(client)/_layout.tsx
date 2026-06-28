@@ -75,6 +75,12 @@ export default function ClientLayout() {
           href: null
         }}
       />
+      <Tabs.Screen
+        name="help"
+        options={{
+          href: null
+        }}
+      />
     </Tabs>
   );
 }
