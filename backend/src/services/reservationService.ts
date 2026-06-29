@@ -1,4 +1,5 @@
 import type { PublicUser } from "../types/auth.js";
+import type { PaginatedResult } from "../utils/pagination.js";
 import type { Reservation, ReservationStatus } from "../types/reservation.js";
 import {
   createReservationRepo,
@@ -82,17 +83,20 @@ async function enrichReservation(
 }
 
 export async function listReservationsForUser(
-  user: PublicUser
-): Promise<ReservationWithDetails[]> {
-  let reservations: Reservation[];
+  user: PublicUser,
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResult<ReservationWithDetails>> {
+  let result: PaginatedResult<Reservation>;
 
   if (user.role === "business" && user.businessId) {
-    reservations = await listReservationsByBusiness(user.businessId);
+    result = await listReservationsByBusiness(user.businessId, page, limit);
   } else {
-    reservations = await listReservationsByUser(user.id);
+    result = await listReservationsByUser(user.id, page, limit);
   }
 
-  return Promise.all(reservations.map(enrichReservation));
+  const items = await Promise.all(result.items.map(enrichReservation));
+  return { ...result, items };
 }
 
 export async function updateReservationStatus(

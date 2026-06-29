@@ -1,7 +1,10 @@
 import { supabase } from "../config/supabase.js";
+import { buildPaginatedResult, type PaginatedResult } from "../utils/pagination.js";
 import type { Business, User } from "../types/auth.js";
 import type { Offer } from "../types/offer.js";
 import type { Reservation, ReservationStatus } from "../types/reservation.js";
+
+/* ── Users ───────────────────────────────────────── */
 
 /* ── Users ───────────────────────────────────────── */
 
@@ -74,17 +77,30 @@ export async function listOffersRepo(filters?: {
   category?: string;
   type?: string;
   city?: string;
-}) {
-  let query = supabase.from("offers").select("*");
+  page?: number;
+  limit?: number;
+}): Promise<PaginatedResult<Offer>> {
+  const page = Math.max(1, filters?.page ?? 1);
+  const limit = Math.min(100, Math.max(1, filters?.limit ?? 20));
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let businessIds: string[] | undefined;
 
   if (filters?.city) {
     const { data: cityBusinesses } = await supabase
       .from("businesses")
       .select("id")
       .eq("city", filters.city);
+    businessIds = (cityBusinesses ?? []).map((b) => b.id);
+  }
 
-    const ids = (cityBusinesses ?? []).map((b) => b.id);
-    query = ids.length > 0 ? query.in("businessId", ids) : query.eq("businessId", "__none__");
+  let query = supabase.from("offers").select("*", { count: "exact" });
+
+  if (businessIds && businessIds.length > 0) {
+    query = query.in("businessId", businessIds);
+  } else if (businessIds?.length === 0) {
+    return buildPaginatedResult([], 0, page, limit);
   }
 
   if (filters?.category) {
@@ -94,8 +110,16 @@ export async function listOffersRepo(filters?: {
     query = query.eq("type", filters.type);
   }
 
-  const { data } = await query.order("createdAt", { ascending: false });
-  return (data ?? []) as Offer[];
+  const { data, count } = await query
+    .order("createdAt", { ascending: false })
+    .range(from, to);
+
+  return buildPaginatedResult(
+    (data ?? []) as Offer[],
+    count ?? 0,
+    page,
+    limit
+  );
 }
 
 export async function findOfferById(id: string) {
@@ -144,22 +168,50 @@ export async function deleteOfferById(offerId: string, businessId: string) {
 
 /* ── Reservations ────────────────────────────────── */
 
-export async function listReservationsByBusiness(businessId: string) {
-  const { data } = await supabase
+export async function listReservationsByBusiness(
+  businessId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResult<Reservation>> {
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  const { data, count } = await supabase
     .from("reservations")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("businessId", businessId)
-    .order("createdAt", { ascending: false });
-  return (data ?? []) as Reservation[];
+    .order("createdAt", { ascending: false })
+    .range(from, to);
+
+  return buildPaginatedResult(
+    (data ?? []) as Reservation[],
+    count ?? 0,
+    page,
+    limit
+  );
 }
 
-export async function listReservationsByUser(userId: string) {
-  const { data } = await supabase
+export async function listReservationsByUser(
+  userId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResult<Reservation>> {
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  const { data, count } = await supabase
     .from("reservations")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("userId", userId)
-    .order("createdAt", { ascending: false });
-  return (data ?? []) as Reservation[];
+    .order("createdAt", { ascending: false })
+    .range(from, to);
+
+  return buildPaginatedResult(
+    (data ?? []) as Reservation[],
+    count ?? 0,
+    page,
+    limit
+  );
 }
 
 export async function findReservationById(id: string) {

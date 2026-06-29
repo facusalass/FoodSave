@@ -10,7 +10,16 @@ export async function listReservationsController(
   request: Request,
   response: Response
 ) {
-  const reservations = await listReservationsForUser(request.user!);
+  const { page, limit } = request.query as {
+    page?: string;
+    limit?: string;
+  };
+
+  const reservations = await listReservationsForUser(
+    request.user!,
+    page ? Number(page) : undefined,
+    limit ? Number(limit) : undefined
+  );
   response.json({ success: true, data: { reservations } });
 }
 

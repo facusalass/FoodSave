@@ -3,13 +3,19 @@ import type { OfferType } from "../types/offer.js";
 import { findOfferByIdPublic, listOffers } from "../services/offerService.js";
 
 export async function listOffersController(request: Request, response: Response) {
-  const { category, type, city } = request.query as {
+  const { category, type, city, page, limit } = request.query as {
     category?: string;
     type?: OfferType;
     city?: string;
+    page?: string;
+    limit?: string;
   };
 
-  const offers = await listOffers({ category, type, city });
+  const offers = await listOffers({
+    category, type, city,
+    page: page ? Number(page) : undefined,
+    limit: limit ? Number(limit) : undefined
+  });
   response.json({ success: true, data: { offers } });
 }
 

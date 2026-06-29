@@ -1,5 +1,6 @@
 import type { Business } from "../types/auth.js";
 import type { Offer } from "../types/offer.js";
+import type { PaginatedResult } from "../utils/pagination.js";
 import {
   createOfferRepo,
   deleteOfferById,
@@ -32,9 +33,12 @@ export async function listOffers(filters?: {
   category?: string;
   type?: string;
   city?: string;
-}): Promise<OfferWithBusinessData[]> {
-  const offers = await listOffersRepo(filters);
-  return Promise.all(offers.map(enrichOfferWithBusiness));
+  page?: number;
+  limit?: number;
+}): Promise<PaginatedResult<OfferWithBusinessData>> {
+  const paginated = await listOffersRepo(filters);
+  const items = await Promise.all(paginated.items.map(enrichOfferWithBusiness));
+  return { ...paginated, items };
 }
 
 export async function findOfferByIdPublic(
