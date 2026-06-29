@@ -1,0 +1,165 @@
+# Cambios en el Backend — FoodSave
+
+## Supabase (PRODUCCIÓN)
+
+El backend ya no usa mocks. Todas las consultas van contra Supabase.
+Credenciales en `backend/.env`:
+
+```
+SUPABASE_URL=https://lmmkszyrhjgbxzxtjwbm.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_BlMt3rzIXHTN6zMA0MEQpQ_eEX4dR_5
+```
+
+Tablas creadas: `users`, `businesses`, `offers`, `reservations`, `favorites`.
+
+**IMPORTANTE:** Para que la API pueda leer datos, deben ejecutarse los 5 SQL en Supabase:
+1. `sql/migration.sql` → crea las tablas
+2. `sql/seed.sql` → datos de prueba
+3. `sql/rls_policies.sql` → permisos de lectura/escritura para la anon key
+4. `sql/auth_trigger.sql` → sincroniza `auth.users` → `public.users`
+5. `sql/storage_bucket.sql` → bucket de imágenes `offers` en Supabase Storage
+
+---
+
+## Autenticación (CAMBIÓ)
+
+**Nuevos usuarios** (registro desde la app):
+- `POST /auth/register` usa Supabase Auth (`signUp` real).
+- Devuelve JWT real en `data.token` (ya no es `mock-token-xxx`).
+- El backend ya no genera tokens, los emite Supabase.
+
+**Usuarios de prueba** (seed, siguen funcionando):
+- `cliente@foodsave.com` / `123456`
+- `comercio@foodsave.com` / `123456`
+- Estos devuelven tokens mock (`mock-token-xxx`) porque no existen en Supabase Auth.
+- Funcionan igual que antes, sin cambios para el frontend.
+
+**Google Sign-In:**
+- `POST /auth/google` usa `supabase.auth.signUp()` real.
+- Si el email no existe, crea el usuario en Supabase Auth y devuelve JWT real.
+- Si es `role: "business"`, crea además el negocio en la tabla `businesses`.
+
+**Email verification:** Desactivado por ahora (el frontend no tiene pantalla para ingresar el código). Si se activa, `POST /auth/register` devolverá `data.session = null` y el frontend deberá mostrar "Revisá tu correo".
+
+---
+
+## Middlewares (CAMBIÓ)
+
+Antes había 3 archivos separados. Ahora todo está en `middlewares/guards.ts`:
+
+| Middleware | Qué hace |
+|---|---|
+| `isAuth` | Cualquier usuario autenticado |
+| `isClient` | Solo rol `client` |
+| `isBusinessOwner` | Solo rol `business` con `businessId` |
+
+Importar desde: `../middlewares/guards.js`
+
+---
+
+## Arquitectura (novedades técnicas)
+
+- **Todos los controllers y servicios son async/await** — usan Promises nativas.
+- **Auth híbrido**: prueba JWT real de Supabase primero, si falla cae en mock-token para los usuarios del seed.
+- **Repositorio único**: `services/repository.ts` centraliza todas las consultas a Supabase. Los servicios no importan `data/`.
+- **Carpeta `data/`**: obsoleta, no se usa. Se mantiene solo como referencia.
+
+---
+
+## Formato de respuesta (SIN CAMBIOS)
+
+Todos los endpoints siguen devolviendo:
+```json
+{ "success": true, "data": { ... } }
+{ "success": false, "error": { "message": "..." } }
+```
+
+---
+
+## Endpoints completos (16)
+
+### Auth
+| Método | Ruta | Auth | Body |
+|---|---|---|---|
+| POST | `/auth/register` | ❌ | `{ email, password, name, phone }` |
+| POST | `/auth/login` | ❌ | `{ email, password }` |
+| POST | `/auth/google` | ❌ | `{ email, name, role, businessName?, businessAddress?, businessCategory? }` |
+| GET | `/auth/me` | ✅ | — |
+
+### Ofertas públicas
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| GET | `/offers` | ❌ | `?category=` (parcial), `?type=` (exacto) |
+| GET | `/offers/:id` | ❌ | — |
+
+### Ofertas del comercio (admin)
+| Método | Ruta | Auth | Body |
+|---|---|---|---|
+| POST | `/business/offers` | ✅ (business) | `{ title, description, category, type, oldPrice, newPrice, stock, ... }` |
+| PUT | `/business/offers/:id` | ✅ (business) | `{ title?, description?, category?, type?, oldPrice?, newPrice?, stock?, pickupWindow?, pickupLimit?, allergens?, imageUrl?, estimatedWeightInKg? }` |
+| DELETE | `/business/offers/:id` | ✅ (business) | — |
+| PUT | `/business/profile` | ✅ (business) | `{ name?, category?, description?, address?, closingTime?, logoUrl? }` |
+
+### Reservas
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| GET | `/reservations` | ✅ | Filtrado por rol |
+| POST | `/reservations` | ✅ | `{ offerId, quantity }`. DTO incluye `paymentInfo`, `code`, `expiresAt`, `whatsappPhone` |
+| PATCH | `/reservations/:id/status` | ✅ | `{ status }`. Client puede cancelar solo sus pending. Business cambia cualquiera |
+
+### Favoritos
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| GET | `/favorites` | ✅ (client) | Devuelve ofertas enriquecidas (listas para mostrar) |
+| POST | `/favorites/:offerId` | ✅ (client) | No duplica |
+| DELETE | `/favorites/:offerId` | ✅ (client) | — |
+
+### Estadísticas
+| Método | Ruta | Auth |
+|---|---|---|
+| GET | `/business/stats` | ✅ (business) |
+
+### Health
+| Método | Ruta | Auth |
+|---|---|---|
+| GET | `/health` | ❌ |
+
+### Upload
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| POST | `/upload/image` | ✅ (business) | Form-data: campo `file`. Devuelve `{ url }` público |
+
+---
+
+## Datos enriquecidos (DTOs)
+
+Las ofertas y reservas siempre llegan con datos del negocio inyectados. El frontend NO necesita hacer llamadas extra.
+
+**Ofertas** incluyen: `storeName`, `storeAddress`, `logoUrl`
+
+**Reservas** incluyen: `customerName`, `customerPhone`, `storeName`, `address`, `offerTitle`, `pickupTime`, `date`, `month`, `code`, `expiresAt`, `paymentAlias`, `bankAlias`, `whatsappPhone`, `paymentInfo: { cvu, alias }`
+
+**Favoritos** devuelven las mismas ofertas enriquecidas que `GET /offers`.
+
+---
+
+## Estructura del proyecto (backend/src/)
+
+```
+config/     → env.ts, supabase.ts
+controllers/ → authController, offerPublicController, offerBusinessController,
+               reservationController, statisticsController, favoriteController,
+               uploadController
+data/       → (obsoleto, no se usa más, solo para referencia)
+middlewares/ → guards.ts (isAuth, isClient, isBusinessOwner), errorHandler.ts,
+               authMiddleware.ts (legacy)
+routes/     → authRoutes, offerRoutes, offerBusinessRoutes,
+                reservationRoutes, statisticsRoutes, favoriteRoutes,
+                uploadRoutes
+services/   → repository.ts, authService, authStrategy, offerService,
+               reservationService, statisticsService, favoriteService
+sql/        → migration.sql, seed.sql, rls_policies.sql, auth_trigger.sql,
+               storage_bucket.sql
+types/      → auth.ts, offer.ts, reservation.ts, statistics.ts, express.ts
+utils/      → publicUser.ts
+```

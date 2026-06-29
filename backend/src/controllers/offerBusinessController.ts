@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { createOffer, deleteOffer, updateOffer } from "../services/offerService.js";
+import { createOffer, deleteOffer, updateOffer, updateBusinessProfile } from "../services/offerService.js";
 import type { OfferType } from "../types/offer.js";
 
 export async function createOfferController(request: Request, response: Response) {
@@ -79,20 +79,24 @@ export async function updateOfferController(request: Request, response: Response
     return;
   }
 
-  const { oldPrice, newPrice, stock, pickupWindow, pickupLimit } = request.body as {
+  const { title, description, category, type, oldPrice, newPrice, stock, pickupWindow, pickupLimit, allergens, imageUrl, estimatedWeightInKg } = request.body as {
+    title?: string;
+    description?: string;
+    category?: string;
+    type?: OfferType;
     oldPrice?: number;
     newPrice?: number;
     stock?: number;
     pickupWindow?: string;
     pickupLimit?: string;
+    allergens?: string[];
+    imageUrl?: string;
+    estimatedWeightInKg?: number;
   };
 
   const offer = await updateOffer(offerId, request.user!.businessId!, {
-    oldPrice,
-    newPrice,
-    stock,
-    pickupWindow,
-    pickupLimit
+    title, description, category, type, oldPrice, newPrice, stock,
+    pickupWindow, pickupLimit, allergens, imageUrl, estimatedWeightInKg
   });
 
   if (!offer) {
@@ -128,4 +132,29 @@ export async function deleteOfferController(request: Request, response: Response
   }
 
   response.json({ success: true, data: { message: "Oferta eliminada." } });
+}
+
+export async function updateBusinessProfileController(request: Request, response: Response) {
+  const { name, category, description, address, closingTime, logoUrl } = request.body as {
+    name?: string;
+    category?: string;
+    description?: string;
+    address?: string;
+    closingTime?: string;
+    logoUrl?: string;
+  };
+
+  const updated = await updateBusinessProfile(request.user!.businessId!, {
+    name, category, description, address, closingTime, logoUrl
+  });
+
+  if (!updated) {
+    response.status(404).json({
+      success: false,
+      error: { message: "Comercio no encontrado." }
+    });
+    return;
+  }
+
+  response.json({ success: true, data: { business: updated } });
 }

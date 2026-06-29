@@ -1,3 +1,4 @@
+import type { Business } from "../types/auth.js";
 import type { Offer } from "../types/offer.js";
 import {
   createOfferRepo,
@@ -5,6 +6,7 @@ import {
   findBusinessById,
   findOfferById,
   listOffersRepo,
+  updateBusinessById,
   updateOfferById
 } from "./repository.js";
 
@@ -62,12 +64,19 @@ export async function updateOffer(
   id: string,
   businessId: string,
   data_update: Partial<
-    Pick<Offer, "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit">
+    Pick<Offer, "title" | "description" | "category" | "type" | "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit" | "allergens" | "imageUrl" | "estimatedWeightInKg">
   >
 ): Promise<OfferWithBusinessData | null> {
   const updated = await updateOfferById(id, businessId, data_update);
   if (!updated) return null;
   return enrichOfferWithBusiness(updated);
+}
+
+export async function updateBusinessProfile(
+  businessId: string,
+  data_update: Partial<Pick<Business, "name" | "category" | "description" | "address" | "closingTime" | "logoUrl">>
+): Promise<Business | null> {
+  return updateBusinessById(businessId, data_update);
 }
 
 export async function deleteOffer(

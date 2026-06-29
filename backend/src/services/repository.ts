@@ -54,6 +54,20 @@ export async function createBusinessRepo(business: Business) {
   return data as Business;
 }
 
+export async function updateBusinessById(
+  id: string,
+  data_update: Partial<Pick<Business, "name" | "category" | "description" | "address" | "closingTime" | "logoUrl">>
+) {
+  const { data, error } = await supabase
+    .from("businesses")
+    .update(data_update as Record<string, unknown>)
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) return null;
+  return data as Business | null;
+}
+
 /* ── Offers ──────────────────────────────────────── */
 
 export async function listOffersRepo(filters?: {
@@ -95,7 +109,7 @@ export async function createOfferRepo(offer: Offer) {
 export async function updateOfferById(
   offerId: string,
   businessId: string,
-  data_update: Partial<Pick<Offer, "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit">>
+  data_update: Partial<Pick<Offer, "title" | "description" | "category" | "type" | "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit" | "allergens" | "imageUrl" | "estimatedWeightInKg">>
 ) {
   const { data, error } = await supabase
     .from("offers")

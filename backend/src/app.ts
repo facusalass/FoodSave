@@ -11,6 +11,7 @@ import { reservationRoutes } from "./routes/reservationRoutes.js";
 import { offerBusinessRoutes } from "./routes/offerBusinessRoutes.js";
 import { favoriteRoutes } from "./routes/favoriteRoutes.js";
 import { statisticsRoutes } from "./routes/statisticsRoutes.js";
+import { uploadRoutes } from "./routes/uploadRoutes.js";
 
 export const app = express();
 
@@ -32,6 +33,7 @@ app.use("/reservations", reservationRoutes);
 app.use("/favorites", favoriteRoutes);
 app.use("/business/offers", offerBusinessRoutes);
 app.use("/business", statisticsRoutes);
+app.use("/upload", uploadRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
