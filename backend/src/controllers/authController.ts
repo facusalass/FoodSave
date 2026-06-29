@@ -2,167 +2,58 @@ import type { Request, Response } from "express";
 import { supabase } from "../config/supabase.js";
 import { googleLogin, login, registerClient } from "../services/authService.js";
 import { findUserByEmail } from "../services/repository.js";
+import type { RegisterError, EmailConfirmationPending } from "../services/authService.js";
+
+function fail(response: Response, status: number, message: string) {
+  response.status(status).json({ success: false, error: { message } });
+}
+
+function handleRegisterResult(result: object, response: Response, successStatus: number) {
+  if ("error" in result) {
+    const err = result as RegisterError;
+    const isRateLimit = err.error.includes("demasiados intentos");
+    return fail(response, isRateLimit ? 429 : 409, err.error);
+  }
+  if ("emailConfirmationRequired" in result) {
+    response.status(200).json({ success: true, data: result });
+    return;
+  }
+  response.status(successStatus).json({ success: true, data: result });
+}
 
 export async function loginController(request: Request, response: Response) {
-  const { email, password } = request.body as {
-    email?: string;
-    password?: string;
-  };
+  const { email, password } = request.body as { email?: string; password?: string };
 
-  if (!email || !password) {
-    response.status(400).json({
-      success: false,
-      error: { message: "Email y contraseña son requeridos." }
-    });
-    return;
-  }
+  if (!email || !password) return fail(response, 400, "Email y contraseña son requeridos.");
 
   const session = await login(email, password);
-
-  if (!session) {
-    response.status(401).json({
-      success: false,
-      error: { message: "Credenciales invalidas." }
-    });
-    return;
-  }
+  if (!session) return fail(response, 401, "Credenciales invalidas.");
 
   response.json({ success: true, data: session });
 }
 
-export async function registerController(
-  request: Request,
-  response: Response
-) {
-  const { email, password, name, phone } = request.body as {
-    email?: string;
-    password?: string;
-    name?: string;
-    phone?: string;
-  };
+export async function registerController(request: Request, response: Response) {
+  const { email, password, name, phone } = request.body as { email?: string; password?: string; name?: string; phone?: string };
 
-  if (!name?.trim()) {
-    response.status(400).json({
-      success: false,
-      error: { message: "El nombre y apellido son requeridos." }
-    });
-    return;
-  }
+  if (!name?.trim()) return fail(response, 400, "El nombre y apellido son requeridos.");
+  if (!phone?.trim()) return fail(response, 400, "El telefono es requerido.");
+  if (!email?.trim()) return fail(response, 400, "El correo electronico es requerido.");
+  if (!isValidEmail(email)) return fail(response, 400, "Ingresa un correo electronico valido.");
+  if (!password) return fail(response, 400, "La contrasena es requerida.");
+  if (password.length < 6) return fail(response, 400, "La contrasena debe tener al menos 6 caracteres.");
 
-  if (!phone?.trim()) {
-    response.status(400).json({
-      success: false,
-      error: { message: "El telefono es requerido." }
-    });
-    return;
-  }
-
-  if (!email?.trim()) {
-    response.status(400).json({
-      success: false,
-      error: { message: "El correo electronico es requerido." }
-    });
-    return;
-  }
-
-  if (!isValidEmail(email)) {
-    response.status(400).json({
-      success: false,
-      error: { message: "Ingresa un correo electronico valido." }
-    });
-    return;
-  }
-
-  if (!password) {
-    response.status(400).json({
-      success: false,
-      error: { message: "La contrasena es requerida." }
-    });
-    return;
-  }
-
-  if (password.length < 6) {
-    response.status(400).json({
-      success: false,
-      error: { message: "La contrasena debe tener al menos 6 caracteres." }
-    });
-    return;
-  }
-
-  const result = await registerClient({ email, password, name, phone });
-
-  if ("error" in result) {
-    const isRateLimit = result.error.includes("demasiados intentos");
-    response.status(isRateLimit ? 429 : 409).json({
-      success: false,
-      error: { message: result.error }
-    });
-    return;
-  }
-
-  if ("emailConfirmationRequired" in result) {
-    response.status(200).json({ success: true, data: result });
-    return;
-  }
-
-  response.status(201).json({ success: true, data: result });
+  handleRegisterResult(await registerClient({ email, password, name, phone }), response, 201);
 }
 
-export async function googleLoginController(
-  request: Request,
-  response: Response
-) {
-  const { email, name, role, businessName, businessAddress, businessCategory, businessCity } =
-    request.body as {
-      email?: string;
-      name?: string;
-      role?: string;
-      businessName?: string;
-      businessAddress?: string;
-      businessCategory?: string;
-      businessCity?: string;
-    };
+export async function googleLoginController(request: Request, response: Response) {
+  const { email, name, role, businessName, businessAddress, businessCategory, businessCity } = request.body as {
+    email?: string; name?: string; role?: string; businessName?: string; businessAddress?: string; businessCategory?: string; businessCity?: string;
+  };
 
-  if (!email || !name || !role) {
-    response.status(400).json({
-      success: false,
-      error: { message: "email, name y role son requeridos." }
-    });
-    return;
-  }
+  if (!email || !name || !role) return fail(response, 400, "email, name y role son requeridos.");
+  if (role !== "client" && role !== "business") return fail(response, 400, "role debe ser 'client' o 'business'.");
 
-  if (role !== "client" && role !== "business") {
-    response.status(400).json({
-      success: false,
-      error: { message: "role debe ser 'client' o 'business'." }
-    });
-    return;
-  }
-
-  const result = await googleLogin({
-    email,
-    name,
-    role,
-    businessName,
-    businessAddress,
-    businessCategory,
-    businessCity
-  });
-
-  if ("error" in result) {
-    response.status(400).json({
-      success: false,
-      error: { message: result.error }
-    });
-    return;
-  }
-
-  if ("emailConfirmationRequired" in result) {
-    response.status(200).json({ success: true, data: result });
-    return;
-  }
-
-  response.json({ success: true, data: result });
+  handleRegisterResult(await googleLogin({ email, name, role, businessName, businessAddress, businessCategory, businessCity }), response, 200);
 }
 
 export function meController(request: Request, response: Response) {
@@ -173,45 +64,22 @@ export async function resetPasswordController(request: Request, response: Respon
   const { email } = request.body as { email?: string };
   const normalizedEmail = email?.trim().toLowerCase();
 
-  if (!normalizedEmail) {
-    response.status(400).json({
-      success: false,
-      error: { message: "El correo electrónico es requerido." }
-    });
-    return;
-  }
+  if (!normalizedEmail) return fail(response, 400, "El correo electrónico es requerido.");
 
   const user = await findUserByEmail(normalizedEmail);
+  if (!user) return fail(response, 404, "No encontramos una cuenta registrada con ese correo.");
 
-  if (!user) {
-    response.status(404).json({
-      success: false,
-      error: { message: "No encontramos una cuenta registrada con ese correo." }
-    });
-    return;
-  }
-
-  const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-    redirectTo: "foodsave://reset-password"
-  });
+  const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: "foodsave://reset-password" });
 
   if (error) {
     const status = error.status === 429 ? 429 : 500;
     const message = error.status === 429
       ? "Se enviaron demasiados correos. Esperá unos minutos y volvé a intentar."
       : "No se pudo enviar el correo de recuperación.";
-
-    response.status(status).json({
-      success: false,
-      error: { message }
-    });
-    return;
+    return fail(response, status, message);
   }
 
-  response.json({
-    success: true,
-    data: { message: "Te enviamos un email con instrucciones para recuperar tu contraseña." }
-  });
+  response.json({ success: true, data: { message: "Te enviamos un email con instrucciones para recuperar tu contraseña." } });
 }
 
 function isValidEmail(email: string) {
