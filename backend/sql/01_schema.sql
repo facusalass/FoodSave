@@ -25,6 +25,7 @@ CREATE TABLE businesses (
   "ownerId" TEXT NOT NULL REFERENCES users(id),
   category TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
+  city TEXT NOT NULL DEFAULT '',
   address TEXT NOT NULL,
   "closingTime" TEXT NOT NULL DEFAULT '22:00',
   "logoUrl" TEXT,

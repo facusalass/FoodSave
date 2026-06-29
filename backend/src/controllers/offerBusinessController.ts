@@ -135,17 +135,18 @@ export async function deleteOfferController(request: Request, response: Response
 }
 
 export async function updateBusinessProfileController(request: Request, response: Response) {
-  const { name, category, description, address, closingTime, logoUrl } = request.body as {
+  const { name, category, description, city, address, closingTime, logoUrl } = request.body as {
     name?: string;
     category?: string;
     description?: string;
+    city?: string;
     address?: string;
     closingTime?: string;
     logoUrl?: string;
   };
 
   const updated = await updateBusinessProfile(request.user!.businessId!, {
-    name, category, description, address, closingTime, logoUrl
+    name, category, description, city, address, closingTime, logoUrl
   });
 
   if (!updated) {

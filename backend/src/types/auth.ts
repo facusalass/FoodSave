@@ -14,17 +14,19 @@ export type User = {
 export type Business = {
   id: string;
   name: string;
-  ownerId: string;     
+  ownerId: string;
   category: string;
   description: string;
+  city: string;
+  address: string;
   closingTime: string;
-  logoUrl?: string;   
+  logoUrl?: string;
   paymentInfo: {
     ownerName: string;
     cvu: string;
-    alias: string;};
-  createdAt: string; 
-  address: string;  // Clave para métricas de facturación y antigüedad SaaS
+    alias: string;
+  };
+  createdAt: string;
 };
 
 export type PublicUser = Omit<User, "password">;
