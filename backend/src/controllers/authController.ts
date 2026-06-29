@@ -92,7 +92,8 @@ export async function registerController(
   const result = await registerClient({ email, password, name, phone });
 
   if ("error" in result) {
-    response.status(409).json({
+    const isRateLimit = result.error.includes("demasiados intentos");
+    response.status(isRateLimit ? 429 : 409).json({
       success: false,
       error: { message: result.error }
     });
@@ -195,9 +196,14 @@ export async function resetPasswordController(request: Request, response: Respon
   });
 
   if (error) {
-    response.status(500).json({
+    const status = error.status === 429 ? 429 : 500;
+    const message = error.status === 429
+      ? "Se enviaron demasiados correos. Esperá unos minutos y volvé a intentar."
+      : "No se pudo enviar el correo de recuperación.";
+
+    response.status(status).json({
       success: false,
-      error: { message: "No se pudo enviar el correo de recuperación." }
+      error: { message }
     });
     return;
   }
