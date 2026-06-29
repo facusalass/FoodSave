@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from "expo-router";
-import { LayoutDashboard } from "lucide-react-native";
+import { ClipboardList, LayoutDashboard, Plus } from "lucide-react-native";
 import { StyleSheet } from "react-native";
 import { SplashLoading } from "../../src/components/SplashLoading";
 import { colors } from "../../src/constants/theme";
@@ -40,6 +40,22 @@ export default function BusinessLayout() {
           title: "Inicio",
           tabBarIcon: ({ color, size }) => (
             <LayoutDashboard color={color} size={size} />
+          )
+        }}
+      />
+      <Tabs.Screen
+        name="publish"
+        options={{
+          title: "Publicar",
+          tabBarIcon: ({ color, size }) => <Plus color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: "Pedidos",
+          tabBarIcon: ({ color, size }) => (
+            <ClipboardList color={color} size={size} />
           )
         }}
       />

@@ -192,6 +192,16 @@ npx expo start -c
 - El estado leida/no leida se guarda localmente por usuario en SecureStore.
 - Como evolucion futura se pueden agregar endpoints dedicados (`GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`) y Expo Push Notifications.
 
+## Panel comercio/admin mobile
+
+- El dashboard comercio vive en `frontend/app/(business)/dashboard.tsx` y usa una interfaz mobile alineada al sistema visual FoodSave: header claro, cards blancas, acentos naranja/verde, saludo del local, cierre del dia, metricas, boton de publicar excedente y accesos rapidos.
+- La navegacion business usa tabs inferiores con `Inicio`, `Publicar` y `Pedidos`.
+- Las metricas del dashboard usan datos reales existentes: `GET /offers` filtrado por `businessId` para ofertas activas y `GET /reservations` para reservas del comercio.
+- El cierre `22:00 HS` queda como fallback temporal porque el frontend todavia no recibe perfil completo del comercio.
+- `Publicar`, `Historial`, `Estadisticas`, `Mi local` y notificaciones del comercio quedan como placeholders livianos; no se implementa CRUD real de publicaciones ni endpoints nuevos.
+- La pantalla `frontend/app/(business)/orders.tsx` muestra una lista basica de pedidos usando reservas existentes.
+- No se toca backend para esta fase.
+
 ## Compatibilidad Expo
 
 - El frontend queda fijado en Expo SDK 54 para compatibilidad con Expo Go disponible en Android.
