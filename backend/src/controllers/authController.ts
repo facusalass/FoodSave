@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { supabase } from "../config/supabase.js";
 import { googleLogin, login, registerClient } from "../services/authService.js";
 
 export async function loginController(request: Request, response: Response) {
@@ -154,6 +155,36 @@ export async function googleLoginController(
 
 export function meController(request: Request, response: Response) {
   response.json({ success: true, data: { user: request.user } });
+}
+
+export async function resetPasswordController(request: Request, response: Response) {
+  const { email } = request.body as { email?: string };
+
+  if (!email) {
+    response.status(400).json({
+      success: false,
+      error: { message: "El correo electrónico es requerido." }
+    });
+    return;
+  }
+
+  // No revelamos si el email existe o no por seguridad
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "foodsave://reset-password"
+  });
+
+  if (error) {
+    response.status(500).json({
+      success: false,
+      error: { message: "No se pudo enviar el correo de recuperación." }
+    });
+    return;
+  }
+
+  response.json({
+    success: true,
+    data: { message: "Si el correo existe, recibirás un enlace para restablecer tu contraseña." }
+  });
 }
 
 function isValidEmail(email: string) {

@@ -64,6 +64,12 @@ Authorization: Bearer <token>
 - **Respuesta (200):** `data: { token, user }`
 - **Comportamiento:** Si el email no existe, registra automáticamente. Si existe, loguea.
 
+### `POST /auth/reset-password`
+- **Auth:** ❌
+- **Body:** `{ "email" }`
+- **Respuesta (200):** `data: { message: "Si el correo existe, recibirás un enlace..." }`
+- **Nota:** Siempre devuelve 200 aunque el email no exista (seguridad).
+
 ### `GET /auth/me`
 - **Auth:** ✅
 - **Respuesta (200):** `data: { user }` — perfil del usuario autenticado.
@@ -193,6 +199,7 @@ Authorization: Bearer <token>
 | POST | `/auth/register` | ❌ | — |
 | POST | `/auth/login` | ❌ | — |
 | POST | `/auth/google` | ❌ | — |
+| POST | `/auth/reset-password` | ❌ | — |
 | GET | `/auth/me` | ✅ | cualquiera |
 | GET | `/cities` | ❌ | — |
 | GET | `/offers` | ❌ | — |

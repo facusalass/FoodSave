@@ -87,7 +87,8 @@ Todos los endpoints siguen devolviendo:
 |---|---|---|---|
 | POST | `/auth/register` | ❌ | `{ email, password, name, phone }` |
 | POST | `/auth/login` | ❌ | `{ email, password }` |
-| POST | `/auth/google` | ❌ | `{ email, name, role, businessName?, businessAddress?, businessCategory? }` |
+| POST | `/auth/google` | ❌ | `{ email, name, role, businessName?, businessAddress?, businessCategory?, businessCity? }` |
+| POST | `/auth/reset-password` | ❌ | `{ email }` |
 | GET | `/auth/me` | ✅ | — |
 
 ### Ofertas públicas
