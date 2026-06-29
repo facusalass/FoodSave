@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from "expo-router";
-import { AlertTriangle, ChevronDown } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { AlertTriangle, Check, ChevronDown } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -37,6 +37,8 @@ export default function ClientReservationsScreen() {
   >(null);
   const [reservationToCancel, setReservationToCancel] =
     useState<Reservation | null>(null);
+  const [isMonthSelectorVisible, setIsMonthSelectorVisible] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -68,9 +70,37 @@ export default function ClientReservationsScreen() {
     }, [loadReservations])
   );
 
+  const monthOptions = useMemo(() => getMonthOptions(reservations), [
+    reservations
+  ]);
+
+  useEffect(() => {
+    if (selectedMonth && !monthOptions.includes(selectedMonth)) {
+      setSelectedMonth(null);
+    }
+  }, [monthOptions, selectedMonth]);
+
   const visibleMonth = useMemo(() => {
-    return reservations[0]?.month ?? "Mayo 2026";
-  }, [reservations]);
+    if (selectedMonth) {
+      return selectedMonth;
+    }
+
+    if (monthOptions.length > 1) {
+      return "Todos los meses";
+    }
+
+    return monthOptions[0] ?? getCurrentMonthLabel();
+  }, [monthOptions, selectedMonth]);
+
+  const visibleReservations = useMemo(() => {
+    if (!selectedMonth) {
+      return reservations;
+    }
+
+    return reservations.filter(
+      (reservation) => reservation.month === selectedMonth
+    );
+  }, [reservations, selectedMonth]);
 
   function handleNavigate(route: ClientMenuRoute) {
     setIsMenuVisible(false);
@@ -147,7 +177,8 @@ export default function ClientReservationsScreen() {
         <Text style={styles.title}>Mis Reservas</Text>
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => undefined}
+          disabled={monthOptions.length === 0}
+          onPress={() => setIsMonthSelectorVisible(true)}
           style={styles.monthButton}
         >
           <Text style={styles.monthText}>{visibleMonth}</Text>
@@ -172,7 +203,7 @@ export default function ClientReservationsScreen() {
           {actionError ? (
             <Text style={styles.actionError}>{actionError}</Text>
           ) : null}
-          {reservations.map((reservation) => (
+          {visibleReservations.map((reservation) => (
             <ReservationCard
               isCancelling={cancellingReservationId === reservation.id}
               key={reservation.id}
@@ -183,6 +214,16 @@ export default function ClientReservationsScreen() {
           ))}
         </View>
       )}
+      <MonthSelectorModal
+        monthOptions={monthOptions}
+        onClose={() => setIsMonthSelectorVisible(false)}
+        onSelect={(month) => {
+          setSelectedMonth(month);
+          setIsMonthSelectorVisible(false);
+        }}
+        selectedMonth={selectedMonth}
+        visible={isMonthSelectorVisible}
+      />
       <CancelReservationModal
         isLoading={
           reservationToCancel
@@ -198,6 +239,83 @@ export default function ClientReservationsScreen() {
         reservation={reservationToCancel}
       />
     </ScreenContainer>
+  );
+}
+
+function MonthSelectorModal({
+  monthOptions,
+  onClose,
+  onSelect,
+  selectedMonth,
+  visible
+}: {
+  monthOptions: string[];
+  onClose: () => void;
+  onSelect: (month: string | null) => void;
+  selectedMonth: string | null;
+  visible: boolean;
+}) {
+  return (
+    <Modal
+      animationType="fade"
+      onRequestClose={onClose}
+      transparent
+      visible={visible}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.monthModalCard}>
+          <Text style={styles.monthModalTitle}>Elegí un mes</Text>
+          <Text style={styles.monthModalDescription}>
+            Filtrá tus reservas por período.
+          </Text>
+
+          <View style={styles.monthOptions}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => onSelect(null)}
+              style={[
+                styles.monthOption,
+                selectedMonth === null ? styles.monthOptionSelected : null
+              ]}
+            >
+              <Text style={styles.monthOptionText}>Todos los meses</Text>
+              {selectedMonth === null ? (
+                <Check color={colors.secondaryDark} size={18} />
+              ) : null}
+            </TouchableOpacity>
+
+            {monthOptions.map((month) => {
+              const isSelected = month === selectedMonth;
+
+              return (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  key={month}
+                  onPress={() => onSelect(month)}
+                  style={[
+                    styles.monthOption,
+                    isSelected ? styles.monthOptionSelected : null
+                  ]}
+                >
+                  <Text style={styles.monthOptionText}>{month}</Text>
+                  {isSelected ? (
+                    <Check color={colors.secondaryDark} size={18} />
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onClose}
+            style={styles.monthModalCloseButton}
+          >
+            <Text style={styles.monthModalCloseText}>Cerrar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -275,6 +393,39 @@ function CancelReservationModal({
   );
 }
 
+function getMonthOptions(reservations: Reservation[]) {
+  const seenMonths = new Set<string>();
+
+  return reservations
+    .map((reservation) => reservation.month)
+    .filter((month): month is string => {
+      if (!month || seenMonths.has(month)) {
+        return false;
+      }
+
+      seenMonths.add(month);
+      return true;
+    });
+}
+
+function getCurrentMonthLabel() {
+  const formattedValue = new Intl.DateTimeFormat("es-AR", {
+    month: "long",
+    year: "numeric"
+  }).format(new Date());
+  const [month, year] = formattedValue.split(" de ");
+
+  if (!month || !year) {
+    return formattedValue;
+  }
+
+  return `${capitalize(month)} ${year}`;
+}
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 const styles = StyleSheet.create({
   actionError: {
     color: colors.danger,
@@ -316,6 +467,60 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: "600"
+  },
+  monthModalCard: {
+    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    gap: spacing.md,
+    marginHorizontal: spacing.lg,
+    padding: spacing.lg,
+    width: "88%"
+  },
+  monthModalCloseButton: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md
+  },
+  monthModalCloseText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  monthModalDescription: {
+    color: colors.mutedText,
+    fontSize: 14,
+    lineHeight: 20
+  },
+  monthModalTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "900"
+  },
+  monthOption: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 46,
+    paddingHorizontal: spacing.md
+  },
+  monthOptionSelected: {
+    backgroundColor: "#14B8A61A",
+    borderColor: "#14B8A666"
+  },
+  monthOptionText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  monthOptions: {
+    gap: spacing.sm
   },
   modalActions: {
     flexDirection: "row",
