@@ -98,6 +98,11 @@ export async function registerController(
     return;
   }
 
+  if ("emailConfirmationRequired" in result) {
+    response.status(200).json({ success: true, data: result });
+    return;
+  }
+
   response.status(201).json({ success: true, data: result });
 }
 
@@ -147,6 +152,11 @@ export async function googleLoginController(
       success: false,
       error: { message: result.error }
     });
+    return;
+  }
+
+  if ("emailConfirmationRequired" in result) {
+    response.status(200).json({ success: true, data: result });
     return;
   }
 

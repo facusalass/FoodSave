@@ -15,12 +15,16 @@ function buildUserFromAuth(authUser: { id: string; email?: string | null; user_m
   };
 }
 
+export type RegisterResult = AuthSession & { user: PublicUser };
+export type RegisterError = { error: string };
+export type EmailConfirmationPending = { emailConfirmationRequired: true; message: string };
+
 export async function registerClient(params: {
   email: string;
   password: string;
   name: string;
   phone: string;
-}): Promise<AuthSession & { user: PublicUser } | { error: string }> {
+}): Promise<RegisterResult | RegisterError | EmailConfirmationPending> {
   const { email, password } = params;
   const already = await findUserByEmail(email.toLowerCase());
 
@@ -45,7 +49,7 @@ export async function registerClient(params: {
   }
 
   if (!data.session || !data.user) {
-    return { error: "Revisá tu correo para confirmar la cuenta." };
+    return { emailConfirmationRequired: true as const, message: "Revisá tu correo para confirmar la cuenta." };
   }
 
   const user = await findUserById(data.user.id);
@@ -94,7 +98,7 @@ export async function googleLogin(params: {
   businessAddress?: string;
   businessCategory?: string;
   businessCity?: string;
-}): Promise<AuthSession & { user: PublicUser } | { error: string }> {
+}): Promise<RegisterResult | RegisterError | EmailConfirmationPending> {
   const { email, name, role, businessName, businessAddress, businessCategory, businessCity } = params;
   const normalizedEmail = email.toLowerCase();
 
@@ -153,7 +157,7 @@ export async function googleLogin(params: {
   }
 
   if (!data.session || !data.user) {
-    return { error: "Revisá tu correo para confirmar la cuenta." };
+    return { emailConfirmationRequired: true as const, message: "Revisá tu correo para confirmar la cuenta." };
   }
 
   // Si es business, actualizar el ownerId del negocio
