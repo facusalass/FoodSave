@@ -4,12 +4,33 @@ import type {
   ReservationStatus
 } from "../types/reservation";
 
+type ReservationsResponse = {
+  reservations?:
+    | Reservation[]
+    | {
+        items?: Reservation[];
+      };
+  items?: Reservation[];
+};
+
 export async function getReservations(token: string) {
-  const response = await apiRequest<{ reservations: Reservation[] }>(
-    "/reservations",
-    { token }
-  );
-  return response.reservations;
+  const response = await apiRequest<ReservationsResponse>("/reservations", {
+    token
+  });
+
+  if (Array.isArray(response.reservations)) {
+    return response.reservations;
+  }
+
+  if (Array.isArray(response.reservations?.items)) {
+    return response.reservations.items;
+  }
+
+  if (Array.isArray(response.items)) {
+    return response.items;
+  }
+
+  return [];
 }
 
 export async function createReservation(
