@@ -4,7 +4,8 @@ import type { Business, User } from "../types/auth.js";
 import type { Offer } from "../types/offer.js";
 import type { Reservation, ReservationStatus } from "../types/reservation.js";
 
-/* ── Users ───────────────────────────────────────── */
+export type BusinessUpdate = Partial<Pick<Business, "name" | "category" | "description" | "city" | "address" | "closingTime" | "logoUrl">>;
+export type OfferUpdate = Partial<Pick<Offer, "title" | "description" | "category" | "type" | "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit" | "allergens" | "imageUrl" | "estimatedWeightInKg">>;
 
 /* ── Users ───────────────────────────────────────── */
 
@@ -24,16 +25,6 @@ export async function findUserById(id: string) {
     .eq("id", id)
     .single();
   return data as User | null;
-}
-
-export async function createUserRepo(user: User) {
-  const { data, error } = await supabase
-    .from("users")
-    .insert(user as Record<string, unknown>)
-    .select("*")
-    .single();
-  if (error) throw error;
-  return data as User;
 }
 
 /* ── Businesses ──────────────────────────────────── */
@@ -57,10 +48,7 @@ export async function createBusinessRepo(business: Business) {
   return data as Business;
 }
 
-export async function updateBusinessById(
-  id: string,
-  data_update: Partial<Pick<Business, "name" | "category" | "description" | "city" | "address" | "closingTime" | "logoUrl">>
-) {
+export async function updateBusinessById(id: string, data_update: BusinessUpdate) {
   const { data, error } = await supabase
     .from("businesses")
     .update(data_update as Record<string, unknown>)
@@ -141,11 +129,7 @@ export async function createOfferRepo(offer: Offer) {
   return data as Offer;
 }
 
-export async function updateOfferById(
-  offerId: string,
-  businessId: string,
-  data_update: Partial<Pick<Offer, "title" | "description" | "category" | "type" | "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit" | "allergens" | "imageUrl" | "estimatedWeightInKg">>
-) {
+export async function updateOfferById(offerId: string, businessId: string, data_update: OfferUpdate) {
   const { data, error } = await supabase
     .from("offers")
     .update(data_update as Record<string, unknown>)
@@ -168,50 +152,26 @@ export async function deleteOfferById(offerId: string, businessId: string) {
 
 /* ── Reservations ────────────────────────────────── */
 
-export async function listReservationsByBusiness(
-  businessId: string,
-  page: number = 1,
-  limit: number = 20
-): Promise<PaginatedResult<Reservation>> {
+async function paginateReservations(column: "businessId" | "userId", value: string, page: number, limit: number) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
   const { data, count } = await supabase
     .from("reservations")
     .select("*", { count: "exact" })
-    .eq("businessId", businessId)
+    .eq(column, value)
     .order("createdAt", { ascending: false })
     .range(from, to);
 
-  return buildPaginatedResult(
-    (data ?? []) as Reservation[],
-    count ?? 0,
-    page,
-    limit
-  );
+  return buildPaginatedResult((data ?? []) as Reservation[], count ?? 0, page, limit);
 }
 
-export async function listReservationsByUser(
-  userId: string,
-  page: number = 1,
-  limit: number = 20
-): Promise<PaginatedResult<Reservation>> {
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+export function listReservationsByBusiness(businessId: string, page = 1, limit = 20) {
+  return paginateReservations("businessId", businessId, page, limit);
+}
 
-  const { data, count } = await supabase
-    .from("reservations")
-    .select("*", { count: "exact" })
-    .eq("userId", userId)
-    .order("createdAt", { ascending: false })
-    .range(from, to);
-
-  return buildPaginatedResult(
-    (data ?? []) as Reservation[],
-    count ?? 0,
-    page,
-    limit
-  );
+export function listReservationsByUser(userId: string, page = 1, limit = 20) {
+  return paginateReservations("userId", userId, page, limit);
 }
 
 export async function findReservationById(id: string) {

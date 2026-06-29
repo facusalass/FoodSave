@@ -3,6 +3,15 @@ import { createBusinessRepo, findUserByEmail, findUserById } from "./repository.
 import { toPublicUser } from "../utils/publicUser.js";
 import type { AuthSession, Business, PublicUser, UserRole } from "../types/auth.js";
 
+function normalizeSignUpError(message: string): string {
+  const m = (message ?? "").toLowerCase();
+  if (m.includes("already") || m.includes("duplicate")) return "Ya existe una cuenta con ese correo.";
+  if (m.includes("rate") || m.includes("limit") || m.includes("too many")) return "Se hicieron demasiados intentos. Esperá unos minutos y probá de nuevo.";
+  if (m.includes("password") || m.includes("weak")) return "La contraseña debe tener al menos 6 caracteres.";
+  if (m.includes("email") || m.includes("format")) return "Ingresá un correo electrónico válido.";
+  return "No pudimos crear la cuenta por un problema del servicio de registro. Probá de nuevo en unos minutos.";
+}
+
 function buildUserFromAuth(authUser: { id: string; email?: string | null; user_metadata?: Record<string, unknown>; created_at?: string }, fallbackName: string, fallbackRole: UserRole): PublicUser {
   return {
     id: authUser.id,
@@ -45,11 +54,11 @@ export async function registerClient(params: {
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: normalizeSignUpError(error.message) };
   }
 
   if (!data.session || !data.user) {
-    return { emailConfirmationRequired: true as const, message: "Revisá tu correo para confirmar la cuenta." };
+    return { emailConfirmationRequired: true, message: "Revisá tu correo para confirmar la cuenta." };
   }
 
   const user = await findUserById(data.user.id);
@@ -66,7 +75,6 @@ export async function login(
 ): Promise<AuthSession | null> {
   const normalizedEmail = email.trim().toLowerCase();
 
-  // 1. Intentar Supabase Auth (usuarios registrados via la app)
   const { data, error } = await supabase.auth.signInWithPassword({
     email: normalizedEmail,
     password
@@ -80,7 +88,6 @@ export async function login(
     };
   }
 
-  // 2. Fallback: usuarios del seed (mock)
   const user = await findUserByEmail(normalizedEmail);
   if (!user || user.password !== password) return null;
 
@@ -102,7 +109,6 @@ export async function googleLogin(params: {
   const { email, name, role, businessName, businessAddress, businessCategory, businessCity } = params;
   const normalizedEmail = email.toLowerCase();
 
-  // Si ya existe, loguear
   const existing = await findUserByEmail(normalizedEmail);
   if (existing) {
     return {
@@ -112,7 +118,6 @@ export async function googleLogin(params: {
   }
 
   const now = new Date().toISOString();
-
   let businessId: string | undefined;
 
   if (role === "business") {
@@ -125,7 +130,7 @@ export async function googleLogin(params: {
     const newBusiness: Business = {
       id: businessId,
       name: businessName,
-      ownerId: "",   // se actualiza después con el ID real
+      ownerId: "",
       category: businessCategory,
       description: "",
       city: businessCity ?? "",
@@ -153,19 +158,15 @@ export async function googleLogin(params: {
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: normalizeSignUpError(error.message) };
   }
 
   if (!data.session || !data.user) {
-    return { emailConfirmationRequired: true as const, message: "Revisá tu correo para confirmar la cuenta." };
+    return { emailConfirmationRequired: true, message: "Revisá tu correo para confirmar la cuenta." };
   }
 
-  // Si es business, actualizar el ownerId del negocio
   if (businessId) {
-    await supabase
-      .from("businesses")
-      .update({ ownerId: data.user.id })
-      .eq("id", businessId);
+    await supabase.from("businesses").update({ ownerId: data.user.id }).eq("id", businessId);
   }
 
   const user = await findUserById(data.user.id);
