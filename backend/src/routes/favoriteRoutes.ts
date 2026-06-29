@@ -4,7 +4,7 @@ import {
   listFavoritesController,
   removeFavoriteController
 } from "../controllers/favoriteController.js";
-import { isClient } from "../middlewares/isClient.js";
+import { isClient } from "../middlewares/guards.js";
 
 export const favoriteRoutes = Router();
 

@@ -1,12 +1,8 @@
 import type { Request, Response } from "express";
-import {
-  createOffer,
-  deleteOffer,
-  updateOffer
-} from "../services/offerService.js";
+import { createOffer, deleteOffer, updateOffer } from "../services/offerService.js";
 import type { OfferType } from "../types/offer.js";
 
-export function createOfferController(request: Request, response: Response) {
+export async function createOfferController(request: Request, response: Response) {
   const {
     title,
     description,
@@ -51,7 +47,7 @@ export function createOfferController(request: Request, response: Response) {
     return;
   }
 
-  const offer = createOffer(
+  const offer = await createOffer(
     {
       title,
       description,
@@ -72,7 +68,7 @@ export function createOfferController(request: Request, response: Response) {
   response.status(201).json({ success: true, data: { offer } });
 }
 
-export function updateOfferController(request: Request, response: Response) {
+export async function updateOfferController(request: Request, response: Response) {
   const offerId = request.params.id;
 
   if (!offerId || Array.isArray(offerId)) {
@@ -83,13 +79,7 @@ export function updateOfferController(request: Request, response: Response) {
     return;
   }
 
-  const {
-    oldPrice,
-    newPrice,
-    stock,
-    pickupWindow,
-    pickupLimit
-  } = request.body as {
+  const { oldPrice, newPrice, stock, pickupWindow, pickupLimit } = request.body as {
     oldPrice?: number;
     newPrice?: number;
     stock?: number;
@@ -97,7 +87,7 @@ export function updateOfferController(request: Request, response: Response) {
     pickupLimit?: string;
   };
 
-  const offer = updateOffer(offerId, request.user!.businessId!, {
+  const offer = await updateOffer(offerId, request.user!.businessId!, {
     oldPrice,
     newPrice,
     stock,
@@ -116,7 +106,7 @@ export function updateOfferController(request: Request, response: Response) {
   response.json({ success: true, data: { offer } });
 }
 
-export function deleteOfferController(request: Request, response: Response) {
+export async function deleteOfferController(request: Request, response: Response) {
   const offerId = request.params.id;
 
   if (!offerId || Array.isArray(offerId)) {
@@ -127,7 +117,7 @@ export function deleteOfferController(request: Request, response: Response) {
     return;
   }
 
-  const deleted = deleteOffer(offerId, request.user!.businessId!);
+  const deleted = await deleteOffer(offerId, request.user!.businessId!);
 
   if (!deleted) {
     response.status(404).json({

@@ -4,7 +4,7 @@ import {
   listReservationsController,
   updateReservationStatusController
 } from "../controllers/reservationController.js";
-import { isAuth } from "../middlewares/isAuth.js";
+import { isAuth } from "../middlewares/guards.js";
 
 export const reservationRoutes = Router();
 

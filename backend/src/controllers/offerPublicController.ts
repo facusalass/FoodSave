@@ -1,18 +1,18 @@
 import type { Request, Response } from "express";
 import type { OfferType } from "../types/offer.js";
-import { findOfferById, listOffers } from "../services/offerService.js";
+import { findOfferByIdPublic, listOffers } from "../services/offerService.js";
 
-export function listOffersController(request: Request, response: Response) {
+export async function listOffersController(request: Request, response: Response) {
   const { category, type } = request.query as {
     category?: string;
     type?: OfferType;
   };
 
-  const offers = listOffers({ category, type });
+  const offers = await listOffers({ category, type });
   response.json({ success: true, data: { offers } });
 }
 
-export function getOfferController(request: Request, response: Response) {
+export async function getOfferController(request: Request, response: Response) {
   const offerId = request.params.id;
 
   if (!offerId || Array.isArray(offerId)) {
@@ -23,7 +23,7 @@ export function getOfferController(request: Request, response: Response) {
     return;
   }
 
-  const offer = findOfferById(offerId);
+  const offer = await findOfferByIdPublic(offerId);
 
   if (!offer) {
     response.status(404).json({

@@ -4,7 +4,7 @@ import {
   deleteOfferController,
   updateOfferController
 } from "../controllers/offerBusinessController.js";
-import { isBusinessOwner } from "../middlewares/isBusinessOwner.js";
+import { isBusinessOwner } from "../middlewares/guards.js";
 
 export const offerBusinessRoutes = Router();
 

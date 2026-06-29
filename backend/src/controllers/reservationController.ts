@@ -6,15 +6,15 @@ import {
 } from "../services/reservationService.js";
 import type { ReservationStatus } from "../types/reservation.js";
 
-export function listReservationsController(
+export async function listReservationsController(
   request: Request,
   response: Response
 ) {
-  const reservations = listReservationsForUser(request.user!);
+  const reservations = await listReservationsForUser(request.user!);
   response.json({ success: true, data: { reservations } });
 }
 
-export function updateReservationStatusController(
+export async function updateReservationStatusController(
   request: Request,
   response: Response
 ) {
@@ -38,7 +38,7 @@ export function updateReservationStatusController(
     return;
   }
 
-  const reservation = updateReservationStatus(
+  const reservation = await updateReservationStatus(
     reservationId,
     status,
     request.user!
@@ -57,7 +57,7 @@ export function updateReservationStatusController(
   response.json({ success: true, data: { reservation } });
 }
 
-export function createReservationController(
+export async function createReservationController(
   request: Request,
   response: Response
 ) {
@@ -82,7 +82,7 @@ export function createReservationController(
     return;
   }
 
-  const result = createReservation(offerId, request.user!.id, quantity);
+  const result = await createReservation(offerId, request.user!.id, quantity);
 
   if ("error" in result) {
     response.status(400).json({

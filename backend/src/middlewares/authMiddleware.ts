@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { getUserFromToken } from "../services/authService.js";
 
-export function requireAuth(
+export async function requireAuth(
   request: Request,
   response: Response,
   next: NextFunction
@@ -16,7 +16,7 @@ export function requireAuth(
     return;
   }
 
-  const user = getUserFromToken(token);
+  const user = await getUserFromToken(token);
 
   if (!user) {
     response.status(401).json({success: false, error: { message: "Sesion expirada o token invalido" }});

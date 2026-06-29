@@ -5,7 +5,7 @@ import {
   meController,
   registerController
 } from "../controllers/authController.js";
-import { isAuth } from "../middlewares/isAuth.js";
+import { isAuth } from "../middlewares/guards.js";
 
 export const authRoutes = Router();
 

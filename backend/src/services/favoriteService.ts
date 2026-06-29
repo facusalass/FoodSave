@@ -1,46 +1,38 @@
-import { mockFavorites } from "../data/favorites.js";
-import { mockOffers } from "../data/offers.js";
-import { listOffers } from "./offerService.js";
-import type { OfferWithBusinessData } from "./offerService.js";
+import {
+  addFavoriteRepo,
+  findOfferById,
+  listFavoritesByUser,
+  removeFavoriteRepo
+} from "./repository.js";
+import { enrichOfferWithBusiness } from "./offerService.js";
 
-export function listFavorites(userId: string): OfferWithBusinessData[] {
-  const favoriteOffers = mockFavorites
-    .filter((fav) => fav.userId === userId)
-    .map((fav) => fav.offerId);
+export async function listFavorites(userId: string) {
+  const favs = await listFavoritesByUser(userId);
+  const results = [];
 
-  const enriched = listOffers();
-  return enriched.filter((offer) => favoriteOffers.includes(offer.id));
+  for (const fav of favs) {
+    const offer = await findOfferById(fav.offerId);
+    if (offer) {
+      results.push(await enrichOfferWithBusiness(offer));
+    }
+  }
+
+  return results;
 }
 
-export function addFavorite(
+export async function addFavorite(
   userId: string,
   offerId: string
-): OfferWithBusinessData | { error: string } {
-  const offer = mockOffers.find((o) => o.id === offerId);
+) {
+  const offer = await findOfferById(offerId);
   if (!offer) {
-    return { error: "Oferta no encontrada." };
+    return { error: "Oferta no encontrada." as const };
   }
 
-  const already = mockFavorites.find(
-    (fav) => fav.userId === userId && fav.offerId === offerId
-  );
-  if (already) {
-    const enriched = listOffers().find((o) => o.id === offerId);
-    return enriched!;
-  }
-
-  mockFavorites.push({ userId, offerId });
-
-  const enriched = listOffers().find((o) => o.id === offerId);
-  return enriched!;
+  await addFavoriteRepo(userId, offerId);
+  return enrichOfferWithBusiness(offer);
 }
 
-export function removeFavorite(userId: string, offerId: string): boolean {
-  const index = mockFavorites.findIndex(
-    (fav) => fav.userId === userId && fav.offerId === offerId
-  );
-  if (index === -1) return false;
-
-  mockFavorites.splice(index, 1);
-  return true;
+export async function removeFavorite(userId: string, offerId: string) {
+  return removeFavoriteRepo(userId, offerId);
 }

@@ -1,29 +1,125 @@
-import { mockBusinesses, mockUsers } from "../data/users.js";
-import type { AuthSession, Business, PublicUser, User } from "../types/auth.js";
+import { supabase } from "../config/supabase.js";
+import { createBusinessRepo, findUserByEmail, findUserById } from "./repository.js";
 import { toPublicUser } from "../utils/publicUser.js";
+import type { AuthSession, Business, PublicUser, UserRole } from "../types/auth.js";
 
-function tokenForUser(userId: string) {
-  return `mock-token-${userId}`;
+async function dbLogin(email: string): Promise<AuthSession | null> {
+  const user = await findUserByEmail(email);
+  if (!user) return null;
+
+  return {
+    token: `mock-token-${user.id}`,
+    user: toPublicUser(user)
+  };
 }
 
-export function register(params: {
+export async function registerClient(params: {
   email: string;
   password: string;
   name: string;
-  role: "client" | "business";
+  phone: string;
+}): Promise<AuthSession & { user: PublicUser } | { error: string }> {
+  const { email, password } = params;
+  const already = await findUserByEmail(email.toLowerCase());
+
+  if (already) {
+    return { error: "Ya existe una cuenta con ese correo." };
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name: params.name.trim(),
+        phone: params.phone.trim(),
+        role: "client"
+      }
+    }
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // La sesión puede ser null si el proveedor requiere confirmación de email
+  if (!data.session) {
+    return { error: "Revisá tu correo para confirmar la cuenta." };
+  }
+
+  const user = await findUserById(data.user!.id);
+
+  return {
+    token: data.session.access_token,
+    user: user ? toPublicUser(user) : {
+      id: data.user!.id,
+      name: params.name.trim(),
+      email,
+      role: "client",
+      phone: params.phone.trim(),
+      createdAt: new Date().toISOString()
+    }
+  };
+}
+
+export async function login(
+  email: string,
+  password: string
+): Promise<AuthSession | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // 1. Intentar Supabase Auth (usuarios registrados via la app)
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: normalizedEmail,
+    password
+  });
+
+  if (!error && data.session) {
+    const user = await findUserById(data.user.id);
+    return {
+      token: data.session.access_token,
+      user: user ? toPublicUser(user) : {
+        id: data.user.id,
+        name: data.user.user_metadata?.name ?? email,
+        email: data.user.email ?? email,
+        role: data.user.user_metadata?.role ?? "client",
+        phone: data.user.user_metadata?.phone,
+        createdAt: data.user.created_at ?? new Date().toISOString()
+      }
+    };
+  }
+
+  // 2. Fallback: usuarios del seed (mock)
+  const user = await findUserByEmail(normalizedEmail);
+  if (!user || user.password !== password) return null;
+
+  return {
+    token: `mock-token-${user.id}`,
+    user: toPublicUser(user)
+  };
+}
+
+export async function googleLogin(params: {
+  email: string;
+  name: string;
+  role: UserRole;
   businessName?: string;
   businessAddress?: string;
   businessCategory?: string;
-}): AuthSession & { user: PublicUser } | { error: string } {
-  const { email, password, name, role, businessName, businessAddress, businessCategory } = params;
+}): Promise<AuthSession & { user: PublicUser } | { error: string }> {
+  const { email, name, role, businessName, businessAddress, businessCategory } = params;
+  const normalizedEmail = email.toLowerCase();
 
-  const exists = mockUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  if (exists) {
-    return { error: "El email ya está registrado." };
+  // Si ya existe, loguear
+  const existing = await findUserByEmail(normalizedEmail);
+  if (existing) {
+    return {
+      token: `mock-token-${existing.id}`,
+      user: toPublicUser(existing)
+    };
   }
 
   const now = new Date().toISOString();
-  const userId = `user-${Date.now()}`;
 
   let businessId: string | undefined;
 
@@ -37,7 +133,7 @@ export function register(params: {
     const newBusiness: Business = {
       id: businessId,
       name: businessName,
-      ownerId: userId,
+      ownerId: "",   // se actualiza después con el ID real
       category: businessCategory,
       description: "",
       address: businessAddress,
@@ -50,102 +146,55 @@ export function register(params: {
       createdAt: now
     };
 
-    mockBusinesses.push(newBusiness);
+    await createBusinessRepo(newBusiness);
   }
 
-  const newUser: User = {
-    id: userId,
-    name,
-    email,
+  const password = `google-${Date.now()}`;
+
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizedEmail,
     password,
-    role,
-    businessId,
-    createdAt: now
-  };
+    options: {
+      data: { name, role, businessId, phone: "" }
+    }
+  });
 
-  mockUsers.push(newUser);
-
-  return {
-    token: tokenForUser(userId),
-    user: toPublicUser(newUser)
-  };
-}
-
-export function registerClient(params: {
-  email: string;
-  password: string;
-  name: string;
-  phone: string;
-}): AuthSession & { user: PublicUser } | { error: string } {
-  const email = params.email.trim().toLowerCase();
-  const exists = mockUsers.find((u) => u.email.toLowerCase() === email);
-
-  if (exists) {
-    return { error: "Ya existe una cuenta con ese correo." };
+  if (error) {
+    return { error: error.message };
   }
 
-  const now = new Date().toISOString();
-  const userId = `user-${Date.now()}`;
-  const newUser: User = {
-    id: userId,
-    name: params.name.trim(),
-    email,
-    password: params.password,
-    role: "client",
-    phone: params.phone.trim(),
-    createdAt: now
-  };
-
-  mockUsers.push(newUser);
-
-  return {
-    token: tokenForUser(userId),
-    user: toPublicUser(newUser)
-  };
-}
-
-export function login(email: string, password: string): AuthSession | null {
-  const normalizedEmail = email.trim().toLowerCase();
-  const user = mockUsers.find(
-    (candidate) =>
-      candidate.email.toLowerCase() === normalizedEmail &&
-      candidate.password === password
-  );
-
-  if (!user) {
-    return null;
+  if (!data.session || !data.user) {
+    return { error: "Revisá tu correo para confirmar la cuenta." };
   }
 
+  // Si es business, actualizar el ownerId del negocio
+  if (businessId) {
+    await supabase
+      .from("businesses")
+      .update({ ownerId: data.user.id })
+      .eq("id", businessId);
+  }
+
+  const user = await findUserById(data.user.id);
+
   return {
-    token: tokenForUser(user.id),
-    user: toPublicUser(user)
+    token: data.session.access_token,
+    user: user ? toPublicUser(user) : {
+      id: data.user.id,
+      name,
+      email: normalizedEmail,
+      role,
+      businessId,
+      phone: "",
+      createdAt: now
+    }
   };
 }
 
-export function googleLogin(params: {
-  email: string;
-  name: string;
-  role: "client" | "business";
-  businessName?: string;
-  businessAddress?: string;
-  businessCategory?: string;
-}): AuthSession & { user: PublicUser } | { error: string } {
-  const { email, name, role, businessName, businessAddress, businessCategory } = params;
-
-  const existing = mockUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  if (existing) {
-    return {
-      token: tokenForUser(existing.id),
-      user: toPublicUser(existing)
-    };
-  }
-
-  return register({ email, password: `google-${Date.now()}`, name, role, businessName, businessAddress, businessCategory });
-}
-
-export function getUserFromToken(token: string): PublicUser | null {
+export async function getUserFromToken(
+  token: string
+): Promise<PublicUser | null> {
   const userId = token.replace("mock-token-", "");
-  const user = mockUsers.find((candidate) => candidate.id === userId);
-
+  const user = await findUserById(userId);
   return user ? toPublicUser(user) : null;
 }

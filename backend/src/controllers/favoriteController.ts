@@ -1,16 +1,18 @@
 import type { Request, Response } from "express";
-import {
-  addFavorite,
-  listFavorites,
-  removeFavorite
-} from "../services/favoriteService.js";
+import { addFavorite, listFavorites, removeFavorite } from "../services/favoriteService.js";
 
-export function listFavoritesController(request: Request, response: Response) {
-  const favorites = listFavorites(request.user!.id);
+export async function listFavoritesController(
+  request: Request,
+  response: Response
+) {
+  const favorites = await listFavorites(request.user!.id);
   response.json({ success: true, data: { favorites } });
 }
 
-export function addFavoriteController(request: Request, response: Response) {
+export async function addFavoriteController(
+  request: Request,
+  response: Response
+) {
   const offerId = request.params.offerId;
 
   if (!offerId || Array.isArray(offerId)) {
@@ -21,7 +23,7 @@ export function addFavoriteController(request: Request, response: Response) {
     return;
   }
 
-  const result = addFavorite(request.user!.id, offerId);
+  const result = await addFavorite(request.user!.id, offerId);
 
   if ("error" in result) {
     response.status(404).json({
@@ -34,7 +36,10 @@ export function addFavoriteController(request: Request, response: Response) {
   response.status(201).json({ success: true, data: { favorite: result } });
 }
 
-export function removeFavoriteController(request: Request, response: Response) {
+export async function removeFavoriteController(
+  request: Request,
+  response: Response
+) {
   const offerId = request.params.offerId;
 
   if (!offerId || Array.isArray(offerId)) {
@@ -45,7 +50,7 @@ export function removeFavoriteController(request: Request, response: Response) {
     return;
   }
 
-  const removed = removeFavorite(request.user!.id, offerId);
+  const removed = await removeFavorite(request.user!.id, offerId);
 
   if (!removed) {
     response.status(404).json({

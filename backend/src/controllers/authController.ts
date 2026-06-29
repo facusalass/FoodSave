@@ -1,32 +1,37 @@
 import type { Request, Response } from "express";
-import {
-  googleLogin,
-  login,
-  registerClient
-} from "../services/authService.js";
+import { googleLogin, login, registerClient } from "../services/authService.js";
 
-export function loginController(request: Request, response: Response) {
+export async function loginController(request: Request, response: Response) {
   const { email, password } = request.body as {
     email?: string;
     password?: string;
   };
 
   if (!email || !password) {
-    response.status(400).json({success: false, error: { message: "Email y contraseña son requeridos." }});
+    response.status(400).json({
+      success: false,
+      error: { message: "Email y contraseña son requeridos." }
+    });
     return;
   }
 
-  const session = login(email, password);
+  const session = await login(email, password);
 
   if (!session) {
-    response.status(401).json({ success: false, error: { message: "Credenciales invalidas." } });
+    response.status(401).json({
+      success: false,
+      error: { message: "Credenciales invalidas." }
+    });
     return;
   }
 
   response.json({ success: true, data: session });
 }
 
-export function registerController(request: Request, response: Response) {
+export async function registerController(
+  request: Request,
+  response: Response
+) {
   const { email, password, name, phone } = request.body as {
     email?: string;
     password?: string;
@@ -82,25 +87,32 @@ export function registerController(request: Request, response: Response) {
     return;
   }
 
-  const result = registerClient({ email, password, name, phone });
+  const result = await registerClient({ email, password, name, phone });
 
   if ("error" in result) {
-    response.status(409).json({ success: false, error: { message: result.error } });
+    response.status(409).json({
+      success: false,
+      error: { message: result.error }
+    });
     return;
   }
 
   response.status(201).json({ success: true, data: result });
 }
 
-export function googleLoginController(request: Request, response: Response) {
-  const { email, name, role, businessName, businessAddress, businessCategory } = request.body as {
-    email?: string;
-    name?: string;
-    role?: string;
-    businessName?: string;
-    businessAddress?: string;
-    businessCategory?: string;
-  };
+export async function googleLoginController(
+  request: Request,
+  response: Response
+) {
+  const { email, name, role, businessName, businessAddress, businessCategory } =
+    request.body as {
+      email?: string;
+      name?: string;
+      role?: string;
+      businessName?: string;
+      businessAddress?: string;
+      businessCategory?: string;
+    };
 
   if (!email || !name || !role) {
     response.status(400).json({
@@ -118,10 +130,20 @@ export function googleLoginController(request: Request, response: Response) {
     return;
   }
 
-  const result = googleLogin({ email, name, role, businessName, businessAddress, businessCategory });
+  const result = await googleLogin({
+    email,
+    name,
+    role,
+    businessName,
+    businessAddress,
+    businessCategory
+  });
 
   if ("error" in result) {
-    response.status(400).json({ success: false, error: { message: result.error } });
+    response.status(400).json({
+      success: false,
+      error: { message: result.error }
+    });
     return;
   }
 
@@ -129,7 +151,7 @@ export function googleLoginController(request: Request, response: Response) {
 }
 
 export function meController(request: Request, response: Response) {
-  response.json({ success:true, data:{ user: request.user} });
+  response.json({ success: true, data: { user: request.user } });
 }
 
 function isValidEmail(email: string) {
