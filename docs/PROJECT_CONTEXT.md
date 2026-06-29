@@ -141,6 +141,15 @@ npx expo start -c
 - Google sigue siendo visual/no-op desde mobile.
 - No hay registro mobile de comercios en esta fase.
 
+## Recuperacion de contrasena
+
+- El login mobile tiene el enlace `Olvide mi contrasena`.
+- La ruta mobile es `frontend/app/(auth)/forgot-password.tsx`.
+- La pantalla valida email vacio/formato invalido y llama `POST /auth/reset-password` mediante `frontend/src/services/authService.ts`.
+- El backend valida que exista una cuenta registrada antes de enviar el link de recuperacion.
+- Si el backend responde bien, muestra instrucciones para revisar el correo.
+- No se implementa todavia la pantalla de nueva contrasena ni validacion de email/codigo porque falta contrato final de Supabase/backend.
+
 ## Fase 2 Cliente MVP
 
 - El flujo cliente usa Expo Router Tabs en `frontend/app/(client)/_layout.tsx`.

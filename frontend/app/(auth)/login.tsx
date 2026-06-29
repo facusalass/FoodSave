@@ -168,6 +168,12 @@ export default function LoginScreen() {
           >
             <Text style={styles.createAccount}>CREAR CUENTA NUEVA</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push("/(auth)/forgot-password")}
+          >
+            <Text style={styles.forgotPassword}>OLVIDÉ MI CONTRASEÑA</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </ScreenContainer>
@@ -217,6 +223,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
     marginTop: spacing.sm,
+    textAlign: "center",
+    textDecorationLine: "underline"
+  },
+  forgotPassword: {
+    color: colors.mutedText,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: -spacing.xs,
     textAlign: "center",
     textDecorationLine: "underline"
   },

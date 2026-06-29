@@ -67,8 +67,8 @@ Authorization: Bearer <token>
 ### `POST /auth/reset-password`
 - **Auth:** ❌
 - **Body:** `{ "email" }`
-- **Respuesta (200):** `data: { message: "Si el correo existe, recibirás un enlace..." }`
-- **Nota:** Siempre devuelve 200 aunque el email no exista (seguridad).
+- **Respuesta (200):** `data: { message: "Te enviamos un email con instrucciones para recuperar tu contraseña." }`
+- **Error:** 404 si no existe una cuenta registrada con ese correo.
 
 ### `GET /auth/me`
 - **Auth:** ✅

@@ -27,3 +27,10 @@ export async function register(credentials: RegisterCredentials) {
     method: "POST"
   });
 }
+
+export async function resetPassword(email: string) {
+  return apiRequest<{ message: string }>("/auth/reset-password", {
+    body: JSON.stringify({ email }),
+    method: "POST"
+  });
+}

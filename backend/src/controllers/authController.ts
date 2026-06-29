@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { supabase } from "../config/supabase.js";
 import { googleLogin, login, registerClient } from "../services/authService.js";
+import { findUserByEmail } from "../services/repository.js";
 
 export async function loginController(request: Request, response: Response) {
   const { email, password } = request.body as {
@@ -169,8 +170,9 @@ export function meController(request: Request, response: Response) {
 
 export async function resetPasswordController(request: Request, response: Response) {
   const { email } = request.body as { email?: string };
+  const normalizedEmail = email?.trim().toLowerCase();
 
-  if (!email) {
+  if (!normalizedEmail) {
     response.status(400).json({
       success: false,
       error: { message: "El correo electrónico es requerido." }
@@ -178,8 +180,17 @@ export async function resetPasswordController(request: Request, response: Respon
     return;
   }
 
-  // No revelamos si el email existe o no por seguridad
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const user = await findUserByEmail(normalizedEmail);
+
+  if (!user) {
+    response.status(404).json({
+      success: false,
+      error: { message: "No encontramos una cuenta registrada con ese correo." }
+    });
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
     redirectTo: "foodsave://reset-password"
   });
 
@@ -193,7 +204,7 @@ export async function resetPasswordController(request: Request, response: Respon
 
   response.json({
     success: true,
-    data: { message: "Si el correo existe, recibirás un enlace para restablecer tu contraseña." }
+    data: { message: "Te enviamos un email con instrucciones para recuperar tu contraseña." }
   });
 }
 
