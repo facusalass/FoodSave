@@ -3,6 +3,7 @@ import type {
   AuthSession,
   LoginCredentials,
   RegisterCredentials,
+  RegisterResult,
   User
 } from "../types/auth";
 
@@ -22,7 +23,7 @@ export async function getMe(token: string) {
 }
 
 export async function register(credentials: RegisterCredentials) {
-  return apiRequest<AuthSession>("/auth/register", {
+  return apiRequest<RegisterResult>("/auth/register", {
     body: JSON.stringify(credentials),
     method: "POST"
   });

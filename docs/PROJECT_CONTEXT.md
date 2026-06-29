@@ -137,7 +137,8 @@ npx expo start -c
 
 - La ruta mobile de registro es `frontend/app/(auth)/register.tsx`.
 - El registro usa `POST /auth/register` con `name`, `phone`, `email` y `password`.
-- Por ahora crea usuarios mock con rol `client` en memoria del backend y devuelve token mock para autologin.
+- Si el backend devuelve token/user, el frontend guarda sesion y hace autologin al Home cliente.
+- Si el backend devuelve `emailConfirmationRequired: true`, el frontend no guarda sesion y navega a `frontend/app/(auth)/check-email.tsx`.
 - Google sigue siendo visual/no-op desde mobile.
 - No hay registro mobile de comercios en esta fase.
 

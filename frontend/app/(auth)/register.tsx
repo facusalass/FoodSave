@@ -66,7 +66,16 @@ export default function RegisterScreen() {
     setIsSubmitting(true);
 
     try {
-      await register(nextValues);
+      const result = await register(nextValues);
+
+      if ("emailConfirmationRequired" in result) {
+        router.replace({
+          pathname: "/(auth)/check-email",
+          params: { email: nextValues.email }
+        });
+        return;
+      }
+
       router.replace("/(client)/home");
     } catch (registerError) {
       const message =

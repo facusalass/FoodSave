@@ -14,6 +14,13 @@ export type AuthSession = {
   user: User;
 };
 
+export type EmailConfirmationRequired = {
+  emailConfirmationRequired: true;
+  message: string;
+};
+
+export type RegisterResult = AuthSession | EmailConfirmationRequired;
+
 export type LoginCredentials = {
   email: string;
   password: string;

@@ -125,5 +125,16 @@ function isApiFailure(body: unknown): body is ApiFailure {
 }
 
 function readApiErrorMessage(body: ApiFailure) {
-  return body.error.message;
+  const message = body.error.message.trim();
+
+  if (
+    !message ||
+    message === "{}" ||
+    message === "[]" ||
+    message === "[object Object]"
+  ) {
+    return "No pudimos completar la solicitud. Revisá los datos e intentá nuevamente.";
+  }
+
+  return message;
 }

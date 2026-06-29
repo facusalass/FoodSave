@@ -11,7 +11,11 @@ import {
   login as loginWithApi,
   register as registerWithApi
 } from "../services/authService";
-import type { AuthSession, RegisterCredentials } from "../types/auth";
+import type {
+  AuthSession,
+  RegisterCredentials,
+  RegisterResult
+} from "../types/auth";
 import {
   clearStoredSession,
   isValidAuthSession,
@@ -23,7 +27,7 @@ type AuthContextValue = {
   isLoading: boolean;
   session: AuthSession | null;
   login: (email: string, password: string) => Promise<AuthSession>;
-  register: (credentials: RegisterCredentials) => Promise<AuthSession>;
+  register: (credentials: RegisterCredentials) => Promise<RegisterResult>;
   logout: () => Promise<void>;
 };
 
@@ -93,15 +97,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return nextSession;
       },
       async register(credentials) {
-        const nextSession = await registerWithApi(credentials);
+        const result = await registerWithApi(credentials);
 
-        if (!isValidAuthSession(nextSession)) {
+        if (isEmailConfirmationRequired(result)) {
+          return result;
+        }
+
+        if (!isValidAuthSession(result)) {
           throw new Error("No pudimos crear la cuenta.");
         }
 
-        await saveStoredSession(nextSession);
-        setSession(nextSession);
-        return nextSession;
+        await saveStoredSession(result);
+        setSession(result);
+        return result;
       },
       async logout() {
         setSession(null);
@@ -112,6 +120,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function isEmailConfirmationRequired(
+  result: RegisterResult
+): result is Extract<RegisterResult, { emailConfirmationRequired: true }> {
+  return "emailConfirmationRequired" in result && result.emailConfirmationRequired;
 }
 
 function wait(milliseconds: number) {
