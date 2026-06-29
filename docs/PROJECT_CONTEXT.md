@@ -198,9 +198,10 @@ npx expo start -c
 - La campanita del `ClientTopBar` abre `frontend/app/(client)/notifications.tsx`.
 - `notifications` queda oculto en tabs y no aparece en la barra inferior.
 - Por ahora no hay push notifications reales, permisos del sistema ni Expo Notifications.
-- Las notificaciones cliente se derivan de `GET /reservations`: reserva creada, pago confirmado, reserva expirada y recordatorio de retiro.
-- El estado leida/no leida se guarda localmente por usuario en SecureStore.
-- Como evolucion futura se pueden agregar endpoints dedicados (`GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`) y Expo Push Notifications.
+- Las notificaciones cliente vienen del backend con `GET /notifications`.
+- El estado leida/no leida lo maneja backend con `PATCH /notifications/:id/read` y `PATCH /notifications/read-all`.
+- Ya no se derivan notificaciones desde reservas ni se guarda read/unread en SecureStore.
+- Como evolucion futura se pueden agregar Expo Push Notifications.
 
 ## Filtro por ciudad cliente
 

@@ -1,31 +1,28 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getReservations } from "../services/reservationService";
 import {
-  buildInternalNotifications,
-  loadReadNotificationIds,
-  saveReadNotificationIds,
-  type InternalNotification
-} from "../utils/internalNotifications";
+  getNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead
+} from "../services/notificationService";
+import type { AppNotification } from "../types/notification";
 
-type UseInternalNotificationsOptions = {
+type UseNotificationsOptions = {
   enabled?: boolean;
 };
 
-export function useInternalNotifications({
+export function useNotifications({
   enabled = true
-}: UseInternalNotificationsOptions = {}) {
+}: UseNotificationsOptions = {}) {
   const { session } = useAuth();
-  const [notifications, setNotifications] = useState<InternalNotification[]>([]);
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
   const loadNotifications = useCallback(async () => {
     if (!enabled || !session || session.user.role !== "client") {
       setNotifications([]);
-      setReadIds(new Set());
       setIsLoading(false);
       return;
     }
@@ -33,15 +30,8 @@ export function useInternalNotifications({
     try {
       setError(null);
       setIsLoading(true);
-      const [storedReadIds, reservations] = await Promise.all([
-        loadReadNotificationIds(session.user.id),
-        getReservations(session.token)
-      ]);
-
-      setReadIds(storedReadIds);
-      setNotifications(
-        buildInternalNotifications(reservations, storedReadIds)
-      );
+      const nextNotifications = await getNotifications(session.token);
+      setNotifications(nextNotifications);
     } catch (loadError) {
       const message =
         loadError instanceof Error
@@ -61,7 +51,7 @@ export function useInternalNotifications({
   );
 
   const unreadCount = useMemo(() => {
-    return notifications.filter((notification) => !notification.isRead).length;
+    return notifications.filter((notification) => !notification.read).length;
   }, [notifications]);
 
   const markAsRead = useCallback(
@@ -70,24 +60,38 @@ export function useInternalNotifications({
         return;
       }
 
-      const nextReadIds = new Set(readIds);
-      nextReadIds.add(notificationId);
-      setReadIds(nextReadIds);
       setNotifications((currentNotifications) =>
         currentNotifications.map((notification) =>
           notification.id === notificationId
-            ? { ...notification, isRead: true }
+            ? { ...notification, read: true }
             : notification
         )
       );
-      await saveReadNotificationIds(session.user.id, nextReadIds);
+
+      await markNotificationAsRead(session.token, notificationId);
     },
-    [readIds, session]
+    [session]
   );
+
+  const markAllAsRead = useCallback(async () => {
+    if (!session) {
+      return;
+    }
+
+    setNotifications((currentNotifications) =>
+      currentNotifications.map((notification) => ({
+        ...notification,
+        read: true
+      }))
+    );
+
+    await markAllNotificationsAsRead(session.token);
+  }, [session]);
 
   return {
     error,
     isLoading,
+    markAllAsRead,
     markAsRead,
     notifications,
     refresh: loadNotifications,

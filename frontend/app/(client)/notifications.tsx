@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+﻿import { useRouter } from "expo-router";
 import {
   AlertTriangle,
   Bell,
@@ -24,11 +24,11 @@ import { EmptyState } from "../../src/components/EmptyState";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
-import { useInternalNotifications } from "../../src/hooks/useInternalNotifications";
+import { useNotifications } from "../../src/hooks/useNotifications";
 import type {
-  InternalNotification,
-  InternalNotificationType
-} from "../../src/utils/internalNotifications";
+  AppNotification,
+  NotificationType
+} from "../../src/types/notification";
 
 export default function ClientNotificationsScreen() {
   const router = useRouter();
@@ -36,10 +36,11 @@ export default function ClientNotificationsScreen() {
   const {
     error,
     isLoading,
+    markAllAsRead,
     markAsRead,
     notifications,
     unreadCount
-  } = useInternalNotifications();
+  } = useNotifications();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   function handleNavigate(route: ClientMenuRoute) {
@@ -53,9 +54,16 @@ export default function ClientNotificationsScreen() {
     router.replace("/(auth)/login");
   }
 
-  async function handleNotificationPress(notification: InternalNotification) {
+  async function handleNotificationPress(notification: AppNotification) {
     await markAsRead(notification.id);
-    router.push("/(client)/reservations");
+
+    if (notification.reservationId) {
+      router.push("/(client)/reservations");
+    }
+  }
+
+  async function handleMarkAllAsRead() {
+    await markAllAsRead();
   }
 
   return (
@@ -74,11 +82,15 @@ export default function ClientNotificationsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Notificaciones</Text>
         {unreadCount > 0 ? (
-          <Text style={styles.unreadSummary}>
-            {unreadCount === 1
-              ? "1 nueva"
-              : `${unreadCount} nuevas`}
-          </Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => {
+              void handleMarkAllAsRead();
+            }}
+            style={styles.markAllButton}
+          >
+            <Text style={styles.markAllText}>Marcar todas como leídas</Text>
+          </TouchableOpacity>
         ) : null}
       </View>
 
@@ -115,7 +127,7 @@ function NotificationCard({
   notification,
   onPress
 }: {
-  notification: InternalNotification;
+  notification: AppNotification;
   onPress: () => void;
 }) {
   return (
@@ -124,7 +136,7 @@ function NotificationCard({
       onPress={onPress}
       style={[
         styles.notificationCard,
-        notification.isRead ? styles.readCard : styles.unreadCard
+        notification.read ? styles.readCard : styles.unreadCard
       ]}
     >
       <View style={styles.notificationIcon}>
@@ -137,10 +149,10 @@ function NotificationCard({
           <Text
             style={[
               styles.readStatus,
-              notification.isRead ? styles.readStatusMuted : null
+              notification.read ? styles.readStatusMuted : null
             ]}
           >
-            {notification.isRead ? "Leída" : "No leída"}
+            {notification.read ? "Leída" : "No leída"}
           </Text>
         </View>
         <Text style={styles.notificationMessage}>{notification.message}</Text>
@@ -152,7 +164,7 @@ function NotificationCard({
   );
 }
 
-function getNotificationIcon(type: InternalNotificationType): ReactNode {
+function getNotificationIcon(type: NotificationType): ReactNode {
   if (type === "reservation_expired") {
     return <AlertTriangle color={colors.warning} size={20} />;
   }
@@ -274,9 +286,18 @@ const styles = StyleSheet.create({
   unreadCard: {
     borderColor: "#14B8A666"
   },
-  unreadSummary: {
+  markAllButton: {
+    backgroundColor: "#14B8A61A",
+    borderColor: "#14B8A64D",
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  markAllText: {
     color: colors.secondaryDark,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "900"
   }
 });
+

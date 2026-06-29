@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { Bell, Menu } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, spacing } from "../constants/theme";
-import { useInternalNotifications } from "../hooks/useInternalNotifications";
+import { useNotifications } from "../hooks/useNotifications";
 
 type ClientTopBarProps = {
   onMenuPress: () => void;
@@ -17,7 +17,7 @@ export function ClientTopBar({
 }: ClientTopBarProps) {
   const router = useRouter();
   const shouldLoadUnreadCount = unreadNotificationsCount === undefined;
-  const { unreadCount } = useInternalNotifications({
+  const { unreadCount } = useNotifications({
     enabled: shouldLoadUnreadCount
   });
   const visibleUnreadCount = unreadNotificationsCount ?? unreadCount;
