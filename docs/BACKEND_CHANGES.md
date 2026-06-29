@@ -12,12 +12,16 @@ SUPABASE_ANON_KEY=sb_publishable_BlMt3rzIXHTN6zMA0MEQpQ_eEX4dR_5
 
 Tablas creadas: `users`, `businesses`, `offers`, `reservations`, `favorites`.
 
-**IMPORTANTE:** Para que la API pueda leer datos, deben ejecutarse los 5 SQL en Supabase:
-1. `sql/migration.sql` → crea las tablas
-2. `sql/seed.sql` → datos de prueba
-3. `sql/rls_policies.sql` → permisos de lectura/escritura para la anon key
-4. `sql/auth_trigger.sql` → sincroniza `auth.users` → `public.users`
-5. `sql/storage_bucket.sql` → bucket de imágenes `offers` en Supabase Storage
+**IMPORTANTE:** Para que la API funcione, ejecutar estos SQL en orden (Supabase Dashboard > SQL Editor):
+
+| # | Archivo | Qué hace |
+|---|---|---|
+| 1 | `01_schema.sql` | Crea las 5 tablas, enums e índices |
+| 2 | `02_seed.sql` | Datos de prueba (usuarios, negocios, ofertas, reservas) |
+| 3 | `03_rls.sql` | Permisos de lectura/escritura (RLS) |
+| 4 | `04_auth_trigger.sql` | Sincroniza `auth.users` → `public.users` |
+| 5 | `05_storage.sql` | Bucket de imágenes `offers` en Storage |
+| 6 | `06_city_column.sql` | Agrega columna `city` a la tabla `businesses` |
 
 ---
 
@@ -150,16 +154,14 @@ config/     → env.ts, supabase.ts
 controllers/ → authController, offerPublicController, offerBusinessController,
                reservationController, statisticsController, favoriteController,
                uploadController
-data/       → (obsoleto, no se usa más, solo para referencia)
-middlewares/ → guards.ts (isAuth, isClient, isBusinessOwner), errorHandler.ts,
-               authMiddleware.ts (legacy)
+middlewares/ → guards.ts (isAuth, isClient, isBusinessOwner), errorHandler.ts
 routes/     → authRoutes, offerRoutes, offerBusinessRoutes,
                 reservationRoutes, statisticsRoutes, favoriteRoutes,
                 uploadRoutes
 services/   → repository.ts, authService, authStrategy, offerService,
                reservationService, statisticsService, favoriteService
-sql/        → migration.sql, seed.sql, rls_policies.sql, auth_trigger.sql,
-               storage_bucket.sql
+sql/        → 01_schema.sql, 02_seed.sql, 03_rls.sql,
+               04_auth_trigger.sql, 05_storage.sql, 06_city_column.sql
 types/      → auth.ts, offer.ts, reservation.ts, statistics.ts, express.ts
 utils/      → publicUser.ts
 ```

@@ -5,11 +5,13 @@ INSERT INTO users (id, name, email, password, role, "businessId", phone) VALUES
 ('user-client-1', 'Mateo Cliente', 'cliente@foodsave.com', '123456', 'client', NULL, '+54 9 362 1234567'),
 ('user-business-1', 'Carlos (Dueño)', 'comercio@foodsave.com', '123456', 'business', 'business-espiga', '+54 9 362 4567890');
 
-INSERT INTO businesses (id, name, "ownerId", category, description, address, "closingTime", "paymentInfo") VALUES
-('business-espiga', 'Panadería La Espiga', 'user-business-1', 'Panadería / Pastelería', 'Especialistas en facturas y panificados.', 'Av. San Martín 123', '22:00', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456789","alias":"PANADERIA.ESPIGA"}'),
-('business-delicias', 'Café & Delicias', 'user-business-1', 'Panadería / Pastelería', 'Café de especialidad y pastelería artesanal.', 'Av. Alberdi 456', '21:00', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456790","alias":"CAFE.DELICIAS"}'),
-('business-rotiseria', 'Pizzería Napolitana', 'user-business-1', 'Rotisería', 'Pizzas artesanales y cocina al horno de barro.', 'Av. Italia 860', '22:30', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456791","alias":"PIZZA.NAPOLITANA"}'),
-('business-verde', 'Verde Mercado', 'user-business-1', 'Verdulería / Dietética', 'Productos orgánicos y vegetarianos.', 'French 340', '20:30', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456792","alias":"VERDE.MERCADO"}');
+INSERT INTO businesses (id, name, "ownerId", category, description, city, address, "closingTime", "paymentInfo") VALUES
+('business-espiga', 'Panadería La Espiga', 'user-business-1', 'Panadería / Pastelería', 'Especialistas en facturas y panificados.', 'Resistencia, Chaco', 'Av. San Martín 123', '22:00', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456789","alias":"PANADERIA.ESPIGA"}'),
+('business-delicias', 'Café & Delicias', 'user-business-1', 'Panadería / Pastelería', 'Café de especialidad y pastelería artesanal.', 'Resistencia, Chaco', 'Av. Alberdi 456', '21:00', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456790","alias":"CAFE.DELICIAS"}'),
+('business-rotiseria', 'Pizzería Napolitana', 'user-business-1', 'Rotisería', 'Pizzas artesanales y cocina al horno de barro.', 'Resistencia, Chaco', 'Av. Italia 860', '22:30', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456791","alias":"PIZZA.NAPOLITANA"}'),
+('business-verde', 'Verde Mercado', 'user-business-1', 'Verdulería / Dietética', 'Productos orgánicos y vegetarianos.', 'Resistencia, Chaco', 'French 340', '20:30', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456792","alias":"VERDE.MERCADO"}'),
+('business-corrientes-1', 'Heladería El Polo', 'user-business-1', 'Heladería', 'Helados artesanales.', 'Corrientes, Corrientes', 'Av. Costanera 450', '23:00', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456793","alias":"HELADERIA.POLO"}'),
+('business-corrientes-2', 'Parrilla Don Julio', 'user-business-1', 'Parrilla / Restaurante', 'Carnes a la leña.', 'Corrientes, Corrientes', 'Calle Junín 890', '00:00', '{"ownerName":"Carlos Dueño","cvu":"0000003100010123456794","alias":"PARRILLA.JULIO"}');
 
 INSERT INTO offers (id, "businessId", title, description, category, type, "oldPrice", "newPrice", stock, "pickupWindow", "pickupLimit", allergens, "imageUrl", "estimatedWeightInKg") VALUES
 ('offer-1', 'business-espiga', 'Mystery Box Panadería', 'Mystery Box de productos de panadería', 'Panadería', 'mystery_box', 3000, 1500, 5, '18:00 - 22:00', '22:00 hs', ARRAY['TACC','Lácteos'], 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80', 1.5),

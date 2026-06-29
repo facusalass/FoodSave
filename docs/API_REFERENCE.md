@@ -22,13 +22,11 @@ Toda respuesta sigue este contrato exacto (éxito o error):
 const res = await fetch("http://localhost:4000/offers");
 const json = await res.json();
 
-// Siempre preguntar success primero
 if (!json.success) {
   mostrarError(json.error.message);
   return;
 }
 
-// json.data contiene los datos específicos del endpoint
 mostrar(json.data.offers);
 ```
 
@@ -36,214 +34,178 @@ mostrar(json.data.offers);
 
 ## Autenticación
 
-### `POST /auth/login`
-- **Auth:** No requiere
-- **Body:**
-  ```json
-  { "email": "comercio@foodsave.com", "password": "123456" }
-  ```
-- **Respuesta exitosa (200):**
-  ```json
-  {
-    "success": true,
-    "data": {
-      "token": "mock-token-user-business-1",
-      "user": {
-        "id": "user-business-1",
-        "name": "Carlos (Dueño)",
-        "email": "comercio@foodsave.com",
-        "role": "business",
-        "businessId": "business-espiga",
-        "phone": "+54 9 362 4567890",
-        "createdAt": "2026-06-01T10:00:00.000Z"
-      }
-    }
-  }
-  ```
-- **Uso del token:** Enviar en todas las rutas protegidas como header:
-  ```
-  Authorization: Bearer mock-token-user-business-1
-  ```
-
-**Usuarios mock disponibles:**
+**Usuarios de prueba:**
 
 | Email | Password | Rol |
 |---|---|---|
 | `comercio@foodsave.com` | `123456` | business |
 | `cliente@foodsave.com` | `123456` | client |
 
+**Token:** Enviar en todas las rutas protegidas como header:
+```
+Authorization: Bearer <token>
+```
+
+### `POST /auth/register`
+- **Auth:** ❌
+- **Body:** `{ "email", "password", "name", "phone" }`
+- **Respuesta (201):** `data: { token, user }`
+- **Nota:** Solo crea usuarios `client`. El token es JWT real emitido por Supabase Auth.
+
+### `POST /auth/login`
+- **Auth:** ❌
+- **Body:** `{ "email", "password" }`
+- **Respuesta (200):** `data: { token, user }`
+- **Nota:** Para usuarios de prueba devuelve token mock. Para usuarios nuevos devuelve JWT real de Supabase.
+
+### `POST /auth/google`
+- **Auth:** ❌
+- **Body:** `{ "email", "name", "role" }` + si `role: "business"` agregar `"businessName", "businessAddress", "businessCategory", "businessCity"`
+- **Respuesta (200):** `data: { token, user }`
+- **Comportamiento:** Si el email no existe, registra automáticamente. Si existe, loguea.
+
 ### `GET /auth/me`
-- **Auth:** Requiere Bearer token
-- **Respuesta (200):**
-  ```json
-  {
-    "success": true,
-    "data": { "user": { ... } }
-  }
-  ```
+- **Auth:** ✅
+- **Respuesta (200):** `data: { user }` — perfil del usuario autenticado.
 
 ---
 
-## Ofertas
+## Catálogo público
 
 ### `GET /offers`
-- **Auth:** No requiere
-- **Respuesta:**
-  ```json
-  {
-    "success": true,
-    "data": {
-      "offers": [
-        {
-          "id": "offer-1",
-          "businessId": "business-espiga",
-          "title": "Mystery Box Panadería",
-          "description": "Mystery Box de productos de panadería",
-          "category": "Panadería",
-          "type": "mystery_box",
-          "oldPrice": 3000,
-          "newPrice": 1500,
-          "stock": 5,
-          "pickupWindow": "18:00 - 22:00",
-          "pickupLimit": "22:00 hs",
-          "allergens": ["TACC", "Lácteos"],
-          "imageUrl": "https://...",
-          "createdAt": "2026-06-15T10:00:00.000Z",
-          "estimatedWeightInKg": 1.5,
-          "storeName": "Panadería La Espiga",
-          "storeAddress": "Av. San Martín 123",
-          "logoUrl": null
-        }
-      ]
-    }
-  }
-  ```
+- **Auth:** ❌
+- **Query params opcionales:** `?category=Panadería` (parcial), `?type=mystery_box` (exacto), `?city=Resistencia, Chaco` (exacto)
+- **Respuesta (200):** `data: { offers: [...] }`
+- **DTO enriquecido:** Cada oferta incluye `storeName`, `storeAddress`, `logoUrl` del negocio.
 
 ### `GET /offers/:id`
-- **Auth:** No requiere
-- **Respuesta:** `data.offer` con la misma estructura de arriba
-- **Errores:** 404 si no existe
+- **Auth:** ❌
+- **Respuesta (200):** `data: { offer }` con la misma estructura enriquecida.
+- **Error:** 404 si no existe.
+
+### `GET /cities`
+- **Auth:** ❌
+- **Respuesta (200):** `data: { cities: ["Corrientes, Corrientes", "Resistencia, Chaco"] }` — ciudades donde hay negocios registrados.
+
+---
+
+## Panel Admin (Comercio)
+
+### `GET /business/stats`
+- **Auth:** ✅ (business)
+- **Respuesta (200):** `data: { stats: { totalRevenue, totalSavedKg, totalBoxesSold, totalCancelled, salesByWeek, topPublications } }`
+- **Error:** 403 si no es business.
+
+### `PUT /business/profile`
+- **Auth:** ✅ (business)
+- **Body:** `{ "name?", "category?", "description?", "city?", "address?", "closingTime?", "logoUrl?" }`
+- **Respuesta (200):** `data: { business }`
+
+### `POST /business/offers`
+- **Auth:** ✅ (business)
+- **Body:** `{ "title", "description", "category", "type", "oldPrice", "newPrice", "stock" }` + opcionales: `pickupWindow, pickupLimit, allergens, imageUrl, estimatedWeightInKg`
+- **Respuesta (201):** `data: { offer }`
+
+### `PUT /business/offers/:id`
+- **Auth:** ✅ (business)
+- **Body:** `{ "title?", "description?", "category?", "type?", "oldPrice?", "newPrice?", "stock?", "pickupWindow?", "pickupLimit?", "allergens?", "imageUrl?", "estimatedWeightInKg?" }`
+- **Respuesta (200):** `data: { offer }`
+- **Error:** 404 si no existe o no pertenece al comercio.
+
+### `DELETE /business/offers/:id`
+- **Auth:** ✅ (business)
+- **Respuesta (200):** `data: { message: "Oferta eliminada." }`
+- **Error:** 404 si no existe o no pertenece.
 
 ---
 
 ## Reservas
 
-Todas las rutas de reservas requieren autenticación.
-
 ### `GET /reservations`
-- **Auth:** Requiere Bearer token
-- **Comportamiento:** Filtra automáticamente según el rol:
-  - `client` → solo sus reservas (`userId`)
-  - `business` → solo reservas de su comercio (`businessId`)
-- **Respuesta:**
-  ```json
-  {
-    "success": true,
-    "data": {
-      "reservations": [
-        {
-          "id": "reservation-1",
-          "offerId": "offer-1",
-          "businessId": "business-espiga",
-          "userId": "user-client-1",
-          "quantity": 1,
-          "totalPrice": 1500,
-          "confirmationCode": "#FS-A4B",
-          "status": "pending",
-          "createdAt": "2026-05-03T18:00:00.000Z",
-          "customerName": "Mateo Cliente",
-          "customerPhone": "+54 9 362 1234567",
-          "storeName": "Panadería La Espiga",
-          "address": "Av. San Martín 123",
-          "offerTitle": "Mystery Box Panadería",
-          "pickupTime": "22:00 hs",
-          "date": "3 de mayo de 2026",
-          "month": "mayo de 2026"
-        }
-      ]
-    }
-  }
-  ```
+- **Auth:** ✅
+- **Filtrado automático por rol:** client → sus reservas, business → las de su comercio.
+- **Respuesta (200):** `data: { reservations: [...] }`
+- **DTO enriquecido:** Cada reserva incluye:
+
+| Campo | Fuente |
+|---|---|
+| `code` | Código de retiro (ej: `FS-A4B`) |
+| `confirmationCode` | Código con # (ej: `#FS-A4B`) |
+| `customerName`, `customerPhone` | Del usuario que reservó |
+| `storeName`, `address` | Del comercio |
+| `offerTitle`, `pickupTime` | De la oferta |
+| `date`, `month` | Fecha formateada en español |
+| `expiresAt` | `createdAt` + 15 minutos (ISO) |
+| `paymentAlias`, `bankAlias` | Alias de transferencia |
+| `whatsappPhone` | Teléfono del dueño del comercio |
+| `paymentInfo: { cvu, alias }` | Datos bancarios del comercio |
 
 ### `POST /reservations`
-- **Auth:** Requiere Bearer token
-- **Body:**
-  ```json
-  { "offerId": "offer-1", "quantity": 1 }
-  ```
-- **Respuesta exitosa (201):**
-  ```json
-  {
-    "success": true,
-    "data": { "reservation": { ... } }
-  }
-  ```
-- **Errores:**
-  - `400` — `offerId` o `quantity` inválidos
-  - `400` — Oferta no encontrada
-  - `400` — Stock insuficiente
+- **Auth:** ✅
+- **Body:** `{ "offerId": "offer-1", "quantity": 1 }`
+- **Respuesta (201):** `data: { reservation }` con DTO enriquecido.
+- **Errores:** 400 — oferta no encontrada, stock insuficiente.
 
 ### `PATCH /reservations/:id/status`
-- **Auth:** Requiere Bearer token (solo rol `business`)
-- **Body:**
-  ```json
-  { "status": "confirmed_paid" }
-  ```
-- **Estados válidos:** `pending` → `confirmed_paid` → `picked_up` | `cancelled`
-- **Respuesta exitosa (200):** `data.reservation` con el estado actualizado
-- **Errores:** 404 si no encuentra la reserva o el cambio no está permitido
+- **Auth:** ✅
+- **Body:** `{ "status": "confirmed_paid" }`
+- **Estados:** `pending → confirmed_paid → picked_up` | `cancelled`
+- **Permisos:** client puede cancelar solo sus reservas `pending`. business puede cambiar cualquier estado de sus reservas.
+- **Error:** 404 si no encuentra o no tiene permisos.
 
 ---
 
-## Estadísticas del Comercio
+## Favoritos
 
-### `GET /business/stats`
-- **Auth:** Requiere Bearer token (solo rol `business`)
-- **Respuesta:**
-  ```json
-  {
-    "success": true,
-    "data": {
-      "stats": {
-        "totalRevenue": 0,
-        "totalSavedKg": 0,
-        "totalBoxesSold": 0,
-        "totalCancelled": 1,
-        "salesByWeek": [0, 0, 0, 0],
-        "topPublications": []
-      }
-    }
-  }
-  ```
-- **Nota:** Los datos están aislados por `businessId` (multi-tenant). Cada comercio ve solo sus propias estadísticas.
-- **Error:** 403 si el usuario no es `business`
+### `GET /favorites`
+- **Auth:** ✅ (client)
+- **Respuesta (200):** `data: { favorites: [...] }` — ofertas enriquecidas, misma estructura que `GET /offers`.
+- **Error:** 403 si no es client.
+
+### `POST /favorites/:offerId`
+- **Auth:** ✅ (client)
+- **Respuesta (201):** `data: { favorite }` — oferta enriquecida. Si ya existe, no duplica.
+- **Error:** 404 si la oferta no existe.
+
+### `DELETE /favorites/:offerId`
+- **Auth:** ✅ (client)
+- **Respuesta (200):** `data: { message: "Favorito eliminado." }`
+- **Error:** 404 si no existía.
 
 ---
 
-## Health Check
+## Upload
 
-### `GET /health`
-- **Auth:** No requiere
-- **Respuesta:**
-  ```json
-  {
-    "success": true,
-    "data": { "status": "ok", "service": "foodsave-api" }
-  }
-  ```
+### `POST /upload/image`
+- **Auth:** ✅ (business)
+- **Content-Type:** `multipart/form-data`
+- **Body:** campo `file` con la imagen.
+- **Respuesta (201):** `data: { url: "https://..." }` — URL pública en Supabase Storage.
+- **Error:** 403 si no es business.
 
 ---
 
 ## Resumen de Endpoints
 
-| Método | Ruta | Auth | Rol | Descripción |
-|---|---|---|---|---|
-| GET | `/health` | ❌ | — | Health check |
-| POST | `/auth/login` | ❌ | — | Iniciar sesión |
-| GET | `/auth/me` | ✅ | cualquiera | Datos del usuario logueado |
-| GET | `/offers` | ❌ | — | Listar ofertas |
-| GET | `/offers/:id` | ❌ | — | Detalle de oferta |
-| GET | `/reservations` | ✅ | cualquiera | Listar reservas (filtradas por rol) |
-| POST | `/reservations` | ✅ | cualquiera | Crear reserva |
-| PATCH | `/reservations/:id/status` | ✅ | business | Cambiar estado de reserva |
-| GET | `/business/stats` | ✅ | business | Dashboard de estadísticas |
+| Método | Ruta | Auth | Rol |
+|---|---|---|---|
+| GET | `/health` | ❌ | — |
+| POST | `/auth/register` | ❌ | — |
+| POST | `/auth/login` | ❌ | — |
+| POST | `/auth/google` | ❌ | — |
+| GET | `/auth/me` | ✅ | cualquiera |
+| GET | `/cities` | ❌ | — |
+| GET | `/offers` | ❌ | — |
+| GET | `/offers/:id` | ❌ | — |
+| GET | `/business/stats` | ✅ | business |
+| PUT | `/business/profile` | ✅ | business |
+| POST | `/business/offers` | ✅ | business |
+| PUT | `/business/offers/:id` | ✅ | business |
+| DELETE | `/business/offers/:id` | ✅ | business |
+| GET | `/reservations` | ✅ | cualquiera |
+| POST | `/reservations` | ✅ | cualquiera |
+| PATCH | `/reservations/:id/status` | ✅ | cualquiera |
+| GET | `/favorites` | ✅ | client |
+| POST | `/favorites/:offerId` | ✅ | client |
+| DELETE | `/favorites/:offerId` | ✅ | client |
+| POST | `/upload/image` | ✅ | business |

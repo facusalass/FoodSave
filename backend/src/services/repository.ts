@@ -56,7 +56,7 @@ export async function createBusinessRepo(business: Business) {
 
 export async function updateBusinessById(
   id: string,
-  data_update: Partial<Pick<Business, "name" | "category" | "description" | "address" | "closingTime" | "logoUrl">>
+  data_update: Partial<Pick<Business, "name" | "category" | "description" | "city" | "address" | "closingTime" | "logoUrl">>
 ) {
   const { data, error } = await supabase
     .from("businesses")
@@ -73,8 +73,19 @@ export async function updateBusinessById(
 export async function listOffersRepo(filters?: {
   category?: string;
   type?: string;
+  city?: string;
 }) {
   let query = supabase.from("offers").select("*");
+
+  if (filters?.city) {
+    const { data: cityBusinesses } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("city", filters.city);
+
+    const ids = (cityBusinesses ?? []).map((b) => b.id);
+    query = ids.length > 0 ? query.in("businessId", ids) : query.eq("businessId", "__none__");
+  }
 
   if (filters?.category) {
     query = query.ilike("category", `%${filters.category}%`);

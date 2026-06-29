@@ -31,6 +31,7 @@ export async function enrichOfferWithBusiness(
 export async function listOffers(filters?: {
   category?: string;
   type?: string;
+  city?: string;
 }): Promise<OfferWithBusinessData[]> {
   const offers = await listOffersRepo(filters);
   return Promise.all(offers.map(enrichOfferWithBusiness));
@@ -74,7 +75,7 @@ export async function updateOffer(
 
 export async function updateBusinessProfile(
   businessId: string,
-  data_update: Partial<Pick<Business, "name" | "category" | "description" | "address" | "closingTime" | "logoUrl">>
+  data_update: Partial<Pick<Business, "name" | "category" | "description" | "city" | "address" | "closingTime" | "logoUrl">>
 ): Promise<Business | null> {
   return updateBusinessById(businessId, data_update);
 }

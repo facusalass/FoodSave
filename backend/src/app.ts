@@ -7,6 +7,7 @@ import {
 } from "./middlewares/errorHandler.js";
 import { authRoutes } from "./routes/authRoutes.js";
 import { offerRoutes } from "./routes/offerRoutes.js";
+import { citiesRoutes } from "./routes/citiesRoutes.js";
 import { reservationRoutes } from "./routes/reservationRoutes.js";
 import { offerBusinessRoutes } from "./routes/offerBusinessRoutes.js";
 import { favoriteRoutes } from "./routes/favoriteRoutes.js";
@@ -29,6 +30,7 @@ app.get("/health", (_request, response) => {
 
 app.use("/auth", authRoutes);
 app.use("/offers", offerRoutes);
+app.use("/cities", citiesRoutes);
 app.use("/reservations", reservationRoutes);
 app.use("/favorites", favoriteRoutes);
 app.use("/business/offers", offerBusinessRoutes);

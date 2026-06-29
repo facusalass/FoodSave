@@ -93,8 +93,9 @@ export async function googleLogin(params: {
   businessName?: string;
   businessAddress?: string;
   businessCategory?: string;
+  businessCity?: string;
 }): Promise<AuthSession & { user: PublicUser } | { error: string }> {
-  const { email, name, role, businessName, businessAddress, businessCategory } = params;
+  const { email, name, role, businessName, businessAddress, businessCategory, businessCity } = params;
   const normalizedEmail = email.toLowerCase();
 
   // Si ya existe, loguear
@@ -123,6 +124,7 @@ export async function googleLogin(params: {
       ownerId: "",   // se actualiza después con el ID real
       category: businessCategory,
       description: "",
+      city: businessCity ?? "",
       address: businessAddress,
       closingTime: "22:00",
       paymentInfo: {
@@ -168,12 +170,4 @@ export async function googleLogin(params: {
     token: data.session.access_token,
     user: user ? toPublicUser(user) : buildUserFromAuth(data.user, name, role)
   };
-}
-
-export async function getUserFromToken(
-  token: string
-): Promise<PublicUser | null> {
-  const userId = token.replace("mock-token-", "");
-  const user = await findUserById(userId);
-  return user ? toPublicUser(user) : null;
 }

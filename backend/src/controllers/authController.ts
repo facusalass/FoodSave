@@ -104,7 +104,7 @@ export async function googleLoginController(
   request: Request,
   response: Response
 ) {
-  const { email, name, role, businessName, businessAddress, businessCategory } =
+  const { email, name, role, businessName, businessAddress, businessCategory, businessCity } =
     request.body as {
       email?: string;
       name?: string;
@@ -112,6 +112,7 @@ export async function googleLoginController(
       businessName?: string;
       businessAddress?: string;
       businessCategory?: string;
+      businessCity?: string;
     };
 
   if (!email || !name || !role) {
@@ -136,7 +137,8 @@ export async function googleLoginController(
     role,
     businessName,
     businessAddress,
-    businessCategory
+    businessCategory,
+    businessCity
   });
 
   if ("error" in result) {
