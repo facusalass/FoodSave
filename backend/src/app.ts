@@ -11,6 +11,7 @@ import { citiesRoutes } from "./routes/citiesRoutes.js";
 import { reservationRoutes } from "./routes/reservationRoutes.js";
 import { offerBusinessRoutes } from "./routes/offerBusinessRoutes.js";
 import { favoriteRoutes } from "./routes/favoriteRoutes.js";
+import { notificationRoutes } from "./routes/notificationRoutes.js";
 import { statisticsRoutes } from "./routes/statisticsRoutes.js";
 import { uploadRoutes } from "./routes/uploadRoutes.js";
 
@@ -33,6 +34,7 @@ app.use("/offers", offerRoutes);
 app.use("/cities", citiesRoutes);
 app.use("/reservations", reservationRoutes);
 app.use("/favorites", favoriteRoutes);
+app.use("/notifications", notificationRoutes);
 app.use("/business/offers", offerBusinessRoutes);
 app.use("/business", statisticsRoutes);
 app.use("/upload", uploadRoutes);

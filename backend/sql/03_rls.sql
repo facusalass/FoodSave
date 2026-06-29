@@ -30,3 +30,9 @@ ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Favorites are viewable by everyone" ON favorites FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert favorites" ON favorites FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can delete favorites" ON favorites FOR DELETE USING (true);
+
+-- Notifications: visibles públicamente
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Notifications are viewable by everyone" ON notifications FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert notifications" ON notifications FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update own notifications" ON notifications FOR UPDATE USING (true);

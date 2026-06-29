@@ -229,3 +229,50 @@ export async function removeFavoriteRepo(userId: string, offerId: string) {
     .eq("offerId", offerId);
   return !error;
 }
+
+/* ── Notifications ───────────────────────────────── */
+
+export type NotificationRow = {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  reservationId: string;
+  read: boolean;
+  createdAt: string;
+};
+
+export async function listNotificationsByUser(userId: string) {
+  const { data } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("userId", userId)
+    .order("createdAt", { ascending: false });
+  return (data ?? []) as NotificationRow[];
+}
+
+export async function createNotification(notif: NotificationRow) {
+  const { error } = await supabase
+    .from("notifications")
+    .insert(notif as Record<string, unknown>);
+  return !error;
+}
+
+export async function markNotificationRead(id: string, userId: string) {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("id", id)
+    .eq("userId", userId);
+  return !error;
+}
+
+export async function markAllNotificationsRead(userId: string) {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("userId", userId)
+    .eq("read", false);
+  return !error;
+}

@@ -2,6 +2,12 @@ import type { PublicUser } from "../types/auth.js";
 import type { PaginatedResult } from "../utils/pagination.js";
 import type { Reservation, ReservationStatus } from "../types/reservation.js";
 import {
+  notifyPaymentConfirmed,
+  notifyPickupReminder,
+  notifyReservationCreated,
+  notifyReservationExpired
+} from "./notificationService.js";
+import {
   createReservationRepo,
   findBusinessById,
   findOfferById,
@@ -95,6 +101,25 @@ export async function listReservationsForUser(
     result = await listReservationsByUser(user.id, page, limit);
   }
 
+  // Expirar reservas pendientes vencidas
+  const now = new Date();
+  for (const r of result.items) {
+    if (r.status === "pending" && r.expiresAt && new Date(r.expiresAt) < now) {
+      const updated = await updateReservationStatusById(r.id, "cancelled");
+      if (updated) {
+        const code = normalizeReservationCode(updated);
+        notifyReservationExpired(r.id, r.userId, code).catch(() => {});
+      }
+    }
+  }
+
+  // Re-fetch para obtener los estados actualizados
+  if (user.role === "business" && user.businessId) {
+    result = await listReservationsByBusiness(user.businessId, page, limit);
+  } else {
+    result = await listReservationsByUser(user.id, page, limit);
+  }
+
   const items = await Promise.all(result.items.map(enrichReservation));
   return { ...result, items };
 }
@@ -129,6 +154,13 @@ export async function updateReservationStatus(
   }
 
   const updated = await updateReservationStatusById(reservationId, status);
+
+  if (status === "confirmed_paid") {
+    const code = normalizeReservationCode(updated);
+    notifyPaymentConfirmed(reservationId, updated.userId, code).catch(() => {});
+    notifyPickupReminder(reservationId, updated.userId, code).catch(() => {});
+  }
+
   return enrichReservation(updated);
 }
 
@@ -175,5 +207,8 @@ export async function createReservation(
   };
 
   const created = await createReservationRepo(newReservation);
+
+  notifyReservationCreated(created.id, userId, code).catch(() => {});
+
   return enrichReservation(created);
 }

@@ -76,9 +76,22 @@ CREATE TABLE favorites (
   UNIQUE("userId", "offerId")
 );
 
+-- Notifications
+CREATE TABLE notifications (
+  id TEXT PRIMARY KEY,
+  "userId" TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  "reservationId" TEXT NOT NULL,
+  read BOOLEAN NOT NULL DEFAULT false,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Indices
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_businesses_owner ON businesses("ownerId");
 CREATE INDEX idx_offers_business ON offers("businessId");
 CREATE INDEX idx_offers_category ON offers(category);
 CREATE INDEX idx_offers_type ON offers(type);
@@ -86,3 +99,4 @@ CREATE INDEX idx_reservations_user ON reservations("userId");
 CREATE INDEX idx_reservations_business ON reservations("businessId");
 CREATE INDEX idx_reservations_status ON reservations(status);
 CREATE INDEX idx_favorites_user ON favorites("userId");
+CREATE INDEX idx_notifications_user ON notifications("userId");

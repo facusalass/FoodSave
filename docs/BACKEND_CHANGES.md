@@ -119,6 +119,15 @@ Todos los endpoints siguen devolviendo:
 | POST | `/favorites/:offerId` | ✅ (client) | No duplica |
 | DELETE | `/favorites/:offerId` | ✅ (client) | — |
 
+### Notificaciones
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| GET | `/notifications` | ✅ | Lista todas las del usuario, ordenadas por fecha |
+| PATCH | `/notifications/:id/read` | ✅ | Marca una como leída |
+| PATCH | `/notifications/read-all` | ✅ | Marca todas como leídas |
+
+**Notificaciones automáticas:** se generan al crear una reserva (`reservation_created`), al confirmar pago (`payment_confirmed` + `pickup_reminder`), y al detectar vencimiento (`reservation_expired`). ID estable: `${reservationId}-${type}`.
+
 ### Estadísticas
 | Método | Ruta | Auth |
 |---|---|---|
@@ -154,13 +163,14 @@ Las ofertas y reservas siempre llegan con datos del negocio inyectados. El front
 config/     → env.ts, supabase.ts
 controllers/ → authController, offerPublicController, offerBusinessController,
                reservationController, statisticsController, favoriteController,
-               uploadController
+               uploadController, notificationController
 middlewares/ → guards.ts (isAuth, isClient, isBusinessOwner), errorHandler.ts
 routes/     → authRoutes, offerRoutes, offerBusinessRoutes,
                 reservationRoutes, statisticsRoutes, favoriteRoutes,
-                uploadRoutes
+                uploadRoutes, notificationRoutes
 services/   → repository.ts, authService, authStrategy, offerService,
-               reservationService, statisticsService, favoriteService
+                reservationService, statisticsService, favoriteService,
+                notificationService
 sql/        → 01_schema.sql, 02_seed.sql, 03_rls.sql,
                04_auth_trigger.sql, 05_storage.sql, 06_city_column.sql
 types/      → auth.ts, offer.ts, reservation.ts, statistics.ts, express.ts
