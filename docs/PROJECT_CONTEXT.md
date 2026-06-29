@@ -219,7 +219,8 @@ npx expo start -c
 - La navegacion business usa tabs inferiores con `Inicio`, `Publicar` y `Pedidos`.
 - Las metricas del dashboard usan datos reales existentes: `GET /offers` filtrado por `businessId` para ofertas activas y `GET /reservations` para reservas del comercio.
 - El cierre `22:00 HS` queda como fallback temporal porque el frontend todavia no recibe perfil completo del comercio.
-- `Publicar`, `Historial`, `Estadisticas`, `Mi local` y notificaciones del comercio quedan como placeholders livianos; no se implementa CRUD real de publicaciones ni endpoints nuevos.
+- `Publicar` permite crear ofertas reales del comercio usando `POST /business/offers`; la carga de imagen queda como placeholder visual hasta definir selector/upload mobile.
+- `Historial`, `Estadisticas`, `Mi local` y notificaciones del comercio quedan como placeholders livianos; no se implementan endpoints nuevos.
 - La pantalla `frontend/app/(business)/orders.tsx` muestra una lista basica de pedidos usando reservas existentes.
 - No se toca backend para esta fase.
 

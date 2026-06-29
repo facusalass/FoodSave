@@ -188,11 +188,7 @@ export default function BusinessDashboardScreen() {
 
           <TouchableOpacity
             activeOpacity={0.86}
-            onPress={() =>
-              showPlaceholder(
-                "Próximamente vas a poder publicar excedentes desde acá."
-              )
-            }
+            onPress={() => router.push("/(business)/publish")}
             style={styles.publishButton}
           >
             <Plus color="#FFFFFF" size={22} />
