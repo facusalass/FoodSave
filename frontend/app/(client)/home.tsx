@@ -1,8 +1,11 @@
 import { useRouter } from "expo-router";
-import { Search } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import * as Location from "expo-location";
+import { Check, MapPin, Search, X } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -19,6 +22,7 @@ import { OfferCard } from "../../src/components/OfferCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { getCities } from "../../src/services/cityService";
 import {
   addFavorite,
   getFavorites,
@@ -29,47 +33,93 @@ import type { Offer } from "../../src/types/offer";
 import { getFavoriteIds, toggleFavoriteId } from "../../src/utils/favorites";
 
 const categories = ["Panaderia", "Rotiseria", "SuperMercado", "Mystery Box"];
+const DEFAULT_CITY = "Resistencia, Chaco";
 
 export default function ClientHomeScreen() {
   const router = useRouter();
   const { logout, session } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [cities, setCities] = useState<string[]>([]);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [isCityModalVisible, setIsCityModalVisible] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationHint, setLocationHint] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
 
+  const loadOffersForCity = useCallback(async (city: string | null) => {
+    const nextOffers = await getOffers({ city });
+    setOffers(nextOffers);
+  }, []);
+
   useEffect(() => {
-    async function loadOffers() {
+    let isMounted = true;
+
+    async function loadHome() {
       try {
-        const nextOffers = await getOffers();
+        setError(null);
+        setIsLoading(true);
+        const nextCities = await getCities();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCities(nextCities);
+
+        const detectedCity = await detectCurrentCity(nextCities);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const initialCity = detectedCity.city ?? getFallbackCity(nextCities);
+        setSelectedCity(initialCity);
+        setLocationHint(detectedCity.hint);
+
+        const [nextOffers, favorites] = await Promise.all([
+          getOffers({ city: initialCity }),
+          session ? getFavorites(session.token).catch(() => null) : null
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
         setOffers(nextOffers);
 
-        if (session) {
-          try {
-            const favorites = await getFavorites(session.token);
-            setFavoriteIds(getFavoriteIds(favorites));
-          } catch {
-            setFavoriteError(
-              "No pudimos cargar tus favoritos por ahora. Las ofertas siguen disponibles."
-            );
-          }
+        if (favorites) {
+          setFavoriteIds(getFavoriteIds(favorites));
+        } else if (session) {
+          setFavoriteError(
+            "No pudimos cargar tus favoritos por ahora. Las ofertas siguen disponibles."
+          );
         }
       } catch (loadError) {
         const message =
           loadError instanceof Error
             ? loadError.message
             : "No pudimos cargar las ofertas.";
-        setError(message);
+
+        if (isMounted) {
+          setError(message);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
 
-    loadOffers();
+    void loadHome();
+
+    return () => {
+      isMounted = false;
+    };
   }, [session]);
 
   const filteredOffers = useMemo(() => {
@@ -99,6 +149,26 @@ export default function ClientHomeScreen() {
     router.replace("/(auth)/login");
   }
 
+  async function handleCitySelect(city: string) {
+    setIsCityModalVisible(false);
+    setSelectedCity(city);
+    setLocationHint(null);
+
+    try {
+      setError(null);
+      setIsLoading(true);
+      await loadOffersForCity(city);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "No pudimos cargar las ofertas de esa ciudad.";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function handleFavoritePress(offer: Offer) {
     if (!session) {
       setFavoriteError("Necesitas iniciar sesion para guardar favoritos.");
@@ -122,7 +192,7 @@ export default function ClientHomeScreen() {
         toggleFavoriteId(currentFavoriteIds, offer.id, !nextIsFavorite)
       );
       setFavoriteError(
-        "No pudimos actualizar favoritos. Intentá de nuevo cuando el backend esté listo."
+        "No pudimos actualizar favoritos. Intenta de nuevo cuando el backend este listo."
       );
     }
   }
@@ -153,12 +223,19 @@ export default function ClientHomeScreen() {
           </View>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => undefined}
+            onPress={() => setIsCityModalVisible(true)}
             style={styles.cityButton}
           >
-            <Text style={styles.cityText}>CIUDAD</Text>
+            <MapPin color={colors.text} size={16} />
+            <Text numberOfLines={1} style={styles.cityText}>
+              {selectedCity ?? "CIUDAD"}
+            </Text>
           </TouchableOpacity>
         </View>
+
+        {locationHint ? (
+          <Text style={styles.locationHint}>{locationHint}</Text>
+        ) : null}
 
         <View style={styles.categoryRow}>
           {categories.map((category) => {
@@ -200,8 +277,24 @@ export default function ClientHomeScreen() {
         </View>
       ) : error ? (
         <EmptyState title="No pudimos cargar el inicio" description={error} />
+      ) : offers.length === 0 ? (
+        <EmptyState
+          description={
+            selectedCity
+              ? "Proba cambiar de ciudad o volver mas tarde."
+              : "Volve mas tarde para ver nuevas ofertas."
+          }
+          title={
+            selectedCity
+              ? `No hay ofertas disponibles en ${selectedCity} por ahora.`
+              : "No hay ofertas disponibles por ahora."
+          }
+        />
       ) : filteredOffers.length === 0 ? (
-        <EmptyState title="No se encontraron ofertas" />
+        <EmptyState
+          description="Proba cambiar la busqueda, categoria o ciudad."
+          title="No se encontraron ofertas"
+        />
       ) : (
         <View style={styles.list}>
           {filteredOffers.map((offer) => (
@@ -217,7 +310,189 @@ export default function ClientHomeScreen() {
           ))}
         </View>
       )}
+
+      <CitySelectorModal
+        cities={cities}
+        onClose={() => setIsCityModalVisible(false)}
+        onSelect={(city) => {
+          void handleCitySelect(city);
+        }}
+        selectedCity={selectedCity}
+        visible={isCityModalVisible}
+      />
     </ScreenContainer>
+  );
+}
+
+function CitySelectorModal({
+  cities,
+  onClose,
+  onSelect,
+  selectedCity,
+  visible
+}: {
+  cities: string[];
+  onClose: () => void;
+  onSelect: (city: string) => void;
+  selectedCity: string | null;
+  visible: boolean;
+}) {
+  return (
+    <Modal
+      animationType="fade"
+      onRequestClose={onClose}
+      transparent
+      visible={visible}
+    >
+      <View style={styles.modalOverlay}>
+        <Pressable style={styles.modalBackdrop} onPress={onClose} />
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Elegir ciudad</Text>
+            <TouchableOpacity
+              accessibilityLabel="Cerrar selector de ciudad"
+              accessibilityRole="button"
+              activeOpacity={0.85}
+              onPress={onClose}
+              style={styles.modalCloseButton}
+            >
+              <X color={colors.text} size={22} />
+            </TouchableOpacity>
+          </View>
+
+          {cities.length === 0 ? (
+            <Text style={styles.modalEmptyText}>
+              No hay ciudades disponibles por ahora.
+            </Text>
+          ) : (
+            <View style={styles.cityList}>
+              {cities.map((city) => {
+                const isSelected = city === selectedCity;
+
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    key={city}
+                    onPress={() => onSelect(city)}
+                    style={[
+                      styles.cityOption,
+                      isSelected ? styles.cityOptionActive : null
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.cityOptionText,
+                        isSelected ? styles.cityOptionTextActive : null
+                      ]}
+                    >
+                      {city}
+                    </Text>
+                    {isSelected ? (
+                      <Check color={colors.secondaryDark} size={18} />
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+async function detectCurrentCity(cities: string[]) {
+  if (cities.length === 0) {
+    return { city: null, hint: null };
+  }
+
+  try {
+    const permission = await Location.requestForegroundPermissionsAsync();
+
+    if (permission.status !== "granted") {
+      return {
+        city: null,
+        hint: "No pudimos detectar tu ubicacion. Elegi una ciudad manualmente."
+      };
+    }
+
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced
+    });
+    const geocodeResults = await Location.reverseGeocodeAsync({
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    });
+    const matchedCity = matchDetectedCity(geocodeResults[0], cities);
+
+    if (!matchedCity) {
+      return {
+        city: null,
+        hint: "No encontramos ofertas para tu ubicacion. Elegi una ciudad disponible."
+      };
+    }
+
+    return { city: matchedCity, hint: null };
+  } catch {
+    return {
+      city: null,
+      hint: "No pudimos detectar tu ubicacion. Elegi una ciudad manualmente."
+    };
+  }
+}
+
+function matchDetectedCity(
+  location: Location.LocationGeocodedAddress | undefined,
+  cities: string[]
+) {
+  if (!location) {
+    return null;
+  }
+
+  const candidates = buildCityCandidates(location).map(normalize);
+
+  return (
+    cities.find((city) => candidates.includes(normalize(city))) ??
+    cities.find((city) => {
+      const normalizedCity = normalize(city);
+      return candidates.some(
+        (candidate) =>
+          normalizedCity.includes(candidate) ||
+          candidate.includes(normalizedCity)
+      );
+    }) ??
+    null
+  );
+}
+
+function buildCityCandidates(location: Location.LocationGeocodedAddress) {
+  const localities = [
+    location.city,
+    location.district,
+    location.subregion
+  ].filter(isNonEmptyString);
+  const regions = [location.region, location.country].filter(isNonEmptyString);
+  const candidates = new Set<string>();
+
+  localities.forEach((locality) => {
+    candidates.add(locality);
+    regions.forEach((region) => {
+      candidates.add(`${locality}, ${region}`);
+    });
+  });
+
+  return Array.from(candidates);
+}
+
+function isNonEmptyString(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function getFallbackCity(cities: string[]) {
+  return (
+    cities.find((city) => normalize(city) === normalize(DEFAULT_CITY)) ??
+    cities[0] ??
+    null
   );
 }
 
@@ -225,7 +500,9 @@ function normalize(value: string) {
   return value
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function matchesCategory(offer: Offer, category: string) {
@@ -284,26 +561,57 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
     height: 50,
     justifyContent: "center",
-    minWidth: 88,
+    maxWidth: 132,
+    minWidth: 96,
+    paddingHorizontal: spacing.sm
+  },
+  cityList: {
+    gap: spacing.sm
+  },
+  cityOption: {
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 48,
     paddingHorizontal: spacing.md
+  },
+  cityOptionActive: {
+    backgroundColor: "#14B8A61A",
+    borderColor: "#14B8A655"
+  },
+  cityOptionText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  cityOptionTextActive: {
+    color: colors.secondaryDark
   },
   cityText: {
     color: colors.text,
-    fontSize: 13,
+    flexShrink: 1,
+    fontSize: 12,
     fontWeight: "900"
   },
   content: {
     gap: spacing.lg
   },
-  filtersBlock: {
-    gap: spacing.md
-  },
   favoriteError: {
     color: colors.mutedText,
     fontSize: 13,
     fontWeight: "700"
+  },
+  filtersBlock: {
+    gap: spacing.md
   },
   list: {
     gap: spacing.md
@@ -316,6 +624,48 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.mutedText,
     fontSize: 14
+  },
+  locationHint: {
+    color: colors.mutedText,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject
+  },
+  modalCard: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    gap: spacing.md,
+    padding: spacing.lg
+  },
+  modalCloseButton: {
+    alignItems: "center",
+    height: 40,
+    justifyContent: "center",
+    width: 40
+  },
+  modalEmptyText: {
+    color: colors.mutedText,
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center"
+  },
+  modalHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  modalOverlay: {
+    backgroundColor: "#11182780",
+    flex: 1,
+    justifyContent: "flex-end"
+  },
+  modalTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "900"
   },
   searchBox: {
     alignItems: "center",

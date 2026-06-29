@@ -192,6 +192,16 @@ npx expo start -c
 - El estado leida/no leida se guarda localmente por usuario en SecureStore.
 - Como evolucion futura se pueden agregar endpoints dedicados (`GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`) y Expo Push Notifications.
 
+## Filtro por ciudad cliente
+
+- El backend expone `GET /cities` para listar ciudades con comercios registrados.
+- `GET /offers` acepta `?city=...` para filtrar ofertas por ciudad del comercio.
+- El Home cliente usa `expo-location` para pedir ubicacion, convertir lat/lng a ciudad con reverse geocode y matchearla contra las ciudades del backend.
+- Si no hay permiso o no hay match, usa fallback a `Resistencia, Chaco` si existe o la primera ciudad disponible.
+- El usuario puede cambiar la ciudad manualmente desde el boton de ciudad junto al buscador.
+- Si una ciudad no tiene ofertas, el Home muestra un estado vacio especifico.
+- No se usa Mapbox ni se muestra mapa en esta fase.
+
 ## Panel comercio/admin mobile
 
 - El dashboard comercio vive en `frontend/app/(business)/dashboard.tsx` y usa una interfaz mobile alineada al sistema visual FoodSave: header claro, cards blancas, acentos naranja/verde, saludo del local, cierre del dia, metricas, boton de publicar excedente y accesos rapidos.
