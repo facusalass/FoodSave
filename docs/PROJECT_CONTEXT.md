@@ -54,6 +54,16 @@ No se implementan pagos integrados, base de datos, autenticación JWT compleja, 
 - Las rutas protegidas envian el token desde la sesion con `Authorization: Bearer <token>`.
 - Si el backend no responde, el frontend muestra un mensaje amigable en espanol y no expone errores tecnicos como `Failed to fetch`.
 
+## Backend conectado a Supabase
+
+- El backend actualizado usa Supabase para datos/autenticacion en produccion.
+- Los usuarios nuevos reciben JWT real desde el backend; el frontend no interpreta el formato del token, solo lo guarda y lo envia como `Authorization: Bearer <token>`.
+- Los usuarios demo `cliente@foodsave.com` y `comercio@foodsave.com` siguen funcionando.
+- No cambiaron endpoints ni contrato de API; las pantallas mobile no necesitan cambios por JWT/Supabase.
+- Variables locales del backend: `PORT`, `NODE_ENV`, `FRONTEND_ORIGIN`, `SUPABASE_URL` y `SUPABASE_ANON_KEY`.
+- Variables locales del frontend: `EXPO_PUBLIC_API_URL` y, si hace falta, `EXPO_PUBLIC_LANDING_URL`.
+- No subir archivos `.env` ni credenciales reales al repo. Usar `.env.example` solo con placeholders.
+
 ## Como probar con Expo Go
 
 1. Instalar Expo Go en el celular desde App Store o Google Play.
@@ -172,6 +182,15 @@ npx expo start -c
 - Incluye explicacion breve de FoodSave, pasos de uso, link a la landing publica para sumar comercios, preguntas frecuentes y contacto mock.
 - La URL de landing se centraliza en `frontend/src/config/links.ts` como `LANDING_URL`, con soporte para `EXPO_PUBLIC_LANDING_URL`.
 - No usa backend, endpoints ni chat real por ahora.
+
+## Notificaciones internas
+
+- La campanita del `ClientTopBar` abre `frontend/app/(client)/notifications.tsx`.
+- `notifications` queda oculto en tabs y no aparece en la barra inferior.
+- Por ahora no hay push notifications reales, permisos del sistema ni Expo Notifications.
+- Las notificaciones cliente se derivan de `GET /reservations`: reserva creada, pago confirmado, reserva expirada y recordatorio de retiro.
+- El estado leida/no leida se guarda localmente por usuario en SecureStore.
+- Como evolucion futura se pueden agregar endpoints dedicados (`GET /notifications`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all`) y Expo Push Notifications.
 
 ## Compatibilidad Expo
 

@@ -20,6 +20,7 @@ export type Reservation = {
   customerPhone: string;
   pickupTime: string;
   status: ReservationStatus;
+  createdAt?: string;
   date: string;
   month: string;
   address: string;
