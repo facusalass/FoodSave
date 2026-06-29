@@ -8,16 +8,10 @@ import { enrichOfferWithBusiness } from "./offerService.js";
 
 export async function listFavorites(userId: string) {
   const favs = await listFavoritesByUser(userId);
-  const results = [];
-
-  for (const fav of favs) {
-    const offer = await findOfferById(fav.offerId);
-    if (offer) {
-      results.push(await enrichOfferWithBusiness(offer));
-    }
-  }
-
-  return results;
+  const offers = await Promise.all(favs.map((f) => findOfferById(f.offerId)));
+  const valid = offers.filter((o): o is NonNullable<typeof o> => o !== null);
+  const enriched = await Promise.all(valid.map((o) => enrichOfferWithBusiness(o)));
+  return enriched;
 }
 
 export async function addFavorite(

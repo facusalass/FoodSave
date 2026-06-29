@@ -3,13 +3,15 @@ import { createBusinessRepo, findUserByEmail, findUserById } from "./repository.
 import { toPublicUser } from "../utils/publicUser.js";
 import type { AuthSession, Business, PublicUser, UserRole } from "../types/auth.js";
 
-async function dbLogin(email: string): Promise<AuthSession | null> {
-  const user = await findUserByEmail(email);
-  if (!user) return null;
-
+function buildUserFromAuth(authUser: { id: string; email?: string | null; user_metadata?: Record<string, unknown>; created_at?: string }, fallbackName: string, fallbackRole: UserRole): PublicUser {
   return {
-    token: `mock-token-${user.id}`,
-    user: toPublicUser(user)
+    id: authUser.id,
+    name: (authUser.user_metadata?.name as string) ?? fallbackName,
+    email: authUser.email ?? "",
+    role: (authUser.user_metadata?.role as UserRole) ?? fallbackRole,
+    businessId: authUser.user_metadata?.businessId as string | undefined,
+    phone: authUser.user_metadata?.phone as string | undefined,
+    createdAt: authUser.created_at ?? new Date().toISOString()
   };
 }
 
@@ -42,23 +44,15 @@ export async function registerClient(params: {
     return { error: error.message };
   }
 
-  // La sesión puede ser null si el proveedor requiere confirmación de email
-  if (!data.session) {
+  if (!data.session || !data.user) {
     return { error: "Revisá tu correo para confirmar la cuenta." };
   }
 
-  const user = await findUserById(data.user!.id);
+  const user = await findUserById(data.user.id);
 
   return {
     token: data.session.access_token,
-    user: user ? toPublicUser(user) : {
-      id: data.user!.id,
-      name: params.name.trim(),
-      email,
-      role: "client",
-      phone: params.phone.trim(),
-      createdAt: new Date().toISOString()
-    }
+    user: user ? toPublicUser(user) : buildUserFromAuth(data.user, params.name.trim(), "client")
   };
 }
 
@@ -74,18 +68,11 @@ export async function login(
     password
   });
 
-  if (!error && data.session) {
+  if (!error && data.session && data.user) {
     const user = await findUserById(data.user.id);
     return {
       token: data.session.access_token,
-      user: user ? toPublicUser(user) : {
-        id: data.user.id,
-        name: data.user.user_metadata?.name ?? email,
-        email: data.user.email ?? email,
-        role: data.user.user_metadata?.role ?? "client",
-        phone: data.user.user_metadata?.phone,
-        createdAt: data.user.created_at ?? new Date().toISOString()
-      }
+      user: user ? toPublicUser(user) : buildUserFromAuth(data.user, email, "client")
     };
   }
 
@@ -179,15 +166,7 @@ export async function googleLogin(params: {
 
   return {
     token: data.session.access_token,
-    user: user ? toPublicUser(user) : {
-      id: data.user.id,
-      name,
-      email: normalizedEmail,
-      role,
-      businessId,
-      phone: "",
-      createdAt: now
-    }
+    user: user ? toPublicUser(user) : buildUserFromAuth(data.user, name, role)
   };
 }
 
