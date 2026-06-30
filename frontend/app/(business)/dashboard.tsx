@@ -224,9 +224,7 @@ export default function BusinessDashboardScreen() {
                 accent="purple"
                 icon={<Store color="#A855F7" size={24} />}
                 label="Mi local"
-                onPress={() =>
-                  showPlaceholder("La edición de datos del local se habilitará pronto.")
-                }
+                onPress={() => router.push("/(business)/store")}
               />
             </View>
           </View>

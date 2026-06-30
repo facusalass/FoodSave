@@ -26,6 +26,16 @@ export type CreateBusinessOfferPayload = {
   estimatedWeightInKg?: number;
 };
 
+export type BusinessProfilePayload = {
+  name?: string;
+  category?: string;
+  description?: string;
+  city?: string;
+  address?: string;
+  closingTime?: string;
+  logoUrl?: string;
+};
+
 export async function getOffers(options: GetOffersOptions = {}) {
   const queryParams = new URLSearchParams();
 
@@ -61,4 +71,20 @@ export async function createBusinessOffer(
   });
 
   return response.offer;
+}
+
+export async function updateBusinessProfile(
+  token: string,
+  payload: BusinessProfilePayload
+) {
+  const response = await apiRequest<{ business: BusinessProfilePayload }>(
+    "/business/profile",
+    {
+      body: JSON.stringify(payload),
+      method: "PUT",
+      token
+    }
+  );
+
+  return response.business;
 }

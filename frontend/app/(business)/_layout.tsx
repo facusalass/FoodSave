@@ -65,6 +65,12 @@ export default function BusinessLayout() {
           href: null
         }}
       />
+      <Tabs.Screen
+        name="store"
+        options={{
+          href: null
+        }}
+      />
     </Tabs>
   );
 }
