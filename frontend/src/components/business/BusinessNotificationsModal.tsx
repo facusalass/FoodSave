@@ -1,4 +1,10 @@
-import { AlertTriangle, Clock, PackageCheck, X } from "lucide-react-native";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  PackageCheck,
+  X
+} from "lucide-react-native";
 import { useEffect, type ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -114,6 +120,14 @@ function NotificationRow({ notification }: { notification: AppNotification }) {
 }
 
 function getNotificationIcon(type: NotificationType): ReactNode {
+  if (type === "payment_received") {
+    return <CheckCircle2 color={colors.secondaryDark} size={21} />;
+  }
+
+  if (type === "reservation_received") {
+    return <PackageCheck color={colors.primary} size={21} />;
+  }
+
   if (type === "pickup_reminder") {
     return <Clock color={colors.text} size={21} />;
   }

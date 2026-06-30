@@ -6,7 +6,10 @@ import {
   markAllNotificationsAsRead,
   markNotificationAsRead
 } from "../services/notificationService";
-import type { AppNotification } from "../types/notification";
+import {
+  isClientNotificationType,
+  type AppNotification
+} from "../types/notification";
 
 type UseNotificationsOptions = {
   enabled?: boolean;
@@ -31,7 +34,11 @@ export function useNotifications({
       setError(null);
       setIsLoading(true);
       const nextNotifications = await getNotifications(session.token);
-      setNotifications(nextNotifications);
+      setNotifications(
+        nextNotifications.filter((notification) =>
+          isClientNotificationType(notification.type)
+        )
+      );
     } catch (loadError) {
       const message =
         loadError instanceof Error
