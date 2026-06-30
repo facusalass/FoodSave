@@ -48,6 +48,7 @@ CREATE TABLE offers (
   "pickupLimit" TEXT NOT NULL DEFAULT '',
   allergens TEXT[] NOT NULL DEFAULT '{}',
   "imageUrl" TEXT NOT NULL DEFAULT '',
+  "isVisible" BOOLEAN NOT NULL DEFAULT true,
   "estimatedWeightInKg" REAL,
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -14,6 +14,7 @@ export type Offer = {
   pickupLimit: string;
   allergens: string[];
   imageUrl: string;
+  isVisible: boolean;
   createdAt: string;
   estimatedWeightInKg?: number;
 };

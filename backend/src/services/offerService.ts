@@ -60,6 +60,7 @@ export async function createOffer(
     ...data,
     id: `offer-${Date.now()}`,
     businessId,
+    isVisible: data.isVisible ?? true,
     createdAt: now
   };
 

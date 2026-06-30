@@ -4,8 +4,8 @@ import type { Business, User } from "../types/auth.js";
 import type { Offer } from "../types/offer.js";
 import type { Reservation, ReservationStatus } from "../types/reservation.js";
 
-export type BusinessUpdate = Partial<Pick<Business, "name" | "category" | "description" | "city" | "address" | "closingTime" | "logoUrl">>;
-export type OfferUpdate = Partial<Pick<Offer, "title" | "description" | "category" | "type" | "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit" | "allergens" | "imageUrl" | "estimatedWeightInKg">>;
+export type BusinessUpdate = Partial<Pick<Business, "name" | "category" | "description" | "city" | "address" | "closingTime" | "logoUrl" | "paymentInfo">>;
+export type OfferUpdate = Partial<Pick<Offer, "title" | "description" | "category" | "type" | "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit" | "allergens" | "imageUrl" | "isVisible" | "estimatedWeightInKg">>;
 
 // ── Helpers ────────────────────────────────────────
 
@@ -57,7 +57,7 @@ export async function listOffersRepo(filters?: { category?: string; type?: strin
     businessIds = (cityBusinesses ?? []).map((b: { id: string }) => b.id);
   }
 
-  let query = supabase.from("offers").select("*", { count: "exact" });
+  let query = supabase.from("offers").select("*", { count: "exact" }).eq("isVisible", true);
   if (businessIds && businessIds.length > 0) query = query.in("businessId", businessIds);
   else if (businessIds?.length === 0) return buildPaginatedResult([], 0, page, limit);
   if (filters?.category) query = query.ilike("category", `%${filters.category}%`);
@@ -87,6 +87,11 @@ export async function updateOfferById(offerId: string, businessId: string, data_
 export async function deleteOfferById(offerId: string, businessId: string) {
   const { error } = await supabase.from("offers").delete().eq("id", offerId).eq("businessId", businessId);
   return !error;
+}
+
+export async function listOffersByBusinessId(businessId: string) {
+  const { data } = await supabase.from("offers").select("*").eq("businessId", businessId).order("createdAt", { ascending: false });
+  return asArray<Offer>(data);
 }
 
 // ── Reservations ──────────────────────────────────

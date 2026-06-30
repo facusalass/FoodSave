@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
-import { createOffer, deleteOffer, updateOffer, updateBusinessProfile } from "../services/offerService.js";
+import { createOffer, deleteOffer, enrichOfferWithBusiness, updateOffer, updateBusinessProfile } from "../services/offerService.js";
 import type { OfferType } from "../types/offer.js";
+import { findBusinessById, listOffersByBusinessId, updateOfferById } from "../services/repository.js";
 
 export async function createOfferController(request: Request, response: Response) {
   const {
@@ -15,7 +16,8 @@ export async function createOfferController(request: Request, response: Response
     pickupLimit,
     allergens,
     imageUrl,
-    estimatedWeightInKg
+    estimatedWeightInKg,
+    isVisible
   } = request.body as {
     title?: string;
     description?: string;
@@ -29,6 +31,7 @@ export async function createOfferController(request: Request, response: Response
     allergens?: string[];
     imageUrl?: string;
     estimatedWeightInKg?: number;
+    isVisible?: boolean;
   };
 
   if (!title || !description || !category || !type || !oldPrice || !newPrice || stock === undefined) {
@@ -60,7 +63,8 @@ export async function createOfferController(request: Request, response: Response
       pickupLimit: pickupLimit ?? "",
       allergens: allergens ?? [],
       imageUrl: imageUrl ?? "",
-      estimatedWeightInKg
+      estimatedWeightInKg,
+      isVisible: isVisible ?? true
     },
     request.user!.businessId!
   );
@@ -135,27 +139,46 @@ export async function deleteOfferController(request: Request, response: Response
 }
 
 export async function updateBusinessProfileController(request: Request, response: Response) {
-  const { name, category, description, city, address, closingTime, logoUrl } = request.body as {
-    name?: string;
-    category?: string;
-    description?: string;
-    city?: string;
-    address?: string;
-    closingTime?: string;
-    logoUrl?: string;
+  const { name, category, description, city, address, closingTime, logoUrl, paymentInfo } = request.body as {
+    name?: string; category?: string; description?: string; city?: string; address?: string; closingTime?: string; logoUrl?: string;
+    paymentInfo?: { ownerName: string; cvu: string; alias: string };
   };
 
   const updated = await updateBusinessProfile(request.user!.businessId!, {
-    name, category, description, city, address, closingTime, logoUrl
+    name, category, description, city, address, closingTime, logoUrl, paymentInfo
   });
 
-  if (!updated) {
-    response.status(404).json({
-      success: false,
-      error: { message: "Comercio no encontrado." }
-    });
-    return;
-  }
+  if (!updated) return fail(response, 404, "Comercio no encontrado.");
 
   response.json({ success: true, data: { business: updated } });
+}
+
+export async function getBusinessProfileController(request: Request, response: Response) {
+  const business = await findBusinessById(request.user!.businessId!);
+  if (!business) return fail(response, 404, "Comercio no encontrado.");
+  response.json({ success: true, data: { business } });
+}
+
+export async function listBusinessOffersController(request: Request, response: Response) {
+  const offers = await listOffersByBusinessId(request.user!.businessId!);
+  const enriched = await Promise.all(offers.map(enrichOfferWithBusiness));
+  response.json({ success: true, data: { offers: enriched } });
+}
+
+export async function toggleOfferVisibilityController(request: Request, response: Response) {
+  const offerId = request.params.id;
+  if (!offerId || Array.isArray(offerId)) return fail(response, 400, "ID de oferta inválido.");
+
+  const { isVisible } = request.body as { isVisible?: boolean };
+  if (typeof isVisible !== "boolean") return fail(response, 400, "isVisible debe ser true o false.");
+
+  const updated = await updateOfferById(offerId, request.user!.businessId!, { isVisible });
+  if (!updated) return fail(response, 404, "Oferta no encontrada o no pertenece a tu comercio.");
+
+  const enriched = await enrichOfferWithBusiness(updated);
+  response.json({ success: true, data: { offer: enriched } });
+}
+
+function fail(response: Response, status: number, message: string) {
+  response.status(status).json({ success: false, error: { message } });
 }
