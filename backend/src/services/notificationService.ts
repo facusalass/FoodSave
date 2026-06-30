@@ -6,7 +6,7 @@ import {
   type NotificationRow
 } from "./repository.js";
 
-type NotificationType = "reservation_created" | "reservation_expired" | "payment_confirmed" | "pickup_reminder";
+type NotificationType = "reservation_created" | "reservation_expired" | "payment_confirmed" | "pickup_reminder" | "reservation_received" | "payment_received";
 
 const templates: Record<NotificationType, { title: string; message: (code: string) => string }> = {
   reservation_created: {
@@ -24,6 +24,14 @@ const templates: Record<NotificationType, { title: string; message: (code: strin
   pickup_reminder: {
     title: "Recordatorio de retiro",
     message: (code) => `Recordá retirar tu pedido #${code} en el horario indicado.`
+  },
+  reservation_received: {
+    title: "Nueva reserva",
+    message: (code) => `Recibiste una nueva reserva #${code}. Confirmá el pago cuando el cliente te avise.`
+  },
+  payment_received: {
+    title: "Pago confirmado",
+    message: (code) => `Confirmaste el pago de la reserva #${code}.`
   }
 };
 
@@ -75,6 +83,32 @@ export async function notifyPickupReminder(reservationId: string, userId: string
   await send({
     id: `${reservationId}-${type}`,
     userId,
+    type,
+    title: templates[type].title,
+    message: templates[type].message(code),
+    reservationId,
+    read: false
+  });
+}
+
+export async function notifyBusinessReservationReceived(reservationId: string, businessOwnerId: string, code: string) {
+  const type = "reservation_received" as const;
+  await send({
+    id: `${reservationId}-${type}-biz`,
+    userId: businessOwnerId,
+    type,
+    title: templates[type].title,
+    message: templates[type].message(code),
+    reservationId,
+    read: false
+  });
+}
+
+export async function notifyBusinessPaymentReceived(reservationId: string, businessOwnerId: string, code: string) {
+  const type = "payment_received" as const;
+  await send({
+    id: `${reservationId}-${type}-biz`,
+    userId: businessOwnerId,
     type,
     title: templates[type].title,
     message: templates[type].message(code),

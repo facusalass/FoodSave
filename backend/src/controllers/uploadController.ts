@@ -4,14 +4,6 @@ import { supabase } from "../config/supabase.js";
 const BUCKET = "offers";
 
 export async function uploadImageController(request: Request, response: Response) {
-  if (!request.user || request.user.role !== "business") {
-    response.status(403).json({
-      success: false,
-      error: { message: "Solo los comercios pueden subir imágenes." }
-    });
-    return;
-  }
-
   const file = request.file;
   if (!file) {
     response.status(400).json({
@@ -21,7 +13,7 @@ export async function uploadImageController(request: Request, response: Response
     return;
   }
 
-  const path = `${request.user.businessId}/${Date.now()}-${file.originalname}`;
+  const path = `${request.user!.businessId}/${Date.now()}-${file.originalname}`;
 
   const { data, error } = await supabase.storage
     .from(BUCKET)

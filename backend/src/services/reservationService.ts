@@ -1,7 +1,7 @@
 import type { PublicUser } from "../types/auth.js";
 import type { PaginatedResult } from "../utils/pagination.js";
 import type { Reservation, ReservationStatus } from "../types/reservation.js";
-import { notifyPaymentConfirmed, notifyPickupReminder, notifyReservationCreated, notifyReservationExpired } from "./notificationService.js";
+import { notifyPaymentConfirmed, notifyPickupReminder, notifyReservationCreated, notifyReservationExpired, notifyBusinessReservationReceived, notifyBusinessPaymentReceived } from "./notificationService.js";
 import { createReservationRepo, findBusinessById, findOfferById, findReservationById, findUserById, listReservationsByBusiness, listReservationsByUser, updateOfferById, updateReservationStatusById } from "./repository.js";
 
 export type ReservationWithDetails = Reservation & {
@@ -98,6 +98,9 @@ export async function updateReservationStatus(reservationId: string, status: Res
     const code = normalizeCode(updated);
     notifyPaymentConfirmed(reservationId, updated.userId, code).catch(() => {});
     notifyPickupReminder(reservationId, updated.userId, code).catch(() => {});
+
+    const biz = await findBusinessById(updated.businessId);
+    if (biz?.ownerId) notifyBusinessPaymentReceived(reservationId, biz.ownerId, code).catch(() => {});
   }
 
   return enrichReservation(updated);
@@ -125,5 +128,8 @@ export async function createReservation(offerId: string, userId: string, quantit
 
   const created = await createReservationRepo(newReservation);
   notifyReservationCreated(created.id, userId, code).catch(() => {});
+
+  const biz = await findBusinessById(offer.businessId);
+  if (biz?.ownerId) notifyBusinessReservationReceived(created.id, biz.ownerId, code).catch(() => {});
   return enrichReservation(created);
 }
