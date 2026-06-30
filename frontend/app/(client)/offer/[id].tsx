@@ -199,7 +199,12 @@ export default function OfferDetailScreen() {
         </Text>
       </View>
 
-      <Text style={styles.store}>{offer.storeName}</Text>
+      <View style={styles.storeRow}>
+        {offer.logoUrl ? (
+          <Image source={{ uri: offer.logoUrl }} style={styles.storeLogo} />
+        ) : null}
+        <Text style={styles.store}>{offer.storeName}</Text>
+      </View>
       <Text style={styles.title}>{offer.title}</Text>
       <Text style={styles.description}>{offer.description}</Text>
 
@@ -405,8 +410,22 @@ const styles = StyleSheet.create({
   },
   store: {
     color: colors.text,
+    flex: 1,
     fontSize: 14,
     fontWeight: "900",
+  },
+  storeLogo: {
+    backgroundColor: colors.border,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 32,
+    width: 32
+  },
+  storeRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
     marginBottom: spacing.xs
   },
   title: {

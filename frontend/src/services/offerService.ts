@@ -145,3 +145,29 @@ export async function updateBusinessOfferVisibility(
 
   return response.offer;
 }
+
+export type UploadImagePayload = {
+  name: string;
+  type: string;
+  uri: string;
+};
+
+export async function uploadImage(token: string, image: UploadImagePayload) {
+  const formData = new FormData();
+  formData.append(
+    "file",
+    {
+      name: image.name,
+      type: image.type,
+      uri: image.uri
+    } as unknown as Blob
+  );
+
+  const response = await apiRequest<{ url: string }>("/upload/image", {
+    body: formData,
+    method: "POST",
+    token
+  });
+
+  return response.url;
+}

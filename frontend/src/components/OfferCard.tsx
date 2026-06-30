@@ -28,9 +28,14 @@ export function OfferCard({
       <Image source={{ uri: offer.imageUrl }} style={styles.image} />
       <View style={styles.content}>
         <View style={styles.titleRow}>
-          <Text numberOfLines={2} style={styles.store}>
-            {offer.storeName.toUpperCase()}
-          </Text>
+          <View style={styles.storeBlock}>
+            {offer.logoUrl ? (
+              <Image source={{ uri: offer.logoUrl }} style={styles.logo} />
+            ) : null}
+            <Text numberOfLines={2} style={styles.store}>
+              {offer.storeName.toUpperCase()}
+            </Text>
+          </View>
           {onFavoritePress ? (
             <TouchableOpacity
               accessibilityLabel={
@@ -139,6 +144,14 @@ const styles = StyleSheet.create({
     height: 94,
     width: 94
   },
+  logo: {
+    backgroundColor: colors.border,
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 28,
+    width: 28
+  },
   metaItem: {
     alignItems: "center",
     flexDirection: "row",
@@ -173,6 +186,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "900",
     lineHeight: 20
+  },
+  storeBlock: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs
   },
   titleRow: {
     alignItems: "flex-start",

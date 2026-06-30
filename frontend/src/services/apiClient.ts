@@ -26,7 +26,7 @@ export async function apiRequest<T>(
 
   headers.set("Accept", "application/json");
 
-  if (options.body && !headers.has("Content-Type")) {
+  if (options.body && !headers.has("Content-Type") && !isFormData(options.body)) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -65,6 +65,10 @@ export async function apiRequest<T>(
   }
 
   throw new Error("No pudimos interpretar la respuesta del servidor.");
+}
+
+function isFormData(body: BodyInit) {
+  return typeof FormData !== "undefined" && body instanceof FormData;
 }
 
 function parseJson<T>(rawBody: string): T | null {

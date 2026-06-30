@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,7 +22,10 @@ import { BusinessNotificationsButton } from "../../src/components/business/Busin
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
-import { getBusinessOffers } from "../../src/services/offerService";
+import {
+  getBusinessOffers,
+  getBusinessProfile
+} from "../../src/services/offerService";
 import { getReservations } from "../../src/services/reservationService";
 import type { Offer } from "../../src/types/offer";
 import type { Reservation } from "../../src/types/reservation";
@@ -33,6 +37,7 @@ export default function BusinessDashboardScreen() {
   const { logout, session } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [businessLogoUrl, setBusinessLogoUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,12 +51,14 @@ export default function BusinessDashboardScreen() {
       try {
         setError(null);
         setIsLoading(true);
-        const [nextOffers, nextReservations] = await Promise.all([
+        const [nextOffers, nextReservations, businessProfile] = await Promise.all([
           getBusinessOffers(session.token),
-          getReservations(session.token)
+          getReservations(session.token),
+          getBusinessProfile(session.token)
         ]);
         setOffers(nextOffers);
         setReservations(nextReservations);
+        setBusinessLogoUrl(businessProfile.logoUrl ?? "");
       } catch (loadError) {
         const message =
           loadError instanceof Error
@@ -133,10 +140,15 @@ export default function BusinessDashboardScreen() {
       </View>
 
       <View style={styles.hero}>
-        <View style={styles.greetingBlock}>
-          <Text numberOfLines={2} style={styles.businessName}>
-            Hola, {toTitleCase(businessName)}
-          </Text>
+        <View style={styles.heroTop}>
+          {businessLogoUrl ? (
+            <Image source={{ uri: businessLogoUrl }} style={styles.businessLogo} />
+          ) : null}
+          <View style={styles.greetingBlock}>
+            <Text numberOfLines={2} style={styles.businessName}>
+              Hola, {toTitleCase(businessName)}
+            </Text>
+          </View>
         </View>
         <View style={styles.closingBadge}>
           <Clock color={colors.secondaryDark} size={14} />
@@ -302,9 +314,18 @@ function toTitleCase(value: string) {
 const styles = StyleSheet.create({
   businessName: {
     color: colors.text,
+    flexShrink: 1,
     fontSize: 22,
     fontWeight: "900",
     lineHeight: 28
+  },
+  businessLogo: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: 24,
+    borderWidth: 1,
+    height: 48,
+    width: 48
   },
   closingBadge: {
     alignItems: "center",
@@ -332,10 +353,16 @@ const styles = StyleSheet.create({
     fontWeight: "800"
   },
   greetingBlock: {
+    flex: 1,
     gap: spacing.xs
   },
   hero: {
     gap: spacing.sm
+  },
+  heroTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md
   },
   loadingBlock: {
     alignItems: "center",

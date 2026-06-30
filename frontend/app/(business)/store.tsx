@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import {
   ChevronDown,
   Clock,
@@ -28,7 +29,8 @@ import {
   getBusinessOffers,
   getBusinessProfile,
   updateBusinessOfferVisibility,
-  updateBusinessProfile
+  updateBusinessProfile,
+  uploadImage
 } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
 import { formatCurrency } from "../../src/utils/formatCurrency";
@@ -37,6 +39,7 @@ type StoreTab = "settings" | "publications";
 
 const DEFAULT_CLOSING_TIME = "22:00";
 const DEFAULT_CATEGORY = "Panaderia / Pasteleria";
+const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
 
 export default function BusinessStoreScreen() {
   const router = useRouter();
@@ -48,6 +51,7 @@ export default function BusinessStoreScreen() {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [offersError, setOffersError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [visibilityLoadingId, setVisibilityLoadingId] = useState<string | null>(
     null
   );
@@ -171,11 +175,72 @@ export default function BusinessStoreScreen() {
     }
   }
 
-  function handleLogoPress() {
-    Alert.alert(
-      "Cargar logo",
-      "El backend ya permite subir imagenes, pero falta agregar un selector de imagen en la app para elegir el logo."
-    );
+  async function handleLogoPress() {
+    if (!session || isUploadingLogo) {
+      return;
+    }
+
+    try {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert(
+          "Permiso requerido",
+          "Necesitamos acceso a tu galeria para elegir el logo del local."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        mediaTypes: ["images"],
+        quality: 0.85
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const image = result.assets.at(0);
+      if (!image) {
+        return;
+      }
+
+      const mimeType = image.mimeType ?? inferMimeType(image.uri);
+      const fileName = image.fileName ?? `logo-${Date.now()}.${getExtension(mimeType)}`;
+
+      if (!isAllowedImageType(mimeType)) {
+        Alert.alert("Formato no compatible", "Elegí una imagen JPG o PNG.");
+        return;
+      }
+
+      if (image.fileSize && image.fileSize > MAX_LOGO_SIZE_BYTES) {
+        Alert.alert("Imagen muy pesada", "El logo puede pesar hasta 2MB.");
+        return;
+      }
+
+      setIsUploadingLogo(true);
+      const uploadedUrl = await uploadImage(session.token, {
+        name: fileName,
+        type: mimeType,
+        uri: image.uri
+      });
+      setLogoUrl(uploadedUrl);
+      Alert.alert(
+        "Logo cargado",
+        "Ya lo subimos. Toca Guardar Cambios para dejarlo fijo en tu local."
+      );
+    } catch (logoError) {
+      const message =
+        logoError instanceof Error
+          ? logoError.message
+          : "No pudimos subir el logo.";
+      Alert.alert("No pudimos cargar el logo", message);
+    } finally {
+      setIsUploadingLogo(false);
+    }
   }
 
   async function handleToggleVisibility(offer: Offer) {
@@ -245,15 +310,21 @@ export default function BusinessStoreScreen() {
           {profileError ? <Text style={styles.errorText}>{profileError}</Text> : null}
           <TouchableOpacity
             activeOpacity={0.85}
+            disabled={isUploadingLogo}
             onPress={handleLogoPress}
-            style={styles.logoBox}
+            style={[styles.logoBox, isUploadingLogo ? styles.disabledButton : null]}
           >
-            {logoUrl ? (
+            {isUploadingLogo ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : logoUrl ? (
               <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
             ) : (
               <Upload color="#94A3B8" size={34} />
             )}
-            <Text style={styles.logoText}>Cargar Logo</Text>
+            <Text style={styles.logoText}>
+              {isUploadingLogo ? "Subiendo logo..." : "Cargar Logo"}
+            </Text>
+            <Text style={styles.logoHint}>JPG, PNG - MAX 2MB</Text>
           </TouchableOpacity>
 
           <InputField
@@ -522,6 +593,24 @@ function IconButton({
   );
 }
 
+function inferMimeType(uri: string) {
+  const lowerUri = uri.toLowerCase();
+
+  if (lowerUri.endsWith(".png")) {
+    return "image/png";
+  }
+
+  return "image/jpeg";
+}
+
+function getExtension(mimeType: string) {
+  return mimeType === "image/png" ? "png" : "jpg";
+}
+
+function isAllowedImageType(mimeType: string) {
+  return mimeType === "image/jpeg" || mimeType === "image/png";
+}
+
 const styles = StyleSheet.create({
   chip: {
     backgroundColor: "#F8FAFC",
@@ -660,6 +749,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     height: 72,
     width: 72
+  },
+  logoHint: {
+    color: "#94A3B8",
+    fontSize: 12,
+    fontWeight: "900"
   },
   logoText: {
     color: colors.text,
