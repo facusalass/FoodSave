@@ -1,0 +1,241 @@
+import { usePathname, useRouter } from "expo-router";
+import {
+  BarChart3,
+  ClipboardList,
+  Clock,
+  Home,
+  LogOut,
+  Menu,
+  Plus,
+  Store
+} from "lucide-react-native";
+import { useState, type ReactNode } from "react";
+import {
+  Alert,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { colors, spacing } from "../../constants/theme";
+import { useAuth } from "../../context/AuthContext";
+
+type BusinessRoute =
+  | "/(business)/dashboard"
+  | "/(business)/publish"
+  | "/(business)/orders"
+  | "/(business)/history"
+  | "/(business)/store";
+
+type BusinessMenuItem = {
+  icon: ReactNode;
+  key: string;
+  label: string;
+  route?: BusinessRoute;
+};
+
+const MENU_ITEMS: BusinessMenuItem[] = [
+  {
+    icon: <Home color={colors.text} size={21} />,
+    key: "dashboard",
+    label: "Inicio",
+    route: "/(business)/dashboard"
+  },
+  {
+    icon: <Plus color={colors.text} size={22} />,
+    key: "publish",
+    label: "Publicar excedente",
+    route: "/(business)/publish"
+  },
+  {
+    icon: <ClipboardList color={colors.text} size={21} />,
+    key: "orders",
+    label: "Pedidos",
+    route: "/(business)/orders"
+  },
+  {
+    icon: <Clock color={colors.text} size={21} />,
+    key: "history",
+    label: "Historial",
+    route: "/(business)/history"
+  },
+  {
+    icon: <BarChart3 color={colors.text} size={21} />,
+    key: "stats",
+    label: "Estadisticas"
+  },
+  {
+    icon: <Store color={colors.text} size={21} />,
+    key: "store",
+    label: "Mi local",
+    route: "/(business)/store"
+  }
+];
+
+export function BusinessMenuButton() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <>
+      <TouchableOpacity
+        accessibilityLabel="Abrir menu"
+        accessibilityRole="button"
+        activeOpacity={0.85}
+        onPress={() => setIsVisible(true)}
+        style={styles.menuButton}
+      >
+        <Menu color={colors.text} size={24} />
+      </TouchableOpacity>
+      <BusinessSideMenu
+        onClose={() => setIsVisible(false)}
+        visible={isVisible}
+      />
+    </>
+  );
+}
+
+export function BusinessSideMenu({
+  onClose,
+  visible
+}: {
+  onClose: () => void;
+  visible: boolean;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  function handleNavigate(item: BusinessMenuItem) {
+    if (!item.route) {
+      onClose();
+      Alert.alert(
+        "Proximamente",
+        "Las estadisticas detalladas estaran disponibles pronto."
+      );
+      return;
+    }
+
+    onClose();
+    router.push(item.route);
+  }
+
+  function handleLogoutPress() {
+    Alert.alert("¿Cerrar sesión?", "Vas a salir del panel comercio.", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        onPress: () => {
+          onClose();
+          void logout().then(() => router.replace("/(auth)/login"));
+        },
+        style: "destructive",
+        text: "Cerrar sesión"
+      }
+    ]);
+  }
+
+  return (
+    <Modal
+      animationType="fade"
+      onRequestClose={onClose}
+      transparent
+      visible={visible}
+    >
+      <View style={styles.overlay}>
+        <Pressable accessibilityRole="button" onPress={onClose} style={styles.backdrop} />
+        <View style={styles.panel}>
+          <View style={styles.menuList}>
+            {MENU_ITEMS.map((item) => {
+              const isActive = item.route ? pathname.includes(item.key) : false;
+
+              return (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  key={item.key}
+                  onPress={() => handleNavigate(item)}
+                  style={[styles.menuItem, isActive ? styles.menuItemActive : null]}
+                >
+                  <View style={styles.iconSlot}>{item.icon}</View>
+                  <Text style={styles.menuText}>{item.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleLogoutPress}
+            style={styles.logoutButton}
+          >
+            <LogOut color={colors.danger} size={21} />
+            <Text style={styles.logoutText}>Cerrar sesión</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0
+  },
+  iconSlot: {
+    alignItems: "center",
+    width: 28
+  },
+  logoutButton: {
+    alignItems: "center",
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    minHeight: 66,
+    paddingHorizontal: spacing.lg
+  },
+  logoutText: {
+    color: colors.danger,
+    fontSize: 15,
+    fontWeight: "900"
+  },
+  menuButton: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    width: 44
+  },
+  menuItem: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 52,
+    paddingHorizontal: spacing.lg
+  },
+  menuItemActive: {
+    backgroundColor: "#F8FAFC"
+  },
+  menuList: {
+    paddingTop: spacing.lg
+  },
+  menuText: {
+    color: "#374151",
+    fontSize: 15,
+    fontWeight: "900"
+  },
+  overlay: {
+    backgroundColor: "#00000026",
+    flex: 1
+  },
+  panel: {
+    backgroundColor: colors.card,
+    flex: 1,
+    justifyContent: "space-between",
+    maxWidth: 290,
+    width: "76%"
+  }
+});

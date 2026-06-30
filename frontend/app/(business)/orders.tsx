@@ -1,5 +1,5 @@
 import { useFocusEffect } from "expo-router";
-import { Clock, Menu, Search } from "lucide-react-native";
+import { Clock, Search } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,6 +11,7 @@ import {
   View
 } from "react-native";
 import { EmptyState } from "../../src/components/EmptyState";
+import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
@@ -93,17 +94,7 @@ export default function BusinessOrdersScreen() {
   return (
     <ScreenContainer contentStyle={styles.content}>
       <View style={styles.topBar}>
-        <TouchableOpacity
-          accessibilityLabel="Abrir menu"
-          accessibilityRole="button"
-          activeOpacity={0.85}
-          onPress={() =>
-            Alert.alert("Panel local", "El menu del comercio se habilitara pronto.")
-          }
-          style={styles.topBarButton}
-        >
-          <Menu color={colors.text} size={24} />
-        </TouchableOpacity>
+        <BusinessMenuButton />
         <Text style={styles.topBarTitle}>Pedidos Activos</Text>
         <BusinessNotificationsButton />
       </View>

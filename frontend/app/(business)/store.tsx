@@ -22,6 +22,7 @@ import {
   View
 } from "react-native";
 import { EmptyState } from "../../src/components/EmptyState";
+import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -282,7 +283,9 @@ export default function BusinessStoreScreen() {
   return (
     <ScreenContainer contentStyle={styles.content}>
       <View style={styles.topBar}>
+        <BusinessMenuButton />
         <Text style={styles.topBarTitle}>Mi Local</Text>
+        <View style={styles.topBarSpacer} />
       </View>
 
       <View style={styles.tabsRow}>
@@ -921,11 +924,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
-    justifyContent: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginHorizontal: -spacing.md,
     marginTop: -spacing.md,
     minHeight: 58,
     paddingHorizontal: spacing.md
+  },
+  topBarSpacer: {
+    width: 44
   },
   topBarTitle: {
     color: "#020617",

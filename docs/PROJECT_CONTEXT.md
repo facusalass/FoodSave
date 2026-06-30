@@ -218,6 +218,7 @@ npx expo start -c
 
 - El dashboard comercio vive en `frontend/app/(business)/dashboard.tsx` y usa una interfaz mobile alineada al sistema visual FoodSave: header claro, cards blancas, acentos naranja/verde, saludo del local, cierre del dia, metricas, boton de publicar excedente y accesos rapidos.
 - La navegacion business usa tabs inferiores con `Inicio`, `Publicar` y `Pedidos`.
+- El menu hamburguesa del comercio usa `BusinessSideMenu` y permite navegar a Inicio, Publicar excedente, Pedidos, Historial y Mi local; Estadisticas queda como placeholder y Cerrar sesion usa `AuthContext.logout`.
 - Las metricas del dashboard usan datos reales existentes: `GET /business/offers` para ofertas del comercio y `GET /reservations` para reservas del comercio.
 - El cierre `22:00 HS` queda como fallback temporal porque el frontend todavia no recibe perfil completo del comercio.
 - `Publicar` permite crear ofertas reales del comercio usando `POST /business/offers`; la carga de imagen queda como placeholder visual hasta definir selector/upload mobile.

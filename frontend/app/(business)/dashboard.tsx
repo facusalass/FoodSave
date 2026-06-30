@@ -4,7 +4,6 @@ import {
   ClipboardList,
   Clock,
   FileText,
-  Menu,
   Plus,
   Store
 } from "lucide-react-native";
@@ -18,6 +17,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
@@ -34,7 +34,7 @@ const FALLBACK_CLOSING_TIME = "22:00 HS";
 
 export default function BusinessDashboardScreen() {
   const router = useRouter();
-  const { logout, session } = useAuth();
+  const { session } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [businessLogoUrl, setBusinessLogoUrl] = useState("");
@@ -101,40 +101,14 @@ export default function BusinessDashboardScreen() {
     offers
   });
 
-  async function handleLogout() {
-    await logout();
-    router.replace("/(auth)/login");
-  }
-
   function showPlaceholder(message: string) {
     Alert.alert("Próximamente", message);
-  }
-
-  function handleMenuPress() {
-    Alert.alert("Panel local", "¿Querés cerrar sesión?", [
-      { text: "Volver", style: "cancel" },
-      {
-        onPress: () => {
-          void handleLogout();
-        },
-        style: "destructive",
-        text: "Cerrar sesión"
-      }
-    ]);
   }
 
   return (
     <ScreenContainer contentStyle={styles.content}>
       <View style={styles.topBar}>
-        <TouchableOpacity
-          accessibilityLabel="Abrir menú"
-          accessibilityRole="button"
-          activeOpacity={0.85}
-          onPress={handleMenuPress}
-          style={styles.topBarButton}
-        >
-          <Menu color={colors.text} size={24} />
-        </TouchableOpacity>
+        <BusinessMenuButton />
         <Text style={styles.topBarTitle}>Panel Local</Text>
         <BusinessNotificationsButton />
       </View>

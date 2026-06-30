@@ -2,7 +2,6 @@ import {
   Clock,
   ImagePlus,
   Info,
-  Menu,
   Minus,
   Plus
 } from "lucide-react-native";
@@ -17,6 +16,7 @@ import {
   View,
   type ViewStyle
 } from "react-native";
+import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
@@ -145,17 +145,7 @@ export default function BusinessPublishScreen() {
   return (
     <ScreenContainer contentStyle={styles.content}>
       <View style={styles.topBar}>
-        <TouchableOpacity
-          accessibilityLabel="Abrir menu"
-          accessibilityRole="button"
-          activeOpacity={0.85}
-          onPress={() =>
-            Alert.alert("Panel local", "El menu del comercio se habilitara pronto.")
-          }
-          style={styles.topBarButton}
-        >
-          <Menu color={colors.text} size={24} />
-        </TouchableOpacity>
+        <BusinessMenuButton />
         <Text style={styles.topBarTitle}>Panel Local</Text>
         <BusinessNotificationsButton />
       </View>
