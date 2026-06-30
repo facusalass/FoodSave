@@ -119,7 +119,7 @@ export async function createReservation(offerId: string, userId: string, quantit
     offerId: offer.id, businessId: offer.businessId, userId, quantity,
     totalPrice: offer.newPrice * quantity, code,
     confirmationCode: `#${code}`,
-    expiresAt: new Date(now.getTime() + 15 * 60 * 1000).toISOString(),
+    expiresAt: new Date(now.getTime() + 25 * 60 * 1000).toISOString(),
     status: "pending", createdAt: now.toISOString()
   };
 

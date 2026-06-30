@@ -11,7 +11,7 @@ type NotificationType = "reservation_created" | "reservation_expired" | "payment
 const templates: Record<NotificationType, { title: string; message: (code: string) => string }> = {
   reservation_created: {
     title: "Reserva creada",
-    message: (code) => `Tu reserva #${code} fue creada. Tenés 15 minutos para avisar el pago.`
+    message: (code) => `Tu reserva #${code} fue creada. Tenés 25 minutos para avisar el pago.`
   },
   reservation_expired: {
     title: "Reserva expirada",

@@ -2,8 +2,8 @@ import { listOffersRepo, listReservationsByBusiness } from "./repository.js";
 import type { BusinessDashboardStats, TopPublication } from "../types/statistics.js";
 
 export async function getBusinessDashboardStats(businessId: string): Promise<BusinessDashboardStats> {
-  const { items: reservations } = await listReservationsByBusiness(businessId);
-  const { items: offers } = await listOffersRepo();
+  const { items: reservations } = await listReservationsByBusiness(businessId, 1, 10000);
+  const { items: offers } = await listOffersRepo({ limit: 10000 });
 
   let totalRevenue = 0;
   let totalBoxesSold = 0;
@@ -11,6 +11,9 @@ export async function getBusinessDashboardStats(businessId: string): Promise<Bus
   let totalCancelled = 0;
 
   const publicationsMap: Record<string, { name: string; qty: number }> = {};
+  const weeklyRevenue = [0, 0, 0, 0];
+  const now = new Date();
+  const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
   for (const r of reservations) {
     if (r.status === "cancelled") {
@@ -22,8 +25,14 @@ export async function getBusinessDashboardStats(businessId: string): Promise<Bus
       totalRevenue += r.totalPrice;
       totalBoxesSold += r.quantity;
 
-      const offer = offers.find((o) => o.id === r.offerId);
+      // Agrupar por semana: 0 = esta semana, 1 = anterior, etc.
+      const createdAt = new Date(r.createdAt);
+      const weekIndex = Math.floor((now.getTime() - createdAt.getTime()) / oneWeek);
+      if (weekIndex >= 0 && weekIndex < 4) {
+        weeklyRevenue[weekIndex]! += r.totalPrice;
+      }
 
+      const offer = offers.find((o) => o.id === r.offerId);
       if (offer) {
         totalSavedKg += (offer.estimatedWeightInKg || 0) * r.quantity;
 
@@ -39,12 +48,5 @@ export async function getBusinessDashboardStats(businessId: string): Promise<Bus
     .map((p) => ({ offerName: p.name, quantitySold: p.qty }))
     .sort((a, b) => b.quantitySold - a.quantitySold);
 
-  const salesByWeek = [
-    totalRevenue * 0.15,
-    totalRevenue * 0.25,
-    totalRevenue * 0.20,
-    totalRevenue * 0.40
-  ];
-
-  return { totalRevenue, totalSavedKg, totalBoxesSold, totalCancelled, salesByWeek, topPublications };
+  return { totalRevenue, totalSavedKg, totalBoxesSold, totalCancelled, salesByWeek: weeklyRevenue.reverse(), topPublications };
 }

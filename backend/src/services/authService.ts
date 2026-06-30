@@ -41,7 +41,7 @@ export async function registerClient(params: {
     return { error: "Ya existe una cuenta con ese correo." };
   }
 
-  const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {

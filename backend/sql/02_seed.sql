@@ -25,6 +25,19 @@ INSERT INTO reservations (id, "offerId", "businessId", "userId", quantity, "tota
 ('reservation-3', 'offer-3', 'business-rotiseria', 'user-client-1', 2, 4000, 'FS-E8F', '#FS-E8F', 'picked_up', '2026-04-15T19:00:00.000Z'),
 ('reservation-4', 'offer-1', 'business-espiga', 'user-client-1', 1, 1500, 'FS-K9M', '#FS-K9M', 'cancelled', '2026-05-01T10:15:00.000Z');
 
+-- Ventas de las últimas 4 semanas para el dashboard (business-espiga)
+INSERT INTO reservations (id, "offerId", "businessId", "userId", quantity, "totalPrice", code, "confirmationCode", status, "createdAt") VALUES
+('res-espiga-w3-1', 'offer-1', 'business-espiga', 'user-client-1', 2, 3000, 'FS-W3A', '#FS-W3A', 'picked_up', '2026-06-14T14:00:00.000Z'),
+('res-espiga-w3-2', 'offer-1', 'business-espiga', 'user-client-1', 1, 1500, 'FS-W3B', '#FS-W3B', 'confirmed_paid', '2026-06-15T10:00:00.000Z'),
+('res-espiga-w3-3', 'offer-1', 'business-espiga', 'user-client-1', 3, 4500, 'FS-W3C', '#FS-W3C', 'cancelled', '2026-06-16T09:00:00.000Z'),
+('res-espiga-w2-1', 'offer-1', 'business-espiga', 'user-client-1', 1, 1500, 'FS-W2A', '#FS-W2A', 'picked_up', '2026-06-19T18:30:00.000Z'),
+('res-espiga-w2-2', 'offer-1', 'business-espiga', 'user-client-1', 2, 3000, 'FS-W2B', '#FS-W2B', 'picked_up', '2026-06-20T11:00:00.000Z'),
+('res-espiga-w2-3', 'offer-1', 'business-espiga', 'user-client-1', 1, 1500, 'FS-W2C', '#FS-W2C', 'picked_up', '2026-06-20T15:00:00.000Z'),
+('res-espiga-w2-4', 'offer-1', 'business-espiga', 'user-client-1', 2, 3000, 'FS-W2D', '#FS-W2D', 'confirmed_paid', '2026-06-21T08:00:00.000Z'),
+('res-espiga-w1-1', 'offer-1', 'business-espiga', 'user-client-1', 1, 1500, 'FS-W1A', '#FS-W1A', 'picked_up', '2026-06-26T12:00:00.000Z'),
+('res-espiga-w1-2', 'offer-1', 'business-espiga', 'user-client-1', 1, 1500, 'FS-W1B', '#FS-W1B', 'confirmed_paid', '2026-06-27T17:00:00.000Z'),
+('res-espiga-w0-1', 'offer-1', 'business-espiga', 'user-client-1', 3, 4500, 'FS-W0A', '#FS-W0A', 'picked_up', '2026-06-29T20:00:00.000Z');
+
 INSERT INTO favorites ("userId", "offerId") VALUES
 ('user-client-1', 'offer-1'),
 ('user-client-1', 'offer-3');
