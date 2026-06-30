@@ -59,6 +59,12 @@ export default function BusinessLayout() {
           )
         }}
       />
+      <Tabs.Screen
+        name="history"
+        options={{
+          href: null
+        }}
+      />
     </Tabs>
   );
 }

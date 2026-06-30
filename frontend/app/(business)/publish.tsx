@@ -1,4 +1,12 @@
-import { Bell, Clock, ImagePlus, Info, Menu, Minus, Plus } from "lucide-react-native";
+import {
+  Bell,
+  Clock,
+  ImagePlus,
+  Info,
+  Menu,
+  Minus,
+  Plus
+} from "lucide-react-native";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -7,7 +15,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  type ViewStyle
 } from "react-native";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
@@ -26,10 +35,18 @@ export default function BusinessPublishScreen() {
   const [stock, setStock] = useState(5);
   const [weight, setWeight] = useState("");
   const [allergens, setAllergens] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
   async function handlePublish() {
-    if (!session || isPublishing) {
+    if (isPublishing) {
+      return;
+    }
+
+    if (!session) {
+      showFormError(
+        "Tu sesion no esta activa. Volve a iniciar sesion como comercio para publicar."
+      );
       return;
     }
 
@@ -37,31 +54,44 @@ export default function BusinessPublishScreen() {
     const parsedOldPrice = parsePrice(oldPrice);
     const parsedNewPrice = parsePrice(newPrice);
     const parsedWeight = parseOptionalNumber(weight);
+    const weightWasCompleted = weight.trim().length > 0;
 
     if (!cleanTitle) {
-      Alert.alert("Falta informacion", "Ingresá una categoría o título.");
+      showFormError(
+        "Agrega un nombre para la publicacion. Ejemplo: Caja Panaderia."
+      );
       return;
     }
 
     if (!parsedOldPrice || parsedOldPrice <= 0) {
-      Alert.alert("Falta informacion", "Ingresá un precio original mayor a 0.");
+      showFormError("Ingresa el precio original. Tiene que ser mayor a $0.");
       return;
     }
 
     if (!parsedNewPrice || parsedNewPrice <= 0) {
-      Alert.alert("Falta informacion", "Ingresá un precio rebajado mayor a 0.");
+      showFormError("Ingresa el precio rebajado. Tiene que ser mayor a $0.");
       return;
     }
 
     if (parsedNewPrice >= parsedOldPrice) {
-      Alert.alert(
-        "Revisá los precios",
-        "El precio rebajado debe ser menor que el precio original."
+      showFormError("El precio rebajado debe ser menor que el precio original.");
+      return;
+    }
+
+    if (stock < 1) {
+      showFormError("El stock disponible debe ser de al menos 1 caja.");
+      return;
+    }
+
+    if (weightWasCompleted && parsedWeight === undefined) {
+      showFormError(
+        "Si cargas el peso aproximado, usa un numero valido. Ejemplo: 1 kg o 500 g."
       );
       return;
     }
 
     try {
+      setFormError(null);
       setIsPublishing(true);
       await createBusinessOffer(session.token, {
         allergens: parseAllergens(allergens),
@@ -77,13 +107,14 @@ export default function BusinessPublishScreen() {
         type
       });
 
-      Alert.alert("Oferta publicada", "El excedente se publicó correctamente.");
+      Alert.alert("Oferta publicada", "El excedente se publico correctamente.");
       resetForm();
     } catch (publishError) {
       const message =
         publishError instanceof Error
           ? publishError.message
-          : "No pudimos publicar el excedente.";
+          : "No pudimos publicar el excedente. Intentalo nuevamente.";
+      setFormError(message);
       Alert.alert("No pudimos publicar", message);
     } finally {
       setIsPublishing(false);
@@ -98,6 +129,17 @@ export default function BusinessPublishScreen() {
     setStock(5);
     setWeight("");
     setAllergens("");
+    setFormError(null);
+  }
+
+  function clearFormError() {
+    if (formError) {
+      setFormError(null);
+    }
+  }
+
+  function showFormError(message: string) {
+    setFormError(message);
   }
 
   return (
@@ -167,7 +209,10 @@ export default function BusinessPublishScreen() {
 
       <InputField
         label="Categoria / Titulo"
-        onChangeText={setTitle}
+        onChangeText={(value) => {
+          setTitle(value);
+          clearFormError();
+        }}
         placeholder="Ej: Caja Panaderia"
         value={title}
       />
@@ -177,7 +222,10 @@ export default function BusinessPublishScreen() {
           containerStyle={styles.priceField}
           keyboardType="numeric"
           label="Precio Original"
-          onChangeText={setOldPrice}
+          onChangeText={(value) => {
+            setOldPrice(value);
+            clearFormError();
+          }}
           placeholder="$"
           value={oldPrice}
         />
@@ -185,7 +233,10 @@ export default function BusinessPublishScreen() {
           containerStyle={styles.priceField}
           keyboardType="numeric"
           label="Precio Rebajado"
-          onChangeText={setNewPrice}
+          onChangeText={(value) => {
+            setNewPrice(value);
+            clearFormError();
+          }}
           placeholder="$"
           value={newPrice}
         />
@@ -198,7 +249,10 @@ export default function BusinessPublishScreen() {
             accessibilityLabel="Restar stock"
             accessibilityRole="button"
             activeOpacity={0.85}
-            onPress={() => setStock((current) => Math.max(1, current - 1))}
+            onPress={() => {
+              setStock((current) => Math.max(1, current - 1));
+              clearFormError();
+            }}
             style={styles.stockButton}
           >
             <Minus color={colors.text} size={20} />
@@ -208,7 +262,10 @@ export default function BusinessPublishScreen() {
             accessibilityLabel="Sumar stock"
             accessibilityRole="button"
             activeOpacity={0.85}
-            onPress={() => setStock((current) => current + 1)}
+            onPress={() => {
+              setStock((current) => current + 1);
+              clearFormError();
+            }}
             style={styles.stockButton}
           >
             <Plus color={colors.text} size={20} />
@@ -218,14 +275,20 @@ export default function BusinessPublishScreen() {
 
       <InputField
         label="Peso Aproximado (Opcional)"
-        onChangeText={setWeight}
+        onChangeText={(value) => {
+          setWeight(value);
+          clearFormError();
+        }}
         placeholder="Ej: 1 kg, 500 g, 2 porciones"
         value={weight}
       />
 
       <InputField
         label="Alergenos (Opcional)"
-        onChangeText={setAllergens}
+        onChangeText={(value) => {
+          setAllergens(value);
+          clearFormError();
+        }}
         placeholder="Ej: TACC, Lacteos..."
         value={allergens}
       />
@@ -244,11 +307,27 @@ export default function BusinessPublishScreen() {
         </Text>
       </View>
 
+      {formError ? (
+        <View style={styles.formErrorBox}>
+          <View style={styles.formErrorAccent} />
+          <View style={styles.formErrorIcon}>
+            <Info color={colors.primary} size={16} />
+          </View>
+          <View style={styles.formErrorContent}>
+            <Text style={styles.formErrorTitle}>Revisemos esta publicacion</Text>
+            <Text style={styles.formErrorText}>{formError}</Text>
+          </View>
+        </View>
+      ) : null}
+
       <TouchableOpacity
         activeOpacity={0.86}
-        disabled={isPublishing}
+        disabled={isPublishing || !session}
         onPress={handlePublish}
-        style={[styles.publishButton, isPublishing ? styles.publishButtonDisabled : null]}
+        style={[
+          styles.publishButton,
+          isPublishing || !session ? styles.publishButtonDisabled : null
+        ]}
       >
         {isPublishing ? (
           <ActivityIndicator color="#FFFFFF" />
@@ -290,7 +369,7 @@ function InputField({
   placeholder,
   value
 }: {
-  containerStyle?: object;
+  containerStyle?: ViewStyle;
   keyboardType?: "default" | "numeric";
   label: string;
   onChangeText: (value: string) => void;
@@ -340,6 +419,54 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     gap: spacing.sm
+  },
+  formErrorBox: {
+    alignItems: "flex-start",
+    backgroundColor: colors.card,
+    borderColor: "#FED7AA",
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    elevation: 2,
+    flexDirection: "row",
+    gap: spacing.sm,
+    overflow: "hidden",
+    padding: spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5
+  },
+  formErrorAccent: {
+    backgroundColor: colors.primary,
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+    top: 0,
+    width: 4
+  },
+  formErrorContent: {
+    flex: 1,
+    gap: 2,
+    paddingLeft: spacing.xs
+  },
+  formErrorIcon: {
+    alignItems: "center",
+    backgroundColor: "#FF6B3514",
+    borderRadius: 16,
+    height: 32,
+    justifyContent: "center",
+    marginLeft: spacing.xs,
+    width: 32
+  },
+  formErrorText: {
+    color: colors.mutedText,
+    fontSize: 13,
+    lineHeight: 19
+  },
+  formErrorTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "900"
   },
   imageBox: {
     alignItems: "center",

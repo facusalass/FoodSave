@@ -220,7 +220,8 @@ npx expo start -c
 - Las metricas del dashboard usan datos reales existentes: `GET /offers` filtrado por `businessId` para ofertas activas y `GET /reservations` para reservas del comercio.
 - El cierre `22:00 HS` queda como fallback temporal porque el frontend todavia no recibe perfil completo del comercio.
 - `Publicar` permite crear ofertas reales del comercio usando `POST /business/offers`; la carga de imagen queda como placeholder visual hasta definir selector/upload mobile.
-- `Historial`, `Estadisticas`, `Mi local` y notificaciones del comercio quedan como placeholders livianos; no se implementan endpoints nuevos.
+- `Historial` usa `GET /reservations` con token business, filtra localmente reservas cobradas/retiradas/canceladas por ultimos 7 dias, ultimo mes, rango de dias o todo el historial cargado, y calcula total cobrado excluyendo canceladas.
+- `Estadisticas`, `Mi local` y notificaciones del comercio quedan como placeholders livianos; no se implementan endpoints nuevos.
 - La pantalla `frontend/app/(business)/orders.tsx` muestra una lista basica de pedidos usando reservas existentes.
 - No se toca backend para esta fase.
 

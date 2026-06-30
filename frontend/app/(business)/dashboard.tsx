@@ -208,9 +208,7 @@ export default function BusinessDashboardScreen() {
                 accent="secondary"
                 icon={<FileText color={colors.secondaryDark} size={24} />}
                 label="Historial"
-                onPress={() =>
-                  showPlaceholder("El historial del comercio estará disponible pronto.")
-                }
+                onPress={() => router.push("/(business)/history")}
               />
               <QuickAction
                 accent="info"
