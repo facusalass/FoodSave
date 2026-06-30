@@ -1,5 +1,5 @@
 import { useFocusEffect } from "expo-router";
-import { Bell, Clock, Menu, Search } from "lucide-react-native";
+import { Clock, Menu, Search } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,6 +11,7 @@ import {
   View
 } from "react-native";
 import { EmptyState } from "../../src/components/EmptyState";
+import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -104,21 +105,7 @@ export default function BusinessOrdersScreen() {
           <Menu color={colors.text} size={24} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Pedidos Activos</Text>
-        <TouchableOpacity
-          accessibilityLabel="Ver notificaciones"
-          accessibilityRole="button"
-          activeOpacity={0.85}
-          onPress={() =>
-            Alert.alert(
-              "Proximamente",
-              "Las notificaciones del comercio se van a habilitar mas adelante."
-            )
-          }
-          style={styles.topBarButton}
-        >
-          <Bell color={colors.text} size={23} />
-          <View style={styles.notificationDot} />
-        </TouchableOpacity>
+        <BusinessNotificationsButton />
       </View>
 
       <View style={styles.searchBox}>

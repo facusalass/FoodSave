@@ -19,4 +19,7 @@ export type Offer = {
   address?: string;
   city?: string;
   imageUrl: string;
+  isVisible?: boolean;
+  createdAt?: string;
+  estimatedWeightInKg?: number;
 };

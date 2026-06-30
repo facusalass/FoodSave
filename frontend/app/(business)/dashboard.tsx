@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import {
   BarChart3,
-  Bell,
   ClipboardList,
   Clock,
   FileText,
@@ -18,10 +17,11 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
-import { getOffers } from "../../src/services/offerService";
+import { getBusinessOffers } from "../../src/services/offerService";
 import { getReservations } from "../../src/services/reservationService";
 import type { Offer } from "../../src/types/offer";
 import type { Reservation } from "../../src/types/reservation";
@@ -47,14 +47,10 @@ export default function BusinessDashboardScreen() {
         setError(null);
         setIsLoading(true);
         const [nextOffers, nextReservations] = await Promise.all([
-          getOffers(),
+          getBusinessOffers(session.token),
           getReservations(session.token)
         ]);
-        setOffers(
-          nextOffers.filter(
-            (offer) => offer.businessId === session.user.businessId
-          )
-        );
+        setOffers(nextOffers);
         setReservations(nextReservations);
       } catch (loadError) {
         const message =
@@ -71,7 +67,8 @@ export default function BusinessDashboardScreen() {
   }, [session]);
 
   const activeOffersCount = useMemo(() => {
-    return offers.filter((offer) => offer.stock > 0).length;
+    return offers.filter((offer) => offer.isVisible !== false && offer.stock > 0)
+      .length;
   }, [offers]);
 
   const todayReservationsCount = useMemo(() => {
@@ -132,20 +129,7 @@ export default function BusinessDashboardScreen() {
           <Menu color={colors.text} size={24} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Panel Local</Text>
-        <TouchableOpacity
-          accessibilityLabel="Ver notificaciones"
-          accessibilityRole="button"
-          activeOpacity={0.85}
-          onPress={() =>
-            showPlaceholder(
-              "Las notificaciones del comercio se van a habilitar más adelante."
-            )
-          }
-          style={styles.topBarButton}
-        >
-          <Bell color={colors.text} size={23} />
-          <View style={styles.notificationDot} />
-        </TouchableOpacity>
+        <BusinessNotificationsButton />
       </View>
 
       <View style={styles.hero}>

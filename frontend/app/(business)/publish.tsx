@@ -1,5 +1,4 @@
 import {
-  Bell,
   Clock,
   ImagePlus,
   Info,
@@ -18,6 +17,7 @@ import {
   View,
   type ViewStyle
 } from "react-native";
+import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -157,21 +157,7 @@ export default function BusinessPublishScreen() {
           <Menu color={colors.text} size={24} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Panel Local</Text>
-        <TouchableOpacity
-          accessibilityLabel="Ver notificaciones"
-          accessibilityRole="button"
-          activeOpacity={0.85}
-          onPress={() =>
-            Alert.alert(
-              "Proximamente",
-              "Las notificaciones del comercio se van a habilitar mas adelante."
-            )
-          }
-          style={styles.topBarButton}
-        >
-          <Bell color={colors.text} size={23} />
-          <View style={styles.notificationDot} />
-        </TouchableOpacity>
+        <BusinessNotificationsButton />
       </View>
 
       <Text style={styles.title}>Publicar Excedente</Text>

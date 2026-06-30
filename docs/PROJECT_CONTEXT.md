@@ -217,13 +217,13 @@ npx expo start -c
 
 - El dashboard comercio vive en `frontend/app/(business)/dashboard.tsx` y usa una interfaz mobile alineada al sistema visual FoodSave: header claro, cards blancas, acentos naranja/verde, saludo del local, cierre del dia, metricas, boton de publicar excedente y accesos rapidos.
 - La navegacion business usa tabs inferiores con `Inicio`, `Publicar` y `Pedidos`.
-- Las metricas del dashboard usan datos reales existentes: `GET /offers` filtrado por `businessId` para ofertas activas y `GET /reservations` para reservas del comercio.
+- Las metricas del dashboard usan datos reales existentes: `GET /business/offers` para ofertas del comercio y `GET /reservations` para reservas del comercio.
 - El cierre `22:00 HS` queda como fallback temporal porque el frontend todavia no recibe perfil completo del comercio.
 - `Publicar` permite crear ofertas reales del comercio usando `POST /business/offers`; la carga de imagen queda como placeholder visual hasta definir selector/upload mobile.
 - `Historial` usa `GET /reservations` con token business, filtra localmente reservas cobradas/retiradas/canceladas por ultimos 7 dias, ultimo mes, rango de dias o todo el historial cargado, y calcula total cobrado excluyendo canceladas.
-- `Mi local` permite editar datos basicos del comercio con `PUT /business/profile`; la lectura de perfil completo y datos de pago quedan pendientes de endpoint dedicado.
-- `Mi local > Publicaciones` lista ofertas del comercio usando `GET /offers` filtrado por `businessId`; editar y ocultar/mostrar quedan como placeholders porque falta endpoint/pantalla de visibilidad.
-- `Estadisticas` y notificaciones del comercio quedan como placeholders livianos; no se implementan endpoints nuevos.
+- `Mi local` carga y guarda datos del comercio con `GET /business/profile` y `PUT /business/profile`, incluyendo `paymentInfo` y `logoUrl`; la seleccion de logo queda pendiente de selector de imagen en frontend.
+- `Mi local > Publicaciones` lista ofertas del comercio con `GET /business/offers` y oculta/muestra usando `PATCH /business/offers/:id/visibility`; editar publicaciones queda como placeholder hasta tener pantalla de edicion.
+- `Estadisticas` queda como placeholder liviano; la campanita del comercio abre un modal conectado a `GET /notifications`. La pantalla completa y marcar leidas del comercio quedan pendientes hasta definir endpoints business-specific.
 - La pantalla `frontend/app/(business)/orders.tsx` muestra una lista basica de pedidos usando reservas existentes.
 - No se toca backend para esta fase.
 

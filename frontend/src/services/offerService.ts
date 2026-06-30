@@ -34,6 +34,29 @@ export type BusinessProfilePayload = {
   address?: string;
   closingTime?: string;
   logoUrl?: string;
+  paymentInfo?: {
+    ownerName: string;
+    cvu: string;
+    alias: string;
+  };
+};
+
+export type BusinessProfile = {
+  id: string;
+  name: string;
+  ownerId: string;
+  category: string;
+  description: string;
+  city: string;
+  address: string;
+  closingTime: string;
+  logoUrl?: string;
+  paymentInfo?: {
+    ownerName?: string;
+    cvu?: string;
+    alias?: string;
+  };
+  createdAt?: string;
 };
 
 export async function getOffers(options: GetOffersOptions = {}) {
@@ -73,11 +96,28 @@ export async function createBusinessOffer(
   return response.offer;
 }
 
+export async function getBusinessProfile(token: string) {
+  const response = await apiRequest<{ business: BusinessProfile }>(
+    "/business/profile",
+    { token }
+  );
+
+  return response.business;
+}
+
+export async function getBusinessOffers(token: string) {
+  const response = await apiRequest<{ offers: Offer[] }>("/business/offers", {
+    token
+  });
+
+  return response.offers;
+}
+
 export async function updateBusinessProfile(
   token: string,
   payload: BusinessProfilePayload
 ) {
-  const response = await apiRequest<{ business: BusinessProfilePayload }>(
+  const response = await apiRequest<{ business: BusinessProfile }>(
     "/business/profile",
     {
       body: JSON.stringify(payload),
@@ -87,4 +127,21 @@ export async function updateBusinessProfile(
   );
 
   return response.business;
+}
+
+export async function updateBusinessOfferVisibility(
+  token: string,
+  offerId: string,
+  isVisible: boolean
+) {
+  const response = await apiRequest<{ offer: Offer }>(
+    `/business/offers/${offerId}/visibility`,
+    {
+      body: JSON.stringify({ isVisible }),
+      method: "PATCH",
+      token
+    }
+  );
+
+  return response.offer;
 }

@@ -9,10 +9,11 @@ import {
   Plus,
   Upload
 } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -24,7 +25,9 @@ import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import {
-  getOffers,
+  getBusinessOffers,
+  getBusinessProfile,
+  updateBusinessOfferVisibility,
   updateBusinessProfile
 } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
@@ -32,7 +35,7 @@ import { formatCurrency } from "../../src/utils/formatCurrency";
 
 type StoreTab = "settings" | "publications";
 
-const FALLBACK_CLOSING_TIME = "10:00 PM";
+const DEFAULT_CLOSING_TIME = "22:00";
 const DEFAULT_CATEGORY = "Panaderia / Pasteleria";
 
 export default function BusinessStoreScreen() {
@@ -40,31 +43,52 @@ export default function BusinessStoreScreen() {
   const { session } = useAuth();
   const [activeTab, setActiveTab] = useState<StoreTab>("settings");
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingOffers, setIsLoadingOffers] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [offersError, setOffersError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [visibilityLoadingId, setVisibilityLoadingId] = useState<string | null>(
+    null
+  );
 
-  const businessOffers = useMemo(() => {
-    return offers.filter((offer) => offer.businessId === session?.user.businessId);
-  }, [offers, session?.user.businessId]);
-
-  const firstOffer = businessOffers[0];
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [description, setDescription] = useState("");
+  const [closingTime, setClosingTime] = useState(DEFAULT_CLOSING_TIME);
   const [holderName, setHolderName] = useState("");
   const [cvu, setCvu] = useState("");
-  const [bankAlias, setBankAlias] = useState("PANADERIA.ESPIGA");
+  const [bankAlias, setBankAlias] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
 
-  useEffect(() => {
-    if (!businessName) {
-      setBusinessName(firstOffer?.storeName ?? session?.user.name ?? "Panaderia La Espiga");
+  const loadProfile = useCallback(async () => {
+    if (!session) {
+      setIsLoadingProfile(false);
+      return;
     }
 
-    if (firstOffer?.category && category === DEFAULT_CATEGORY) {
-      setCategory(firstOffer.category);
+    try {
+      setProfileError(null);
+      setIsLoadingProfile(true);
+      const business = await getBusinessProfile(session.token);
+      setBusinessName(business.name ?? "");
+      setCategory(business.category ?? DEFAULT_CATEGORY);
+      setDescription(business.description ?? "");
+      setClosingTime(business.closingTime ?? DEFAULT_CLOSING_TIME);
+      setLogoUrl(business.logoUrl ?? "");
+      setHolderName(business.paymentInfo?.ownerName ?? "");
+      setCvu(business.paymentInfo?.cvu ?? "");
+      setBankAlias(business.paymentInfo?.alias ?? "");
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "No pudimos cargar los datos del local.";
+      setProfileError(message);
+    } finally {
+      setIsLoadingProfile(false);
     }
-  }, [businessName, category, firstOffer, session?.user.name]);
+  }, [session]);
 
   const loadOffers = useCallback(async () => {
     if (!session) {
@@ -75,7 +99,7 @@ export default function BusinessStoreScreen() {
     try {
       setOffersError(null);
       setIsLoadingOffers(true);
-      const nextOffers = await getOffers();
+      const nextOffers = await getBusinessOffers(session.token);
       setOffers(nextOffers);
     } catch (loadError) {
       const message =
@@ -90,8 +114,9 @@ export default function BusinessStoreScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      void loadProfile();
       void loadOffers();
-    }, [loadOffers])
+    }, [loadOffers, loadProfile])
   );
 
   async function handleSave() {
@@ -101,6 +126,10 @@ export default function BusinessStoreScreen() {
 
     const cleanName = businessName.trim();
     const cleanCategory = category.trim();
+    const cleanClosingTime = closingTime.trim();
+    const cleanHolderName = holderName.trim();
+    const cleanCvu = cvu.trim();
+    const cleanBankAlias = bankAlias.trim();
 
     if (!cleanName) {
       Alert.alert("Revisemos los datos", "El nombre del negocio es requerido.");
@@ -116,14 +145,20 @@ export default function BusinessStoreScreen() {
       setIsSaving(true);
       await updateBusinessProfile(session.token, {
         category: cleanCategory,
-        closingTime: FALLBACK_CLOSING_TIME,
+        closingTime: cleanClosingTime,
         description: description.trim(),
-        name: cleanName
+        logoUrl: logoUrl.trim() || undefined,
+        name: cleanName,
+        paymentInfo: {
+          alias: cleanBankAlias,
+          cvu: cleanCvu,
+          ownerName: cleanHolderName
+        }
       });
 
       Alert.alert(
         "Cambios guardados",
-        "Actualizamos los datos principales del local. Los datos de pago necesitan endpoint propio para guardarse."
+        "Actualizamos los datos del local."
       );
     } catch (saveError) {
       const message =
@@ -136,8 +171,48 @@ export default function BusinessStoreScreen() {
     }
   }
 
-  const activeCount = businessOffers.filter((offer) => offer.stock > 0).length;
-  const hiddenCount = businessOffers.filter((offer) => offer.stock <= 0).length;
+  function handleLogoPress() {
+    Alert.alert(
+      "Cargar logo",
+      "El backend ya permite subir imagenes, pero falta agregar un selector de imagen en la app para elegir el logo."
+    );
+  }
+
+  async function handleToggleVisibility(offer: Offer) {
+    if (!session || visibilityLoadingId) {
+      return;
+    }
+
+    const nextVisibility = offer.isVisible === false;
+
+    try {
+      setVisibilityLoadingId(offer.id);
+      const updatedOffer = await updateBusinessOfferVisibility(
+        session.token,
+        offer.id,
+        nextVisibility
+      );
+
+      setOffers((currentOffers) =>
+        currentOffers.map((currentOffer) =>
+          currentOffer.id === offer.id
+            ? { ...currentOffer, ...updatedOffer }
+            : currentOffer
+        )
+      );
+    } catch (visibilityError) {
+      const message =
+        visibilityError instanceof Error
+          ? visibilityError.message
+          : "No pudimos actualizar la publicacion.";
+      Alert.alert("No pudimos actualizar", message);
+    } finally {
+      setVisibilityLoadingId(null);
+    }
+  }
+
+  const activeCount = offers.filter((offer) => offer.isVisible !== false).length;
+  const hiddenCount = offers.filter((offer) => offer.isVisible === false).length;
 
   return (
     <ScreenContainer contentStyle={styles.content}>
@@ -158,19 +233,26 @@ export default function BusinessStoreScreen() {
         />
       </View>
 
-      {activeTab === "settings" ? (
+      {activeTab === "settings" && isLoadingProfile ? (
+        <View style={styles.loadingBlock}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={styles.loadingText}>Cargando datos del local...</Text>
+        </View>
+      ) : activeTab === "settings" && profileError && !businessName ? (
+        <EmptyState title="No pudimos cargar el local" description={profileError} />
+      ) : activeTab === "settings" ? (
         <View style={styles.form}>
+          {profileError ? <Text style={styles.errorText}>{profileError}</Text> : null}
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() =>
-              Alert.alert(
-                "Proximamente",
-                "La carga de logo se conectara cuando definamos el selector de imagenes."
-              )
-            }
+            onPress={handleLogoPress}
             style={styles.logoBox}
           >
-            <Upload color="#94A3B8" size={34} />
+            {logoUrl ? (
+              <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
+            ) : (
+              <Upload color="#94A3B8" size={34} />
+            )}
             <Text style={styles.logoText}>Cargar Logo</Text>
           </TouchableOpacity>
 
@@ -210,7 +292,13 @@ export default function BusinessStoreScreen() {
           <View style={styles.closingCard}>
             <View>
               <Text style={styles.closingLabel}>Horario de Cierre</Text>
-              <Text style={styles.closingTime}>{FALLBACK_CLOSING_TIME}</Text>
+              <TextInput
+                onChangeText={setClosingTime}
+                placeholder="22:00"
+                placeholderTextColor="#94A3B8"
+                style={styles.closingTimeInput}
+                value={closingTime}
+              />
             </View>
             <View style={styles.clockBox}>
               <Clock color={colors.primary} size={30} />
@@ -279,12 +367,17 @@ export default function BusinessStoreScreen() {
             </View>
           ) : offersError ? (
             <EmptyState title="No pudimos cargar publicaciones" description={offersError} />
-          ) : businessOffers.length === 0 ? (
+          ) : offers.length === 0 ? (
             <EmptyState title="Todavia no hay publicaciones para este local." />
           ) : (
             <View style={styles.offerList}>
-              {businessOffers.map((offer) => (
-                <PublicationCard key={offer.id} offer={offer} />
+              {offers.map((offer) => (
+                <PublicationCard
+                  key={offer.id}
+                  isUpdatingVisibility={visibilityLoadingId === offer.id}
+                  offer={offer}
+                  onToggleVisibility={handleToggleVisibility}
+                />
               ))}
             </View>
           )}
@@ -358,19 +451,28 @@ function Chip({ accent, label }: { accent?: "primary"; label: string }) {
   );
 }
 
-function PublicationCard({ offer }: { offer: Offer }) {
-  const isHidden = offer.stock <= 0;
+function PublicationCard({
+  isUpdatingVisibility,
+  offer,
+  onToggleVisibility
+}: {
+  isUpdatingVisibility: boolean;
+  offer: Offer;
+  onToggleVisibility: (offer: Offer) => void;
+}) {
+  const isHidden = offer.isVisible === false;
+  const isMuted = isHidden || offer.stock <= 0;
 
   return (
     <View style={[styles.publicationCard, isHidden ? styles.publicationCardHidden : null]}>
       <View style={styles.publicationInfo}>
-        <Text style={[styles.offerTitle, isHidden ? styles.hiddenText : null]}>
+        <Text style={[styles.offerTitle, isMuted ? styles.hiddenText : null]}>
           {offer.title}
         </Text>
-        <Text style={[styles.offerPrice, isHidden ? styles.hiddenPrice : null]}>
+        <Text style={[styles.offerPrice, isMuted ? styles.hiddenPrice : null]}>
           {formatCurrency(offer.newPrice)}
         </Text>
-        <Text style={[styles.offerStock, isHidden ? styles.hiddenText : null]}>
+        <Text style={[styles.offerStock, isMuted ? styles.hiddenText : null]}>
           Stock: {offer.stock}
         </Text>
       </View>
@@ -382,28 +484,39 @@ function PublicationCard({ offer }: { offer: Offer }) {
           }
         />
         <IconButton
+          disabled={isUpdatingVisibility}
           icon={
-            isHidden ? (
+            isUpdatingVisibility ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : isHidden ? (
               <EyeOff color="#94A3B8" size={20} />
             ) : (
               <Eye color={colors.secondary} size={20} />
             )
           }
-          onPress={() =>
-            Alert.alert(
-              "Proximamente",
-              "Para ocultar o mostrar publicaciones falta un endpoint de visibilidad."
-            )
-          }
+          onPress={() => onToggleVisibility(offer)}
         />
       </View>
     </View>
   );
 }
 
-function IconButton({ icon, onPress }: { icon: ReactNode; onPress: () => void }) {
+function IconButton({
+  disabled,
+  icon,
+  onPress
+}: {
+  disabled?: boolean;
+  icon: ReactNode;
+  onPress: () => void;
+}) {
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.iconButton}>
+    <TouchableOpacity
+      activeOpacity={0.85}
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.iconButton, disabled ? styles.disabledButton : null]}
+    >
       {icon}
     </TouchableOpacity>
   );
@@ -462,16 +575,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800"
   },
-  closingTime: {
+  closingTimeInput: {
     color: "#020617",
     fontSize: 30,
-    fontWeight: "900"
+    fontWeight: "900",
+    minHeight: 42,
+    minWidth: 120,
+    padding: 0
   },
   content: {
     gap: spacing.md
   },
   disabledButton: {
     opacity: 0.72
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: "800"
   },
   fieldGroup: {
     gap: spacing.sm
@@ -534,6 +655,11 @@ const styles = StyleSheet.create({
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.06,
     shadowRadius: 5
+  },
+  logoPreview: {
+    borderRadius: radii.md,
+    height: 72,
+    width: 72
   },
   logoText: {
     color: colors.text,
