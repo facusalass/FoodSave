@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { SplashLoading } from "../../src/components/SplashLoading";
 import { TextInputField } from "../../src/components/TextInputField";
@@ -176,10 +177,7 @@ export default function LoginScreen() {
             ]}
           >
             <View style={styles.googleLogo}>
-              <Text style={styles.googleMark}>G</Text>
-              <View style={[styles.googleAccent, styles.googleAccentRed]} />
-              <View style={[styles.googleAccent, styles.googleAccentYellow]} />
-              <View style={[styles.googleAccent, styles.googleAccentGreen]} />
+              <GoogleLogo />
             </View>
             {isGoogleSubmitting ? (
               <ActivityIndicator color={colors.text} />
@@ -273,6 +271,29 @@ function getHomeRoute(role: "client" | "business") {
   return role === "business" ? "/(business)/dashboard" : "/(client)/home";
 }
 
+function GoogleLogo() {
+  return (
+    <Svg height={22} viewBox="0 0 48 48" width={22}>
+      <Path
+        d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 3.1l6-6C34.4 4.7 29.5 2.5 24 2.5 12.1 2.5 2.5 12.1 2.5 24S12.1 45.5 24 45.5c11 0 21-8 21-21.5 0-1.5-.2-2.8-.5-4z"
+        fill="#FFC107"
+      />
+      <Path
+        d="M5.8 14.1l7 5.1C14.7 14.5 19 11 24 11c3.1 0 5.9 1.1 8.1 3.1l6-6C34.4 4.7 29.5 2.5 24 2.5c-7.8 0-14.6 4.4-18.2 11.6z"
+        fill="#FF3D00"
+      />
+      <Path
+        d="M24 45.5c5.4 0 10.2-1.8 13.9-5.1l-6.4-5.4C29.5 36.3 26.9 37 24 37c-6 0-10.6-3-12.4-7.5l-7 5.4C8 41.4 15.4 45.5 24 45.5z"
+        fill="#4CAF50"
+      />
+      <Path
+        d="M44.5 20H24v8.5h11.8c-.5 2.5-2 4.8-4.3 6.5l6.4 5.4C41.6 37 45 31.5 45 24c0-1.5-.2-2.8-.5-4z"
+        fill="#1976D2"
+      />
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
   brandAccent: {
     color: colors.primary,
@@ -340,56 +361,33 @@ const styles = StyleSheet.create({
   googleButton: {
     alignItems: "center",
     backgroundColor: colors.card,
-    borderColor: colors.border,
+    borderColor: "#E2E8F0",
     borderRadius: radii.md,
     borderWidth: 1,
+    elevation: 2,
     flexDirection: "row",
-    gap: spacing.md,
-    height: 50,
-    justifyContent: "center"
-  },
-  googleAccent: {
-    borderRadius: 2,
-    height: 4,
-    position: "absolute",
-    width: 4
-  },
-  googleAccentGreen: {
-    backgroundColor: "#34A853",
-    bottom: 4,
-    right: 5
-  },
-  googleAccentRed: {
-    backgroundColor: "#EA4335",
-    left: 5,
-    top: 4
-  },
-  googleAccentYellow: {
-    backgroundColor: "#FBBC05",
-    bottom: 4,
-    left: 7
+    gap: spacing.sm,
+    height: 54,
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5
   },
   googleLogo: {
     alignItems: "center",
-    backgroundColor: colors.card,
+    backgroundColor: "#FFFFFF",
     borderColor: colors.border,
-    borderRadius: 15,
+    borderRadius: 17,
     borderWidth: 1,
-    height: 30,
+    height: 34,
     justifyContent: "center",
-    position: "relative",
-    width: 30
-  },
-  googleMark: {
-    color: "#4285F4",
-    fontSize: 18,
-    fontWeight: "900",
-    letterSpacing: 0
+    width: 34
   },
   googleText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "800",
+    color: "#0F172A",
+    fontSize: 14,
+    fontWeight: "900",
     letterSpacing: 0
   },
   keyboard: {
