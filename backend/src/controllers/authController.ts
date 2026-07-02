@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { supabase } from "../config/supabase.js";
-import { googleLogin, login, registerClient } from "../services/authService.js";
+import { googleLogin, login, registerBusiness, registerClient } from "../services/authService.js";
 import { findUserByEmail } from "../services/repository.js";
 import type { RegisterError, EmailConfirmationPending } from "../services/authService.js";
 
@@ -55,6 +55,23 @@ export async function googleLoginController(request: Request, response: Response
 
 export function meController(request: Request, response: Response) {
   response.json({ success: true, data: { user: request.user } });
+}
+
+export async function registerBusinessController(request: Request, response: Response) {
+  const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName } = request.body as {
+    email?: string; password?: string; businessName?: string; businessAddress?: string;
+    businessCategory?: string; businessCity?: string; ownerName?: string;
+  };
+
+  if (!email || !password || !businessName || !businessAddress || !businessCategory || !ownerName) {
+    return fail(response, 400, "Faltan campos requeridos: email, password, businessName, businessAddress, businessCategory, ownerName.");
+  }
+
+  if (password.length < 6) return fail(response, 400, "La contrasena debe tener al menos 6 caracteres.");
+
+  handleRegisterResult(await registerBusiness({
+    email, password, businessName, businessAddress, businessCategory, businessCity, ownerName
+  }), response, 201);
 }
 
 export async function resetPasswordController(request: Request, response: Response) {

@@ -1,9 +1,9 @@
 import { OAuth2Client } from "google-auth-library";
 import { env } from "../config/env.js";
 import { supabase } from "../config/supabase.js";
-import { findUserByEmail, findUserById } from "./repository.js";
+import { findUserByEmail, findUserById, createBusinessRepo } from "./repository.js";
 import { toPublicUser } from "../utils/publicUser.js";
-import type { AuthSession, PublicUser, UserRole } from "../types/auth.js";
+import type { AuthSession, Business, PublicUser, UserRole } from "../types/auth.js";
 
 const googleClient = new OAuth2Client();
 
@@ -45,7 +45,7 @@ export async function registerClient(params: {
     return { error: "Ya existe una cuenta con ese correo." };
   }
 
-    const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -182,4 +182,62 @@ async function verifyGoogleIdToken(idToken: string): Promise<
   } catch {
     return { error: "No pudimos validar tu cuenta de Google." };
   }
+}
+
+export async function registerBusiness(params: {
+  email: string;
+  password: string;
+  businessName: string;
+  businessAddress: string;
+  businessCategory: string;
+  businessCity?: string;
+  ownerName: string;
+}): Promise<RegisterResult | RegisterError | EmailConfirmationPending> {
+  const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName } = params;
+  const normalizedEmail = email.toLowerCase();
+
+  const existing = await findUserByEmail(normalizedEmail);
+  if (existing) return { error: "Ya existe una cuenta con ese correo." };
+
+  const now = new Date().toISOString();
+  const businessId = `business-${Date.now()}`;
+
+  const newBusiness: Business = {
+    id: businessId,
+    name: businessName,
+    ownerId: "",
+    category: businessCategory,
+    description: "",
+    city: businessCity ?? "",
+    address: businessAddress,
+    closingTime: "22:00",
+    paymentInfo: {
+      ownerName,
+      cvu: `000000310001${String(Date.now()).slice(0, 10)}`,
+      alias: `${businessName.replace(/\s+/g, ".").toUpperCase()}`
+    },
+    createdAt: now
+  };
+
+  await createBusinessRepo(newBusiness);
+
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizedEmail,
+    password,
+    options: {
+      data: { name: ownerName, role: "business", businessId, phone: "" }
+    }
+  });
+
+  if (error) return { error: normalizeSignUpError(error.message) };
+  if (!data.session || !data.user) return { emailConfirmationRequired: true, message: "Revisá tu correo para confirmar la cuenta." };
+
+  await supabase.from("businesses").update({ ownerId: data.user.id }).eq("id", businessId);
+
+  const user = await findUserById(data.user.id);
+
+  return {
+    token: data.session.access_token,
+    user: user ? toPublicUser(user) : buildUserFromAuth(data.user, ownerName, "business")
+  };
 }
