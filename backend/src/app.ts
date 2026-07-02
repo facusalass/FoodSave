@@ -1,6 +1,5 @@
 import cors from "cors";
 import express from "express";
-import { env } from "./config/env.js";
 import {
   errorHandler,
   notFoundHandler
@@ -17,12 +16,7 @@ import { uploadRoutes } from "./routes/uploadRoutes.js";
 
 export const app = express();
 
-app.use(
-  cors({
-    origin: env.frontendOrigin,
-    credentials: true
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 app.get("/health", (_request, response) => {
