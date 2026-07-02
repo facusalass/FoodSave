@@ -220,8 +220,8 @@ npx expo start -c
 - La navegacion business usa tabs inferiores con `Inicio`, `Publicar` y `Pedidos`.
 - El menu hamburguesa del comercio usa `BusinessSideMenu` y permite navegar a Inicio, Publicar excedente, Pedidos, Historial, Estadisticas y Mi local; Cerrar sesion usa `AuthContext.logout`.
 - Las metricas del dashboard usan datos reales existentes: `GET /business/offers` para ofertas del comercio y `GET /reservations` para reservas del comercio.
-- El cierre `22:00 HS` queda como fallback temporal porque el frontend todavia no recibe perfil completo del comercio.
-- `Publicar` permite crear ofertas reales del comercio usando `POST /business/offers`; la carga de imagen queda como placeholder visual hasta definir selector/upload mobile.
+- El cierre del dia sale de `GET /business/profile` y se guarda desde Mi local como `closingTime` en formato `HH:mm`.
+- `Publicar` permite crear ofertas reales del comercio usando `POST /business/offers`; el limite de retiro usa el horario de cierre real del perfil. La carga de imagen queda como placeholder visual hasta definir selector/upload mobile.
 - `Historial` usa `GET /reservations` con token business, filtra localmente reservas cobradas/retiradas/canceladas por ultimos 7 dias, ultimo mes, rango de dias o todo el historial cargado, y calcula total cobrado excluyendo canceladas.
 - `Mi local` carga y guarda datos del comercio con `GET /business/profile` y `PUT /business/profile`, incluyendo `paymentInfo` y `logoUrl`; el logo se selecciona con `expo-image-picker`, se sube con `POST /upload/image` y se guarda como `logoUrl`.
 - `Mi local > Publicaciones` lista ofertas del comercio con `GET /business/offers` y oculta/muestra usando `PATCH /business/offers/:id/visibility`; editar publicaciones queda como placeholder hasta tener pantalla de edicion.

@@ -17,6 +17,7 @@ export type OfferWithBusinessData = Offer & {
   storeName: string;
   storeAddress: string;
   logoUrl: string | undefined;
+  businessClosingTime: string | undefined;
 };
 
 export async function enrichOfferWithBusiness(
@@ -25,6 +26,7 @@ export async function enrichOfferWithBusiness(
   const business = await findBusinessById(offer.businessId);
   return {
     ...offer,
+    businessClosingTime: business?.closingTime,
     storeName: business?.name ?? "Comercio no encontrado",
     storeAddress: business?.address ?? "",
     logoUrl: business?.logoUrl

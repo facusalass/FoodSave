@@ -9,6 +9,7 @@ import {
 import { colors, radii, spacing } from "../constants/theme";
 import type { Offer } from "../types/offer";
 import { formatCurrency } from "../utils/formatCurrency";
+import { getOfferPickupText } from "../utils/offerPickup";
 
 type OfferCardProps = {
   offer: Offer;
@@ -69,7 +70,7 @@ export function OfferCard({
         <View style={styles.footer}>
           <View style={styles.metaItem}>
             <Clock color={colors.mutedText} size={15} />
-            <Text style={styles.metaText}>{offer.pickupWindow}</Text>
+            <Text style={styles.metaText}>{getOfferPickupText(offer)}</Text>
           </View>
           <TouchableOpacity
             activeOpacity={0.85}

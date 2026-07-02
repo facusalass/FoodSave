@@ -6,6 +6,8 @@ export type Offer = {
   storeName: string;
   storeAddress: string;
   logoUrl?: string;
+  businessClosingTime?: string;
+  closingTime?: string;
   title: string;
   description: string;
   category: string;

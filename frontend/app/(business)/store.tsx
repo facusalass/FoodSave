@@ -34,11 +34,17 @@ import {
   uploadImage
 } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
+import {
+  formatClosingTimeDisplay,
+  isValidClosingTime,
+  maskClosingTimeInput,
+  normalizeClosingTime
+} from "../../src/utils/closingTime";
 import { formatCurrency } from "../../src/utils/formatCurrency";
 
 type StoreTab = "settings" | "publications";
 
-const DEFAULT_CLOSING_TIME = "22:00";
+const DEFAULT_CLOSING_TIME = "";
 const DEFAULT_CATEGORY = "Panaderia / Pasteleria";
 const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
 
@@ -79,7 +85,7 @@ export default function BusinessStoreScreen() {
       setBusinessName(business.name ?? "");
       setCategory(business.category ?? DEFAULT_CATEGORY);
       setDescription(business.description ?? "");
-      setClosingTime(business.closingTime ?? DEFAULT_CLOSING_TIME);
+      setClosingTime(normalizeClosingTime(business.closingTime) ?? DEFAULT_CLOSING_TIME);
       setLogoUrl(business.logoUrl ?? "");
       setHolderName(business.paymentInfo?.ownerName ?? "");
       setCvu(business.paymentInfo?.cvu ?? "");
@@ -131,7 +137,7 @@ export default function BusinessStoreScreen() {
 
     const cleanName = businessName.trim();
     const cleanCategory = category.trim();
-    const cleanClosingTime = closingTime.trim();
+    const cleanClosingTime = normalizeClosingTime(closingTime);
     const cleanHolderName = holderName.trim();
     const cleanCvu = cvu.trim();
     const cleanBankAlias = bankAlias.trim();
@@ -143,6 +149,14 @@ export default function BusinessStoreScreen() {
 
     if (!cleanCategory) {
       Alert.alert("Revisemos los datos", "El rubro o categoria es requerido.");
+      return;
+    }
+
+    if (!cleanClosingTime || !isValidClosingTime(cleanClosingTime)) {
+      Alert.alert(
+        "Revisemos el horario",
+        "Carga un horario de cierre valido en formato HH:mm. Ejemplo: 22:00."
+      );
       return;
     }
 
@@ -366,13 +380,25 @@ export default function BusinessStoreScreen() {
           <View style={styles.closingCard}>
             <View>
               <Text style={styles.closingLabel}>Horario de Cierre</Text>
-              <TextInput
-                onChangeText={setClosingTime}
-                placeholder="22:00"
-                placeholderTextColor="#94A3B8"
-                style={styles.closingTimeInput}
-                value={closingTime}
-              />
+              <View style={styles.closingInputRow}>
+                <TextInput
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  onChangeText={(value) =>
+                    setClosingTime((current) =>
+                      maskClosingTimeInput(value, current)
+                    )
+                  }
+                  placeholder="22:00"
+                  placeholderTextColor="#94A3B8"
+                  style={styles.closingTimeInput}
+                  value={closingTime}
+                />
+                <Text style={styles.closingSuffix}>hs</Text>
+              </View>
+              <Text style={styles.closingHint}>
+                Se guarda como {formatClosingTimeDisplay(closingTime)}
+              </Text>
             </View>
             <View style={styles.clockBox}>
               <Clock color={colors.primary} size={30} />
@@ -666,6 +692,21 @@ const styles = StyleSheet.create({
     color: colors.mutedText,
     fontSize: 14,
     fontWeight: "800"
+  },
+  closingHint: {
+    color: colors.mutedText,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  closingInputRow: {
+    alignItems: "baseline",
+    flexDirection: "row",
+    gap: spacing.xs
+  },
+  closingSuffix: {
+    color: "#020617",
+    fontSize: 18,
+    fontWeight: "900"
   },
   closingTimeInput: {
     color: "#020617",

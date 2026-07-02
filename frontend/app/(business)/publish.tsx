@@ -5,7 +5,7 @@ import {
   Minus,
   Plus
 } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,10 +21,15 @@ import { BusinessNotificationsButton } from "../../src/components/business/Busin
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
-import { createBusinessOffer } from "../../src/services/offerService";
+import {
+  createBusinessOffer,
+  getBusinessProfile
+} from "../../src/services/offerService";
 import type { OfferType } from "../../src/types/offer";
-
-const PICKUP_LIMIT = "22:00 hs";
+import {
+  formatClosingTimeDisplay,
+  normalizeClosingTime
+} from "../../src/utils/closingTime";
 
 export default function BusinessPublishScreen() {
   const { session } = useAuth();
@@ -35,8 +40,39 @@ export default function BusinessPublishScreen() {
   const [stock, setStock] = useState(5);
   const [weight, setWeight] = useState("");
   const [allergens, setAllergens] = useState("");
+  const [businessClosingTime, setBusinessClosingTime] = useState<string | null>(
+    null
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBusinessClosingTime() {
+      if (!session) {
+        return;
+      }
+
+      try {
+        const business = await getBusinessProfile(session.token);
+
+        if (isMounted) {
+          setBusinessClosingTime(normalizeClosingTime(business.closingTime));
+        }
+      } catch {
+        if (isMounted) {
+          setBusinessClosingTime(null);
+        }
+      }
+    }
+
+    void loadBusinessClosingTime();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session]);
 
   async function handlePublish() {
     if (isPublishing) {
@@ -55,6 +91,8 @@ export default function BusinessPublishScreen() {
     const parsedNewPrice = parsePrice(newPrice);
     const parsedWeight = parseOptionalNumber(weight);
     const weightWasCompleted = weight.trim().length > 0;
+    const pickupLimit = normalizeClosingTime(businessClosingTime);
+    const pickupLimitLabel = formatClosingTimeDisplay(pickupLimit);
 
     if (!cleanTitle) {
       showFormError(
@@ -100,8 +138,12 @@ export default function BusinessPublishScreen() {
         estimatedWeightInKg: parsedWeight,
         newPrice: parsedNewPrice,
         oldPrice: parsedOldPrice,
-        pickupLimit: PICKUP_LIMIT,
-        pickupWindow: `Retirar antes de las ${PICKUP_LIMIT}`,
+        ...(pickupLimit
+          ? {
+              pickupLimit: pickupLimitLabel,
+              pickupWindow: `Retirar antes de las ${pickupLimitLabel}`
+            }
+          : {}),
         stock,
         title: cleanTitle,
         type
@@ -276,7 +318,9 @@ export default function BusinessPublishScreen() {
         </View>
         <View style={styles.limitTimeRow}>
           <Clock color={colors.primary} size={24} />
-          <Text style={styles.limitTime}>{PICKUP_LIMIT}</Text>
+          <Text style={styles.limitTime}>
+            {formatClosingTimeDisplay(businessClosingTime)}
+          </Text>
         </View>
         <Text style={styles.limitHint}>
           Basado en el horario de cierre de tu local

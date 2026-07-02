@@ -29,6 +29,7 @@ import { getOfferById } from "../../../src/services/offerService";
 import { createReservation } from "../../../src/services/reservationService";
 import type { Offer } from "../../../src/types/offer";
 import { formatCurrency } from "../../../src/utils/formatCurrency";
+import { getOfferPickupText } from "../../../src/utils/offerPickup";
 
 export default function OfferDetailScreen() {
   const router = useRouter();
@@ -222,7 +223,7 @@ export default function OfferDetailScreen() {
         <InfoItem
           icon={<Clock color={colors.secondary} size={19} />}
           label="Horario de retiro"
-          value={offer.pickupWindow}
+          value={getOfferPickupText(offer)}
         />
         <InfoItem
           icon={<MapPin color={colors.secondary} size={19} />}

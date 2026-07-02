@@ -28,8 +28,7 @@ import {
 import { getReservations } from "../../src/services/reservationService";
 import type { Offer } from "../../src/types/offer";
 import type { Reservation } from "../../src/types/reservation";
-
-const FALLBACK_CLOSING_TIME = "22:00 HS";
+import { formatClosingTimeDisplay } from "../../src/utils/closingTime";
 
 export default function BusinessDashboardScreen() {
   const router = useRouter();
@@ -37,6 +36,9 @@ export default function BusinessDashboardScreen() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [businessLogoUrl, setBusinessLogoUrl] = useState("");
+  const [businessClosingTime, setBusinessClosingTime] = useState<string | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +60,7 @@ export default function BusinessDashboardScreen() {
         setOffers(nextOffers);
         setReservations(nextReservations);
         setBusinessLogoUrl(businessProfile.logoUrl ?? "");
+        setBusinessClosingTime(businessProfile.closingTime ?? null);
       } catch (loadError) {
         const message =
           loadError instanceof Error
@@ -122,7 +125,7 @@ export default function BusinessDashboardScreen() {
         <View style={styles.closingBadge}>
           <Clock color={colors.secondaryDark} size={14} />
           <Text style={styles.closingText}>
-            Cierre hoy: {FALLBACK_CLOSING_TIME.toLowerCase()}
+            Cierre hoy: {formatClosingTimeDisplay(businessClosingTime)}
           </Text>
         </View>
       </View>
