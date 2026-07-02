@@ -138,7 +138,7 @@ export default function OfferDetailScreen() {
     } catch {
       setIsFavorite(!nextIsFavorite);
       setFavoriteError(
-        "No pudimos actualizar favoritos. Intentá de nuevo cuando el backend esté listo."
+        "No pudimos actualizar tus favoritos. Intenta de nuevo en unos segundos."
       );
     }
   }

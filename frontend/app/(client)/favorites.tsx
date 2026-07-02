@@ -38,9 +38,7 @@ export default function ClientFavoritesScreen() {
       const nextFavorites = await getFavorites(session.token);
       setFavorites(nextFavorites);
     } catch {
-      setError(
-        "No pudimos cargar tus favoritos por ahora. Cuando el backend conecte /favorites, van a aparecer aca."
-      );
+      setError("No pudimos cargar tus favoritos en este momento.");
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +78,7 @@ export default function ClientFavoritesScreen() {
     } catch {
       setFavorites(previousFavorites);
       setActionError(
-        "No pudimos quitar este favorito. Intentá de nuevo cuando el backend esté listo."
+        "No pudimos quitar este favorito. Intenta de nuevo en unos segundos."
       );
     }
   }
@@ -106,8 +104,8 @@ export default function ClientFavoritesScreen() {
         <EmptyState title="No pudimos cargar favoritos" description={error} />
       ) : favorites.length === 0 ? (
         <EmptyState
-          description="Guardá ofertas con el corazón para encontrarlas rápido."
-          title="Todavía no agregaste favoritos."
+          description="Guarda ofertas con el corazon para encontrarlas rapido."
+          title="Todavia no agregaste favoritos."
         />
       ) : (
         <View style={styles.list}>

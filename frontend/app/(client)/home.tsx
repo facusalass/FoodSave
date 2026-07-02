@@ -192,7 +192,7 @@ export default function ClientHomeScreen() {
         toggleFavoriteId(currentFavoriteIds, offer.id, !nextIsFavorite)
       );
       setFavoriteError(
-        "No pudimos actualizar favoritos. Intenta de nuevo cuando el backend este listo."
+        "No pudimos actualizar tus favoritos. Intenta de nuevo en unos segundos."
       );
     }
   }

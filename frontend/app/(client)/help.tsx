@@ -167,8 +167,8 @@ export default function ClientHelpScreen() {
           <Text style={styles.bodyText}>{SUPPORT_EMAIL}</Text>
         </View>
         <Text style={styles.helperText}>
-          Por ahora no hay chat real integrado. Este contacto queda como soporte
-          mock para la demo.
+          Si necesitas ayuda, escribinos a este correo y te respondemos a la
+          brevedad.
         </Text>
       </HelpCard>
     </ScreenContainer>

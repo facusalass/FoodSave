@@ -157,18 +157,18 @@ npx expo start -c
 - El flujo cliente usa Expo Router Tabs en `frontend/app/(client)/_layout.tsx`.
 - Tabs visibles: `Explorar` (`home.tsx`), `Mis reservas` (`reservations.tsx`) y `Perfil` (`profile.tsx`).
 - El detalle de oferta vive en `frontend/app/(client)/offer/[id].tsx` y queda oculto en la barra inferior.
-- `Explorar` consume `GET /offers` mediante `frontend/src/services/offerService.ts`; las ofertas mock principales viven en el backend.
+- `Explorar` consume `GET /offers` mediante `frontend/src/services/offerService.ts`.
 - Las cards y el detalle de oferta muestran `logoUrl` del comercio cuando el backend lo incluye en las ofertas enriquecidas.
 - `Mis reservas` consume `GET /reservations` mediante `frontend/src/services/reservationService.ts` usando el token de sesion.
-- El detalle de oferta permite crear una reserva mock con `POST /reservations`; la reserva queda en estado `pending`, descuenta un cupo de la oferta y luego aparece en `Mis reservas`.
-- El menu lateral cliente esta en `ClientSideMenu` y deja disponible `Cerrar sesion`; Favoritos y Ayuda quedan como placeholders visuales por ahora.
+- El detalle de oferta permite crear una reserva real con `POST /reservations`; la reserva queda en estado `pending`, descuenta un cupo de la oferta y luego aparece en `Mis reservas`.
+- El menu lateral cliente esta en `ClientSideMenu` y deja disponible `Cerrar sesion`, `Favoritos` y `Ayuda`.
 - `Perfil` es MVP visual/local: muestra datos de sesion y campos de contacto, sin persistencia real ni endpoint de perfil todavia.
 
 ## Flujo de reserva y confirmacion de pago
 
 - El cliente crea reservas desde el detalle de oferta usando `POST /reservations`.
 - La reserva se crea con estado inicial `pending`; en la UI cliente se muestra como `Pendiente de pago`.
-- El backend mock devuelve la reserva completa con `code`, `confirmationCode`, `expiresAt`, `paymentAlias`/`bankAlias` y `whatsappPhone` si existe.
+- El backend devuelve la reserva completa con `code`, `confirmationCode`, `expiresAt`, `paymentAlias`/`bankAlias` y `whatsappPhone` si existe.
 - Despues de reservar, el frontend navega a `frontend/app/(client)/reservation-confirmed.tsx`, una pantalla oculta en tabs.
 - La pantalla de reserva creada muestra codigo, comercio, oferta, horario de retiro, alias bancario y un temporizador visual de 15 minutos basado en `expiresAt`.
 - El boton `Avisar pago por WhatsApp` abre WhatsApp con un mensaje prearmado para el comercio; no envia comprobantes ni confirma pagos automaticamente.
@@ -183,15 +183,15 @@ npx expo start -c
 - La seccion se abre desde el menu hamburguesa; `favorites` queda oculto en tabs y no aparece en la barra inferior.
 - Home y detalle de oferta muestran un corazon para agregar o quitar favoritos.
 - El frontend consume los endpoints esperados `GET /favorites`, `POST /favorites/:offerId` y `DELETE /favorites/:offerId` mediante `frontend/src/services/favoriteService.ts`.
-- Pendiente para Facu/backend: implementar `/favorites` como endpoints protegidos para rol `client`, usando `Authorization: Bearer <token>` y el contrato estandar `{ success, data/error }`.
-- Backend debe persistir favoritos mock por `userId + offerId`, evitar duplicados, validar oferta inexistente y devolver en `GET /favorites` ofertas enriquecidas con el mismo formato que `GET /offers`.
-- Mientras `/favorites` no exista, el frontend muestra mensajes amigables y no rompe Home, detalle ni navegacion cliente.
+- Favoritos ya usa endpoints reales protegidos para rol `client` con `Authorization: Bearer <token>` y contrato estandar `{ success, data/error }`.
+- El backend persiste favoritos por `userId + offerId`, evita duplicados, valida oferta inexistente y devuelve en `GET /favorites` ofertas enriquecidas con el mismo formato que `GET /offers`.
+- Si falla una accion puntual de favoritos, el frontend muestra un mensaje simple y mantiene la navegacion estable.
 
 ## Ayuda cliente
 
 - La ruta mobile de ayuda es `frontend/app/(client)/help.tsx`.
 - La seccion se abre desde el menu hamburguesa; `help` queda oculto en tabs y no aparece en la barra inferior.
-- Incluye explicacion breve de FoodSave, pasos de uso, link a la landing publica para sumar comercios, preguntas frecuentes y contacto mock.
+- Incluye explicacion breve de FoodSave, pasos de uso, link a la landing publica para sumar comercios, preguntas frecuentes y correo de soporte.
 - La URL de landing se centraliza en `frontend/src/config/links.ts` como `LANDING_URL`, con soporte para `EXPO_PUBLIC_LANDING_URL`.
 - No usa backend, endpoints ni chat real por ahora.
 
@@ -222,7 +222,7 @@ npx expo start -c
 - El menu hamburguesa del comercio usa `BusinessSideMenu` y permite navegar a Inicio, Publicar excedente, Pedidos, Historial, Estadisticas y Mi local; Cerrar sesion usa `AuthContext.logout`.
 - Las metricas del dashboard usan datos reales existentes: `GET /business/offers` para ofertas del comercio y `GET /reservations` para reservas del comercio.
 - El cierre del dia sale de `GET /business/profile` y se guarda desde Mi local como `closingTime` en formato `HH:mm`.
-- `Publicar` permite crear ofertas reales del comercio usando `POST /business/offers`; el limite de retiro usa el horario de cierre real del perfil. La carga de imagen queda como placeholder visual hasta definir selector/upload mobile.
+- `Publicar` permite crear ofertas reales del comercio usando `POST /business/offers`; el limite de retiro usa el horario de cierre real del perfil y la imagen se puede seleccionar/subir con `expo-image-picker` + `POST /upload/image`.
 - `Historial` usa `GET /reservations` con token business, filtra localmente reservas cobradas/retiradas/canceladas por ultimos 7 dias, ultimo mes, rango de dias o todo el historial cargado, y calcula total cobrado excluyendo canceladas.
 - `Mi local` carga y guarda datos del comercio con `GET /business/profile` y `PUT /business/profile`, incluyendo `paymentInfo` y `logoUrl`; el logo se selecciona con `expo-image-picker`, se sube con `POST /upload/image` y se guarda como `logoUrl`.
 - `Mi local > Publicaciones` lista ofertas del comercio con `GET /business/offers` y oculta/muestra usando `PATCH /business/offers/:id/visibility`; editar publicaciones queda como placeholder hasta tener pantalla de edicion.
