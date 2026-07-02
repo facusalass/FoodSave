@@ -11,7 +11,6 @@ import {
 } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import {
-  Alert,
   Modal,
   Pressable,
   StyleSheet,
@@ -19,6 +18,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { LogoutConfirmModal } from "../LogoutConfirmModal";
 import { colors, spacing } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
 
@@ -108,6 +108,7 @@ export function BusinessSideMenu({
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   function handleNavigate(item: BusinessMenuItem) {
     onClose();
@@ -115,17 +116,13 @@ export function BusinessSideMenu({
   }
 
   function handleLogoutPress() {
-    Alert.alert("¿Cerrar sesión?", "Vas a salir del panel comercio.", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        onPress: () => {
-          onClose();
-          void logout().then(() => router.replace("/(auth)/login"));
-        },
-        style: "destructive",
-        text: "Cerrar sesión"
-      }
-    ]);
+    setIsLogoutModalVisible(true);
+  }
+
+  function handleConfirmLogout() {
+    setIsLogoutModalVisible(false);
+    onClose();
+    void logout().then(() => router.replace("/(auth)/login"));
   }
 
   return (
@@ -165,6 +162,11 @@ export function BusinessSideMenu({
             <Text style={styles.logoutText}>Cerrar sesión</Text>
           </TouchableOpacity>
         </View>
+        <LogoutConfirmModal
+          onCancel={() => setIsLogoutModalVisible(false)}
+          onConfirm={handleConfirmLogout}
+          visible={isLogoutModalVisible}
+        />
       </View>
     </Modal>
   );

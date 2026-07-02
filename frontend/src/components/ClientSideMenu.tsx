@@ -8,7 +8,7 @@ import {
   User,
   X
 } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Modal,
   Pressable,
@@ -18,6 +18,7 @@ import {
   View
 } from "react-native";
 import { colors, spacing } from "../constants/theme";
+import { LogoutConfirmModal } from "./LogoutConfirmModal";
 
 export type ClientMenuRoute =
   | "/(client)/home"
@@ -39,6 +40,13 @@ export function ClientSideMenu({
   onNavigate,
   onLogout
 }: ClientSideMenuProps) {
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+
+  function handleConfirmLogout() {
+    setIsLogoutModalVisible(false);
+    onLogout();
+  }
+
   return (
     <Modal
       animationType="fade"
@@ -98,13 +106,18 @@ export function ClientSideMenu({
 
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={onLogout}
+            onPress={() => setIsLogoutModalVisible(true)}
             style={styles.logoutButton}
           >
-            <LogOut color={colors.primary} size={21} />
+            <LogOut color={colors.danger} size={21} />
             <Text style={styles.logoutText}>Cerrar sesion</Text>
           </TouchableOpacity>
         </View>
+        <LogoutConfirmModal
+          onCancel={() => setIsLogoutModalVisible(false)}
+          onConfirm={handleConfirmLogout}
+          visible={isLogoutModalVisible}
+        />
       </View>
     </Modal>
   );
@@ -195,7 +208,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg
   },
   logoutText: {
-    color: colors.primary,
+    color: colors.danger,
     fontSize: 15,
     fontWeight: "800"
   },
