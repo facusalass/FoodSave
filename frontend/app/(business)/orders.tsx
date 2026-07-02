@@ -1,9 +1,10 @@
 import { useFocusEffect } from "expo-router";
-import { Clock, Search } from "lucide-react-native";
+import { CheckCircle2, Clock, Search, XCircle } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Modal,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -16,8 +17,11 @@ import { BusinessNotificationsButton } from "../../src/components/business/Busin
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
-import { getReservations } from "../../src/services/reservationService";
-import type { Reservation } from "../../src/types/reservation";
+import {
+  getReservations,
+  updateReservationStatus
+} from "../../src/services/reservationService";
+import type { Reservation, ReservationStatus } from "../../src/types/reservation";
 import { formatCurrency } from "../../src/utils/formatCurrency";
 import {
   formatRemainingTime,
@@ -26,6 +30,11 @@ import {
 } from "../../src/utils/reservationStatus";
 
 type OrdersTab = "pending" | "confirmed";
+type OrderAction = "cancel" | "confirm";
+type OrderDialog =
+  | { type: "cancel"; reservation: Reservation }
+  | { message: string; title: string; type: "error" | "success" }
+  | null;
 
 const LOW_TIME_THRESHOLD_MS = 5 * 60 * 1000;
 
@@ -36,6 +45,11 @@ export default function BusinessOrdersScreen() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionState, setActionState] = useState<{
+    id: string;
+    type: OrderAction;
+  } | null>(null);
+  const [dialog, setDialog] = useState<OrderDialog>(null);
 
   const loadReservations = useCallback(async () => {
     if (!session) {
@@ -91,6 +105,64 @@ export default function BusinessOrdersScreen() {
     );
   }, [activeTab, confirmedReservations, pendingReservations, searchText]);
 
+  async function handleUpdateReservation(
+    reservation: Reservation,
+    status: ReservationStatus,
+    action: OrderAction
+  ) {
+    if (!session || actionState) {
+      return;
+    }
+
+    try {
+      setActionState({ id: reservation.id, type: action });
+      const updatedReservation = await updateReservationStatus(
+        session.token,
+        reservation.id,
+        status
+      );
+
+      setReservations((currentReservations) =>
+        currentReservations.map((currentReservation) =>
+          currentReservation.id === updatedReservation.id
+            ? updatedReservation
+            : currentReservation
+        )
+      );
+
+      if (status === "confirmed_paid") {
+        setActiveTab("confirmed");
+        setDialog({
+          message: "El pedido paso a la lista de Confirmados.",
+          title: "Pago confirmado",
+          type: "success"
+        });
+      } else {
+        setDialog({
+          message: "El pedido fue cancelado y ya no aparece en activos.",
+          title: "Pedido cancelado",
+          type: "success"
+        });
+      }
+    } catch (updateError) {
+      const message =
+        updateError instanceof Error
+          ? updateError.message
+          : "No pudimos actualizar el pedido.";
+      setDialog({
+        message,
+        title: "No pudimos actualizar",
+        type: "error"
+      });
+    } finally {
+      setActionState(null);
+    }
+  }
+
+  function handleCancelReservation(reservation: Reservation) {
+    setDialog({ reservation, type: "cancel" });
+  }
+
   return (
     <ScreenContainer contentStyle={styles.content}>
       <View style={styles.topBar}>
@@ -138,10 +210,32 @@ export default function BusinessOrdersScreen() {
       ) : (
         <View style={styles.list}>
           {visibleReservations.map((reservation) => (
-            <OrderCard key={reservation.id} reservation={reservation} />
+            <OrderCard
+              actionState={actionState}
+              key={reservation.id}
+              onCancel={handleCancelReservation}
+              onConfirmPayment={(nextReservation) => {
+                void handleUpdateReservation(
+                  nextReservation,
+                  "confirmed_paid",
+                  "confirm"
+                );
+              }}
+              reservation={reservation}
+            />
           ))}
         </View>
       )}
+
+      <OrderDialogModal
+        dialog={dialog}
+        isLoading={actionState?.type === "cancel"}
+        onClose={() => setDialog(null)}
+        onConfirmCancel={(reservation) => {
+          setDialog(null);
+          void handleUpdateReservation(reservation, "cancelled", "cancel");
+        }}
+      />
     </ScreenContainer>
   );
 }
@@ -170,13 +264,26 @@ function TabButton({
   );
 }
 
-function OrderCard({ reservation }: { reservation: Reservation }) {
+function OrderCard({
+  actionState,
+  onCancel,
+  onConfirmPayment,
+  reservation
+}: {
+  actionState: { id: string; type: OrderAction } | null;
+  onCancel: (reservation: Reservation) => void;
+  onConfirmPayment: (reservation: Reservation) => void;
+  reservation: Reservation;
+}) {
   const remainingMilliseconds = getRemainingMilliseconds(reservation.expiresAt);
   const isLowTime =
     remainingMilliseconds !== null &&
     remainingMilliseconds > 0 &&
     remainingMilliseconds <= LOW_TIME_THRESHOLD_MS;
   const isPending = reservation.status === "pending";
+  const isActionLoading = actionState?.id === reservation.id;
+  const isCancelling = isActionLoading && actionState?.type === "cancel";
+  const isConfirming = isActionLoading && actionState?.type === "confirm";
 
   return (
     <View style={styles.orderCard}>
@@ -210,31 +317,121 @@ function OrderCard({ reservation }: { reservation: Reservation }) {
         <View style={styles.actionsRow}>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() =>
-              Alert.alert(
-                "Proximamente",
-                "La cancelacion desde el panel comercio se va a completar en una proxima fase."
-              )
-            }
-            style={[styles.orderActionButton, styles.cancelButton]}
+            disabled={isActionLoading}
+            onPress={() => onCancel(reservation)}
+            style={[
+              styles.orderActionButton,
+              styles.cancelButton,
+              isActionLoading ? styles.actionButtonDisabled : null
+            ]}
           >
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+            {isCancelling ? (
+              <ActivityIndicator color="#0F172A" />
+            ) : (
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() =>
-              Alert.alert(
-                "Proximamente",
-                "La confirmacion de pago desde el panel comercio se va a completar en una proxima fase."
-              )
-            }
-            style={[styles.orderActionButton, styles.confirmButton]}
+            disabled={isActionLoading}
+            onPress={() => onConfirmPayment(reservation)}
+            style={[
+              styles.orderActionButton,
+              styles.confirmButton,
+              isActionLoading ? styles.actionButtonDisabled : null
+            ]}
           >
-            <Text style={styles.confirmButtonText}>Confirmar Pago</Text>
+            {isConfirming ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.confirmButtonText}>Confirmar Pago</Text>
+            )}
           </TouchableOpacity>
         </View>
       ) : null}
     </View>
+  );
+}
+
+function OrderDialogModal({
+  dialog,
+  isLoading,
+  onClose,
+  onConfirmCancel
+}: {
+  dialog: OrderDialog;
+  isLoading: boolean;
+  onClose: () => void;
+  onConfirmCancel: (reservation: Reservation) => void;
+}) {
+  if (!dialog) {
+    return null;
+  }
+
+  const isCancelDialog = dialog.type === "cancel";
+  const isErrorDialog = dialog.type === "error";
+  const title = isCancelDialog ? "Cancelar pedido" : dialog.title;
+  const message = isCancelDialog
+    ? `Vas a cancelar el pedido #${getReservationCode(dialog.reservation)}. Esta accion no se puede deshacer desde esta pantalla.`
+    : dialog.message;
+
+  return (
+    <Modal animationType="fade" onRequestClose={onClose} transparent visible>
+      <View style={styles.dialogOverlay}>
+        <Pressable style={styles.dialogBackdrop} onPress={onClose} />
+        <View style={styles.dialogCard}>
+          <View
+            style={[
+              styles.dialogIcon,
+              isErrorDialog || isCancelDialog
+                ? styles.dialogIconError
+                : styles.dialogIconSuccess
+            ]}
+          >
+            {isErrorDialog || isCancelDialog ? (
+              <XCircle color={colors.danger} size={28} />
+            ) : (
+              <CheckCircle2 color={colors.secondaryDark} size={28} />
+            )}
+          </View>
+          <Text style={styles.dialogTitle}>{title}</Text>
+          <Text style={styles.dialogMessage}>{message}</Text>
+
+          {isCancelDialog ? (
+            <View style={styles.dialogActions}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                disabled={isLoading}
+                onPress={onClose}
+                style={[styles.dialogButton, styles.dialogSecondaryButton]}
+              >
+                <Text style={styles.dialogSecondaryText}>Volver</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                disabled={isLoading}
+                onPress={() => onConfirmCancel(dialog.reservation)}
+                style={[styles.dialogButton, styles.dialogDangerButton]}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.dialogDangerText}>Confirmar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={onClose}
+              style={[styles.dialogButton, styles.dialogPrimaryButton]}
+            >
+              <Text style={styles.dialogPrimaryText}>Entendido</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -243,6 +440,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm,
     marginTop: spacing.md
+  },
+  actionButtonDisabled: {
+    opacity: 0.72
   },
   cancelButton: {
     backgroundColor: colors.card,
@@ -280,6 +480,98 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     marginTop: spacing.sm
+  },
+  dialogActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    width: "100%"
+  },
+  dialogBackdrop: {
+    ...StyleSheet.absoluteFillObject
+  },
+  dialogButton: {
+    alignItems: "center",
+    borderRadius: radii.md,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: spacing.md
+  },
+  dialogCard: {
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    elevation: 6,
+    gap: spacing.md,
+    marginHorizontal: spacing.lg,
+    maxWidth: 360,
+    padding: spacing.lg,
+    shadowColor: "#000000",
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    width: "88%"
+  },
+  dialogDangerButton: {
+    backgroundColor: colors.danger
+  },
+  dialogDangerText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  dialogIcon: {
+    alignItems: "center",
+    borderRadius: 28,
+    height: 56,
+    justifyContent: "center",
+    width: 56
+  },
+  dialogIconError: {
+    backgroundColor: "#FEE2E2"
+  },
+  dialogIconSuccess: {
+    backgroundColor: "#DCFCE7"
+  },
+  dialogMessage: {
+    color: colors.mutedText,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center"
+  },
+  dialogOverlay: {
+    alignItems: "center",
+    backgroundColor: "#0F172A66",
+    flex: 1,
+    justifyContent: "center"
+  },
+  dialogPrimaryButton: {
+    backgroundColor: colors.primary,
+    width: "100%"
+  },
+  dialogPrimaryText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  dialogSecondaryButton: {
+    backgroundColor: colors.card,
+    borderColor: "#D1D5DB",
+    borderWidth: 1
+  },
+  dialogSecondaryText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  dialogTitle: {
+    color: "#020617",
+    fontSize: 20,
+    fontWeight: "900",
+    textAlign: "center"
   },
   expireRow: {
     alignItems: "center",
