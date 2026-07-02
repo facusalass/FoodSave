@@ -130,6 +130,7 @@ npx expo start -c
 - Antes de llamar al backend, el frontend valida correo vacio, formato de correo y contrasena vacia.
 - Las credenciales mock vigentes son `cliente@foodsave.com` / `123456` para rol `client` y `comercio@foodsave.com` / `123456` para rol `business`.
 - Si el backend rechaza credenciales con formato valido, la app muestra `Correo o contrasena incorrectos.`
+- El login con Google usa `expo-auth-session` en mobile, envia `{ idToken }` a `POST /auth/google`, el backend valida el token con Google y crea/inicia usuario `client` por defecto si el email no existe.
 - La sesion se guarda localmente y se restaura al abrir la app; si no hay sesion valida o falla `/auth/me`, se limpia la sesion local y se vuelve al login.
 - Hay logout visible en home cliente y dashboard comercio para limpiar la sesion y volver al login.
 
@@ -139,7 +140,7 @@ npx expo start -c
 - El registro usa `POST /auth/register` con `name`, `phone`, `email` y `password`.
 - Si el backend devuelve token/user, el frontend guarda sesion y hace autologin al Home cliente.
 - Si el backend devuelve `emailConfirmationRequired: true`, el frontend no guarda sesion y navega a `frontend/app/(auth)/check-email.tsx`.
-- Google sigue siendo visual/no-op desde mobile.
+- Google desde mobile queda conectado al backend; no se usa Supabase client en frontend.
 - No hay registro mobile de comercios en esta fase.
 
 ## Recuperacion de contrasena

@@ -9,6 +9,7 @@ import {
 import {
   getMe,
   login as loginWithApi,
+  loginWithGoogle as loginWithGoogleApi,
   register as registerWithApi
 } from "../services/authService";
 import type {
@@ -27,6 +28,7 @@ type AuthContextValue = {
   isLoading: boolean;
   session: AuthSession | null;
   login: (email: string, password: string) => Promise<AuthSession>;
+  loginWithGoogle: (idToken: string) => Promise<AuthSession>;
   register: (credentials: RegisterCredentials) => Promise<RegisterResult>;
   logout: () => Promise<void>;
 };
@@ -90,6 +92,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
         if (!isValidAuthSession(nextSession)) {
           throw new Error("No pudimos iniciar sesión.");
+        }
+
+        await saveStoredSession(nextSession);
+        setSession(nextSession);
+        return nextSession;
+      },
+      async loginWithGoogle(idToken) {
+        const nextSession = await loginWithGoogleApi(idToken);
+
+        if (!isValidAuthSession(nextSession)) {
+          throw new Error("No pudimos iniciar sesion con Google.");
         }
 
         await saveStoredSession(nextSession);

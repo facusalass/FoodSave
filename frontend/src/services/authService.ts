@@ -14,6 +14,13 @@ export async function login(credentials: LoginCredentials) {
   });
 }
 
+export async function loginWithGoogle(idToken: string) {
+  return apiRequest<AuthSession>("/auth/google", {
+    body: JSON.stringify({ idToken }),
+    method: "POST"
+  });
+}
+
 export async function getMe(token: string) {
   const response = await apiRequest<{ user: User }>("/auth/me", {
     token

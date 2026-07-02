@@ -46,14 +46,11 @@ export async function registerController(request: Request, response: Response) {
 }
 
 export async function googleLoginController(request: Request, response: Response) {
-  const { email, name, role, businessName, businessAddress, businessCategory, businessCity } = request.body as {
-    email?: string; name?: string; role?: string; businessName?: string; businessAddress?: string; businessCategory?: string; businessCity?: string;
-  };
+  const { idToken } = request.body as { idToken?: string };
 
-  if (!email || !name || !role) return fail(response, 400, "email, name y role son requeridos.");
-  if (role !== "client" && role !== "business") return fail(response, 400, "role debe ser 'client' o 'business'.");
+  if (!idToken?.trim()) return fail(response, 400, "idToken es requerido.");
 
-  handleRegisterResult(await googleLogin({ email, name, role, businessName, businessAddress, businessCategory, businessCity }), response, 200);
+  handleRegisterResult(await googleLogin(idToken), response, 200);
 }
 
 export function meController(request: Request, response: Response) {

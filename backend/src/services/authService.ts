@@ -1,7 +1,11 @@
+import { OAuth2Client } from "google-auth-library";
+import { env } from "../config/env.js";
 import { supabase } from "../config/supabase.js";
-import { createBusinessRepo, findUserByEmail, findUserById } from "./repository.js";
+import { findUserByEmail, findUserById } from "./repository.js";
 import { toPublicUser } from "../utils/publicUser.js";
-import type { AuthSession, Business, PublicUser, UserRole } from "../types/auth.js";
+import type { AuthSession, PublicUser, UserRole } from "../types/auth.js";
+
+const googleClient = new OAuth2Client();
 
 function normalizeSignUpError(message: string): string {
   const m = (message ?? "").toLowerCase();
@@ -97,17 +101,16 @@ export async function login(
   };
 }
 
-export async function googleLogin(params: {
-  email: string;
-  name: string;
-  role: UserRole;
-  businessName?: string;
-  businessAddress?: string;
-  businessCategory?: string;
-  businessCity?: string;
-}): Promise<RegisterResult | RegisterError | EmailConfirmationPending> {
-  const { email, name, role, businessName, businessAddress, businessCategory, businessCity } = params;
-  const normalizedEmail = email.toLowerCase();
+export async function googleLogin(
+  idToken: string
+): Promise<RegisterResult | RegisterError | EmailConfirmationPending> {
+  const googleUser = await verifyGoogleIdToken(idToken);
+
+  if ("error" in googleUser) {
+    return googleUser;
+  }
+
+  const normalizedEmail = googleUser.email.toLowerCase();
 
   const existing = await findUserByEmail(normalizedEmail);
   if (existing) {
@@ -117,43 +120,13 @@ export async function googleLogin(params: {
     };
   }
 
-  const now = new Date().toISOString();
-  let businessId: string | undefined;
-
-  if (role === "business") {
-    if (!businessName || !businessAddress || !businessCategory) {
-      return { error: "Los comercios deben enviar businessName, businessAddress y businessCategory." };
-    }
-
-    businessId = `business-${Date.now()}`;
-
-    const newBusiness: Business = {
-      id: businessId,
-      name: businessName,
-      ownerId: "",
-      category: businessCategory,
-      description: "",
-      city: businessCity ?? "",
-      address: businessAddress,
-      closingTime: "22:00",
-      paymentInfo: {
-        ownerName: name,
-        cvu: `000000310001${String(Date.now()).slice(0, 10)}`,
-        alias: `${businessName.replace(/\s+/g, ".").toUpperCase()}`
-      },
-      createdAt: now
-    };
-
-    await createBusinessRepo(newBusiness);
-  }
-
   const password = `google-${Date.now()}`;
 
   const { data, error } = await supabase.auth.signUp({
     email: normalizedEmail,
     password,
     options: {
-      data: { name, role, businessId, phone: "" }
+      data: { name: googleUser.name, role: "client", phone: "" }
     }
   });
 
@@ -165,14 +138,48 @@ export async function googleLogin(params: {
     return { emailConfirmationRequired: true, message: "Revisá tu correo para confirmar la cuenta." };
   }
 
-  if (businessId) {
-    await supabase.from("businesses").update({ ownerId: data.user.id }).eq("id", businessId);
-  }
-
   const user = await findUserById(data.user.id);
 
   return {
     token: data.session.access_token,
-    user: user ? toPublicUser(user) : buildUserFromAuth(data.user, name, role)
+    user: user ? toPublicUser(user) : buildUserFromAuth(data.user, googleUser.name, "client")
   };
+}
+
+async function verifyGoogleIdToken(idToken: string): Promise<
+  | { email: string; name: string }
+  | RegisterError
+> {
+  if (env.googleClientIds.length === 0) {
+    return { error: "Google Login no esta configurado en el servidor." };
+  }
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      audience: env.googleClientIds,
+      idToken
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload) {
+      return { error: "Google no devolvio datos de usuario." };
+    }
+
+    const email = payload.email?.trim();
+
+    if (!email) {
+      return { error: "Google no devolvio un correo valido." };
+    }
+
+    if (payload.email_verified === false) {
+      return { error: "El correo de Google no esta verificado." };
+    }
+
+    return {
+      email,
+      name: payload.name?.trim() || email.split("@")[0] || "Usuario FoodSave"
+    };
+  } catch {
+    return { error: "No pudimos validar tu cuenta de Google." };
+  }
 }

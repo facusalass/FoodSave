@@ -1,5 +1,7 @@
 import { Redirect, useRouter } from "expo-router";
-import { useState } from "react";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,18 +14,69 @@ import {
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { SplashLoading } from "../../src/components/SplashLoading";
 import { TextInputField } from "../../src/components/TextInputField";
+import {
+  googleAuthConfig,
+  hasGoogleClientId
+} from "../../src/config/googleAuth";
 import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 
+WebBrowser.maybeCompleteAuthSession();
+
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, session, isLoading } = useAuth();
+  const { login, loginWithGoogle, session, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [googleRequest, googleResponse, promptGoogleAuth] =
+    Google.useIdTokenAuthRequest({
+      androidClientId: googleAuthConfig.androidClientId,
+      clientId: googleAuthConfig.clientId,
+      iosClientId: googleAuthConfig.iosClientId,
+      selectAccount: true,
+      webClientId: googleAuthConfig.webClientId
+    });
+
+  useEffect(() => {
+    async function finishGoogleLogin() {
+      if (!googleResponse) {
+        return;
+      }
+
+      if (googleResponse.type !== "success") {
+        setIsGoogleSubmitting(false);
+        return;
+      }
+
+      const idToken = googleResponse.params.id_token;
+
+      if (!idToken) {
+        setError("No pudimos obtener la credencial de Google.");
+        setIsGoogleSubmitting(false);
+        return;
+      }
+
+      try {
+        const nextSession = await loginWithGoogle(idToken);
+        router.replace(getHomeRoute(nextSession.user.role));
+      } catch (googleError) {
+        const message =
+          googleError instanceof Error
+            ? googleError.message
+            : "No pudimos iniciar sesion con Google.";
+        setError(message);
+      } finally {
+        setIsGoogleSubmitting(false);
+      }
+    }
+
+    void finishGoogleLogin();
+  }, [googleResponse, loginWithGoogle, router]);
 
   if (isLoading) {
     return <SplashLoading />;
@@ -57,12 +110,7 @@ export default function LoginScreen() {
 
     try {
       const nextSession = await login(nextEmail, password);
-      const nextRoute =
-        nextSession.user.role === "business"
-          ? "/(business)/dashboard"
-          : "/(client)/home";
-
-      router.replace(nextRoute);
+      router.replace(getHomeRoute(nextSession.user.role));
     } catch (loginError) {
       const message =
         loginError instanceof Error
@@ -71,6 +119,29 @@ export default function LoginScreen() {
       setError(message);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setError(null);
+    setEmailError(null);
+    setPasswordError(null);
+
+    if (!hasGoogleClientId()) {
+      setError("Google Login no esta configurado en la app.");
+      return;
+    }
+
+    if (!googleRequest) {
+      setError("Google Login todavia se esta preparando. Intenta de nuevo.");
+      return;
+    }
+
+    setIsGoogleSubmitting(true);
+    const result = await promptGoogleAuth();
+
+    if (result.type !== "success") {
+      setIsGoogleSubmitting(false);
     }
   }
 
@@ -95,15 +166,27 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          <View style={styles.googleButton}>
+          <TouchableOpacity
+            activeOpacity={0.86}
+            disabled={isGoogleSubmitting || isSubmitting}
+            onPress={handleGoogleLogin}
+            style={[
+              styles.googleButton,
+              isGoogleSubmitting || isSubmitting ? styles.disabled : null
+            ]}
+          >
             <View style={styles.googleLogo}>
               <Text style={styles.googleMark}>G</Text>
               <View style={[styles.googleAccent, styles.googleAccentRed]} />
               <View style={[styles.googleAccent, styles.googleAccentYellow]} />
               <View style={[styles.googleAccent, styles.googleAccentGreen]} />
             </View>
-            <Text style={styles.googleText}>CONTINUAR CON GOOGLE</Text>
-          </View>
+            {isGoogleSubmitting ? (
+              <ActivityIndicator color={colors.text} />
+            ) : (
+              <Text style={styles.googleText}>CONTINUAR CON GOOGLE</Text>
+            )}
+          </TouchableOpacity>
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
@@ -184,6 +267,10 @@ function getEmailError(email: string) {
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function getHomeRoute(role: "client" | "business") {
+  return role === "business" ? "/(business)/dashboard" : "/(client)/home";
 }
 
 const styles = StyleSheet.create({
