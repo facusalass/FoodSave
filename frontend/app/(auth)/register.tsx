@@ -22,6 +22,7 @@ type FieldErrors = {
   phone?: string;
   email?: string;
   password?: string;
+  confirmPassword?: string;
 };
 
 export default function RegisterScreen() {
@@ -31,6 +32,7 @@ export default function RegisterScreen() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +56,8 @@ export default function RegisterScreen() {
       name: name.trim(),
       phone: phone.trim(),
       email: email.trim(),
-      password
+      password,
+      confirmPassword
     };
     const nextErrors = validateRegister(nextValues);
     setFieldErrors(nextErrors);
@@ -66,7 +69,12 @@ export default function RegisterScreen() {
     setIsSubmitting(true);
 
     try {
-      const result = await register(nextValues);
+      const result = await register({
+        email: nextValues.email,
+        name: nextValues.name,
+        password: nextValues.password,
+        phone: nextValues.phone
+      });
 
       if ("emailConfirmationRequired" in result) {
         router.replace({
@@ -177,6 +185,17 @@ export default function RegisterScreen() {
             textContentType="newPassword"
             value={password}
           />
+          <TextInputField
+            error={fieldErrors.confirmPassword}
+            onChangeText={(value) => {
+              setConfirmPassword(value);
+              clearFieldError("confirmPassword");
+            }}
+            placeholder="CONFIRMAR CONTRASENA"
+            secureTextEntry
+            textContentType="newPassword"
+            value={confirmPassword}
+          />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -207,6 +226,7 @@ function validateRegister(values: {
   phone: string;
   email: string;
   password: string;
+  confirmPassword: string;
 }) {
   const errors: FieldErrors = {};
 
@@ -228,6 +248,12 @@ function validateRegister(values: {
     errors.password = "Crea una contrasena.";
   } else if (values.password.length < 6) {
     errors.password = "La contrasena debe tener al menos 6 caracteres.";
+  }
+
+  if (!values.confirmPassword) {
+    errors.confirmPassword = "Confirma tu contrasena.";
+  } else if (values.password !== values.confirmPassword) {
+    errors.confirmPassword = "Las contrasenas no coinciden.";
   }
 
   return errors;
