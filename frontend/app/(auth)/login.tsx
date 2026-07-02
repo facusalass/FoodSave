@@ -1,5 +1,4 @@
 import { Redirect, useRouter } from "expo-router";
-import { Bell, Menu } from "lucide-react-native";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -82,18 +81,9 @@ export default function LoginScreen() {
         style={styles.keyboard}
       >
         <View style={styles.topBar}>
-          <View style={styles.iconButton}>
-            <Menu color={colors.text} size={24} />
-          </View>
-
           <View style={styles.brandRow}>
             <Text style={styles.brandPrimary}>FOOD</Text>
             <Text style={styles.brandAccent}>SAVE</Text>
-          </View>
-
-          <View style={styles.iconButton}>
-            <Bell color={colors.text} size={21} />
-            <View style={styles.notificationDot} />
           </View>
         </View>
 
@@ -315,13 +305,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0
   },
-  iconButton: {
-    alignItems: "center",
-    height: 40,
-    justifyContent: "center",
-    position: "relative",
-    width: 40
-  },
   keyboard: {
     flex: 1
   },
@@ -337,17 +320,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "900",
     letterSpacing: 0
-  },
-  notificationDot: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.card,
-    borderRadius: 5,
-    borderWidth: 1,
-    height: 9,
-    position: "absolute",
-    right: 9,
-    top: 8,
-    width: 9
   },
   profileCard: {
     alignItems: "center",
@@ -381,7 +353,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: "row",
     height: 68,
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginHorizontal: -spacing.lg,
     paddingHorizontal: spacing.lg
   }
