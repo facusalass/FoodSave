@@ -5,10 +5,12 @@ import {
   Minus,
   Plus
 } from "lucide-react-native";
+import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -23,13 +25,16 @@ import { colors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import {
   createBusinessOffer,
-  getBusinessProfile
+  getBusinessProfile,
+  uploadImage
 } from "../../src/services/offerService";
 import type { OfferType } from "../../src/types/offer";
 import {
   formatClosingTimeDisplay,
   normalizeClosingTime
 } from "../../src/utils/closingTime";
+
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
 export default function BusinessPublishScreen() {
   const { session } = useAuth();
@@ -40,11 +45,14 @@ export default function BusinessPublishScreen() {
   const [stock, setStock] = useState(5);
   const [weight, setWeight] = useState("");
   const [allergens, setAllergens] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [imagePreviewUri, setImagePreviewUri] = useState("");
   const [businessClosingTime, setBusinessClosingTime] = useState<string | null>(
     null
   );
   const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -75,7 +83,7 @@ export default function BusinessPublishScreen() {
   }, [session]);
 
   async function handlePublish() {
-    if (isPublishing) {
+    if (isPublishing || isUploadingImage) {
       return;
     }
 
@@ -136,6 +144,7 @@ export default function BusinessPublishScreen() {
         category: cleanTitle,
         description: cleanTitle,
         estimatedWeightInKg: parsedWeight,
+        ...(imageUrl ? { imageUrl } : {}),
         newPrice: parsedNewPrice,
         oldPrice: parsedOldPrice,
         ...(pickupLimit
@@ -171,6 +180,8 @@ export default function BusinessPublishScreen() {
     setStock(5);
     setWeight("");
     setAllergens("");
+    setImageUrl("");
+    setImagePreviewUri("");
     setFormError(null);
   }
 
@@ -182,6 +193,70 @@ export default function BusinessPublishScreen() {
 
   function showFormError(message: string) {
     setFormError(message);
+  }
+
+  async function handleImagePress() {
+    if (!session || isUploadingImage) {
+      return;
+    }
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        showFormError("Necesitamos acceso a tu galeria para elegir la imagen.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        mediaTypes: ["images"],
+        quality: 0.85
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const image = result.assets.at(0);
+
+      if (!image) {
+        return;
+      }
+
+      const mimeType = image.mimeType ?? inferMimeType(image.uri);
+      const fileName =
+        image.fileName ?? `oferta-${Date.now()}.${getExtension(mimeType)}`;
+
+      if (!isAllowedImageType(mimeType)) {
+        showFormError("Elegi una imagen JPG o PNG.");
+        return;
+      }
+
+      if (image.fileSize && image.fileSize > MAX_IMAGE_SIZE_BYTES) {
+        showFormError("La imagen puede pesar hasta 2MB.");
+        return;
+      }
+
+      setFormError(null);
+      setIsUploadingImage(true);
+      const uploadedUrl = await uploadImage(session.token, {
+        name: fileName,
+        type: mimeType,
+        uri: image.uri
+      });
+      setImageUrl(uploadedUrl);
+      setImagePreviewUri(image.uri);
+    } catch (imageError) {
+      const message =
+        imageError instanceof Error
+          ? imageError.message
+          : "No pudimos subir la imagen.";
+      showFormError(message);
+    } finally {
+      setIsUploadingImage(false);
+    }
   }
 
   return (
@@ -211,17 +286,52 @@ export default function BusinessPublishScreen() {
         <Text style={styles.label}>Imagen del Producto</Text>
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() =>
-            Alert.alert(
-              "Proximamente",
-              "La carga de imagenes se conectara cuando definamos el flujo de seleccion de archivos."
-            )
-          }
-          style={styles.imageBox}
+          disabled={isUploadingImage}
+          onPress={handleImagePress}
+          style={[
+            styles.imageBox,
+            imagePreviewUri ? styles.imageBoxWithPreview : null,
+            isUploadingImage ? styles.imageBoxDisabled : null
+          ]}
         >
-          <ImagePlus color="#94A3B8" size={42} />
-          <Text style={styles.imageText}>Subir Imagen</Text>
-          <Text style={styles.imageHint}>JPG, PNG - MAX 2MB</Text>
+          {imagePreviewUri ? (
+            <Image source={{ uri: imagePreviewUri }} style={styles.imagePreview} />
+          ) : null}
+          <View
+            style={[
+              styles.imageOverlay,
+              imagePreviewUri ? styles.imageOverlayWithPreview : null
+            ]}
+          >
+            {isUploadingImage ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <ImagePlus
+                color={imagePreviewUri ? "#FFFFFF" : "#94A3B8"}
+                size={42}
+              />
+            )}
+            <Text
+              style={[
+                styles.imageText,
+                imagePreviewUri ? styles.imageTextWithPreview : null
+              ]}
+            >
+              {isUploadingImage
+                ? "Subiendo imagen..."
+                : imagePreviewUri
+                  ? "Cambiar Imagen"
+                  : "Subir Imagen"}
+            </Text>
+            <Text
+              style={[
+                styles.imageHint,
+                imagePreviewUri ? styles.imageHintWithPreview : null
+              ]}
+            >
+              JPG, PNG - MAX 2MB
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -342,11 +452,13 @@ export default function BusinessPublishScreen() {
 
       <TouchableOpacity
         activeOpacity={0.86}
-        disabled={isPublishing || !session}
+        disabled={isPublishing || isUploadingImage || !session}
         onPress={handlePublish}
         style={[
           styles.publishButton,
-          isPublishing || !session ? styles.publishButtonDisabled : null
+          isPublishing || isUploadingImage || !session
+            ? styles.publishButtonDisabled
+            : null
         ]}
       >
         {isPublishing ? (
@@ -433,6 +545,24 @@ function parseAllergens(value: string) {
     .filter(Boolean);
 }
 
+function inferMimeType(uri: string) {
+  const lowerUri = uri.toLowerCase();
+
+  if (lowerUri.endsWith(".png")) {
+    return "image/png";
+  }
+
+  return "image/jpeg";
+}
+
+function getExtension(mimeType: string) {
+  return mimeType === "image/png" ? "png" : "jpg";
+}
+
+function isAllowedImageType(mimeType: string) {
+  return mimeType === "image/jpeg" || mimeType === "image/png";
+}
+
 const styles = StyleSheet.create({
   content: {
     gap: spacing.md
@@ -498,17 +628,49 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: "center",
     minHeight: 182,
+    overflow: "hidden",
     padding: spacing.lg
+  },
+  imageBoxDisabled: {
+    opacity: 0.72
+  },
+  imageBoxWithPreview: {
+    borderColor: colors.primary,
+    borderStyle: "solid",
+    padding: 0
   },
   imageHint: {
     color: "#94A3B8",
     fontSize: 12,
     fontWeight: "900"
   },
+  imageHintWithPreview: {
+    color: "#FFFFFFCC"
+  },
+  imageOverlay: {
+    alignItems: "center",
+    gap: spacing.sm,
+    justifyContent: "center"
+  },
+  imageOverlayWithPreview: {
+    backgroundColor: "#0F172A66",
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0
+  },
+  imagePreview: {
+    height: "100%",
+    width: "100%"
+  },
   imageText: {
     color: colors.text,
     fontSize: 14,
     fontWeight: "800"
+  },
+  imageTextWithPreview: {
+    color: "#FFFFFF"
   },
   input: {
     backgroundColor: colors.card,
