@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
 import { CheckCircle2, Clock, Search, XCircle } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -25,7 +25,6 @@ import type { Reservation, ReservationStatus } from "../../src/types/reservation
 import { formatCurrency } from "../../src/utils/formatCurrency";
 import {
   formatRemainingTime,
-  getRemainingMilliseconds,
   getReservationCode
 } from "../../src/utils/reservationStatus";
 
@@ -37,6 +36,7 @@ type OrderDialog =
   | null;
 
 const LOW_TIME_THRESHOLD_MS = 5 * 60 * 1000;
+const TIMER_REFRESH_MS = 1000;
 
 export default function BusinessOrdersScreen() {
   const { session } = useAuth();
@@ -50,6 +50,15 @@ export default function BusinessOrdersScreen() {
     type: OrderAction;
   } | null>(null);
   const [dialog, setDialog] = useState<OrderDialog>(null);
+  const [currentTimestamp, setCurrentTimestamp] = useState(Date.now());
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setCurrentTimestamp(Date.now());
+    }, TIMER_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const loadReservations = useCallback(async () => {
     if (!session) {
@@ -133,8 +142,8 @@ export default function BusinessOrdersScreen() {
       if (status === "confirmed_paid") {
         setActiveTab("confirmed");
         setDialog({
-          message: "El pedido paso a la lista de Confirmados.",
-          title: "Pago confirmado",
+          message: "El pedido quedo marcado como pagado y paso a Confirmados.",
+          title: "Pago realizado",
           type: "success"
         });
       } else {
@@ -212,6 +221,7 @@ export default function BusinessOrdersScreen() {
           {visibleReservations.map((reservation) => (
             <OrderCard
               actionState={actionState}
+              currentTimestamp={currentTimestamp}
               key={reservation.id}
               onCancel={handleCancelReservation}
               onConfirmPayment={(nextReservation) => {
@@ -266,20 +276,26 @@ function TabButton({
 
 function OrderCard({
   actionState,
+  currentTimestamp,
   onCancel,
   onConfirmPayment,
   reservation
 }: {
   actionState: { id: string; type: OrderAction } | null;
+  currentTimestamp: number;
   onCancel: (reservation: Reservation) => void;
   onConfirmPayment: (reservation: Reservation) => void;
   reservation: Reservation;
 }) {
-  const remainingMilliseconds = getRemainingMilliseconds(reservation.expiresAt);
+  const remainingMilliseconds = getRemainingMillisecondsAt(
+    reservation.expiresAt,
+    currentTimestamp
+  );
   const isLowTime =
     remainingMilliseconds !== null &&
     remainingMilliseconds > 0 &&
     remainingMilliseconds <= LOW_TIME_THRESHOLD_MS;
+  const isExpired = remainingMilliseconds === 0;
   const isPending = reservation.status === "pending";
   const isActionLoading = actionState?.id === reservation.id;
   const isCancelling = isActionLoading && actionState?.type === "cancel";
@@ -302,11 +318,18 @@ function OrderCard({
       {isPending && remainingMilliseconds !== null ? (
         <View style={styles.expireRow}>
           <Clock
-            color={isLowTime ? colors.danger : colors.mutedText}
+            color={isLowTime || isExpired ? colors.danger : colors.mutedText}
             size={15}
           />
-          <Text style={[styles.expireText, isLowTime ? styles.expireTextDanger : null]}>
-            Expira en: {formatRemainingTime(remainingMilliseconds)} min
+          <Text
+            style={[
+              styles.expireText,
+              isLowTime || isExpired ? styles.expireTextDanger : null
+            ]}
+          >
+            {isExpired
+              ? "Expirado"
+              : `Expira en: ${formatRemainingTime(remainingMilliseconds)} min`}
           </Text>
         </View>
       ) : (
@@ -351,6 +374,23 @@ function OrderCard({
       ) : null}
     </View>
   );
+}
+
+function getRemainingMillisecondsAt(
+  expiresAt: string | undefined,
+  currentTimestamp: number
+) {
+  if (!expiresAt) {
+    return null;
+  }
+
+  const expirationTimestamp = Date.parse(expiresAt);
+
+  if (Number.isNaN(expirationTimestamp)) {
+    return null;
+  }
+
+  return Math.max(expirationTimestamp - currentTimestamp, 0);
 }
 
 function OrderDialogModal({
@@ -424,7 +464,7 @@ function OrderDialogModal({
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={onClose}
-              style={[styles.dialogButton, styles.dialogPrimaryButton]}
+              style={styles.dialogPrimaryButton}
             >
               <Text style={styles.dialogPrimaryText}>Entendido</Text>
             </TouchableOpacity>
@@ -549,7 +589,12 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   dialogPrimaryButton: {
+    alignItems: "center",
     backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
     width: "100%"
   },
   dialogPrimaryText: {
