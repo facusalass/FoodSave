@@ -10,7 +10,6 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   StyleSheet,
   Text,
@@ -101,10 +100,6 @@ export default function BusinessDashboardScreen() {
     offers
   });
 
-  function showPlaceholder(message: string) {
-    Alert.alert("Próximamente", message);
-  }
-
   return (
     <ScreenContainer contentStyle={styles.content}>
       <View style={styles.topBar}>
@@ -184,11 +179,7 @@ export default function BusinessDashboardScreen() {
                 accent="info"
                 icon={<BarChart3 color={colors.info} size={24} />}
                 label="Estadísticas"
-                onPress={() =>
-                  showPlaceholder(
-                    "Las estadísticas detalladas estarán disponibles pronto."
-                  )
-                }
+                onPress={() => router.push("/(business)/stats")}
               />
               <QuickAction
                 accent="purple"

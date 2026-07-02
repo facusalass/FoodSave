@@ -27,13 +27,14 @@ type BusinessRoute =
   | "/(business)/publish"
   | "/(business)/orders"
   | "/(business)/history"
+  | "/(business)/stats"
   | "/(business)/store";
 
 type BusinessMenuItem = {
   icon: ReactNode;
   key: string;
   label: string;
-  route?: BusinessRoute;
+  route: BusinessRoute;
 };
 
 const MENU_ITEMS: BusinessMenuItem[] = [
@@ -64,7 +65,8 @@ const MENU_ITEMS: BusinessMenuItem[] = [
   {
     icon: <BarChart3 color={colors.text} size={21} />,
     key: "stats",
-    label: "Estadisticas"
+    label: "Estadisticas",
+    route: "/(business)/stats"
   },
   {
     icon: <Store color={colors.text} size={21} />,
@@ -108,15 +110,6 @@ export function BusinessSideMenu({
   const { logout } = useAuth();
 
   function handleNavigate(item: BusinessMenuItem) {
-    if (!item.route) {
-      onClose();
-      Alert.alert(
-        "Proximamente",
-        "Las estadisticas detalladas estaran disponibles pronto."
-      );
-      return;
-    }
-
     onClose();
     router.push(item.route);
   }

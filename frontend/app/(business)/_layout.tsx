@@ -66,6 +66,12 @@ export default function BusinessLayout() {
         }}
       />
       <Tabs.Screen
+        name="stats"
+        options={{
+          href: null
+        }}
+      />
+      <Tabs.Screen
         name="store"
         options={{
           href: null
