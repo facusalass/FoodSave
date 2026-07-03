@@ -32,6 +32,10 @@ app.get("/health", (_request, response) => {
   response.json({"success":true,"data":{ status: "ok", service: "foodsave-api"} });
 });
 
+app.get("/", (_request, response) => {
+  response.json({ success: true, data: { message: "FoodSave API corriendo", docs: "/health", version: "1.0.0" } });
+});
+
 app.use("/auth", authRoutes);
 app.use("/offers", offerRoutes);
 app.use("/cities", citiesRoutes);
