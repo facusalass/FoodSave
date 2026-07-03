@@ -150,7 +150,7 @@ export async function registerBusiness(params) {
     const newBusiness = {
         id: businessId,
         name: businessName,
-        ownerId: "",
+        ownerId: businessId,
         category: businessCategory,
         description: "",
         city: businessCity ?? "",
