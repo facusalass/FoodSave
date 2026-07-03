@@ -19,8 +19,10 @@ export async function findBusinessById(id) {
 }
 export async function createBusinessRepo(business) {
     const { data, error } = await supabase.from("businesses").insert(business).select("*").single();
-    if (error)
+    if (error) {
+        console.error("[createBusinessRepo]", JSON.stringify(error));
         return null;
+    }
     return data;
 }
 export async function updateBusinessById(id, data_update) {
