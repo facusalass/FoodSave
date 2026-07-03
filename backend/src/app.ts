@@ -16,7 +16,16 @@ import { uploadRoutes } from "./routes/uploadRoutes.js";
 
 export const app = express();
 
-app.use(cors());
+app.use((_req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-API-Key");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  if (_req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
 app.use(express.json());
 
 app.get("/health", (_request, response) => {
