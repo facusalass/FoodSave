@@ -20,7 +20,7 @@ export async function findBusinessById(id) {
 export async function createBusinessRepo(business) {
     const { data, error } = await supabase.from("businesses").insert(business).select("*").single();
     if (error)
-        throw error;
+        return null;
     return data;
 }
 export async function updateBusinessById(id, data_update) {
@@ -59,7 +59,7 @@ export async function findOfferById(id) {
 export async function createOfferRepo(offer) {
     const { data, error } = await supabase.from("offers").insert(offer).select("*").single();
     if (error)
-        throw error;
+        return null;
     return data;
 }
 export async function updateOfferById(offerId, businessId, data_update) {
@@ -96,13 +96,13 @@ export async function findReservationById(id) {
 export async function createReservationRepo(reservation) {
     const { data, error } = await supabase.from("reservations").insert(reservation).select("*").single();
     if (error)
-        throw error;
+        return null;
     return data;
 }
 export async function updateReservationStatusById(id, status) {
     const { data, error } = await supabase.from("reservations").update({ status }).eq("id", id).select("*").single();
     if (error)
-        throw error;
+        return null;
     return data;
 }
 // ── Favorites ─────────────────────────────────────

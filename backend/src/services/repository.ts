@@ -33,8 +33,8 @@ export async function findBusinessById(id: string) {
 
 export async function createBusinessRepo(business: Business) {
   const { data, error } = await supabase.from("businesses").insert(business as Record<string, unknown>).select("*").single();
-  if (error) throw error;
-  return data as Business;
+  if (error) return null;
+  return data as Business | null;
 }
 
 export async function updateBusinessById(id: string, data_update: BusinessUpdate) {
@@ -74,8 +74,8 @@ export async function findOfferById(id: string) {
 
 export async function createOfferRepo(offer: Offer) {
   const { data, error } = await supabase.from("offers").insert(offer as Record<string, unknown>).select("*").single();
-  if (error) throw error;
-  return data as Offer;
+  if (error) return null;
+  return data as Offer | null;
 }
 
 export async function updateOfferById(offerId: string, businessId: string, data_update: OfferUpdate) {
@@ -118,14 +118,14 @@ export async function findReservationById(id: string) {
 
 export async function createReservationRepo(reservation: Reservation) {
   const { data, error } = await supabase.from("reservations").insert(reservation as Record<string, unknown>).select("*").single();
-  if (error) throw error;
-  return data as Reservation;
+  if (error) return null;
+  return data as Reservation | null;
 }
 
 export async function updateReservationStatusById(id: string, status: ReservationStatus) {
   const { data, error } = await supabase.from("reservations").update({ status }).eq("id", id).select("*").single();
-  if (error) throw error;
-  return data as Reservation;
+  if (error) return null;
+  return data as Reservation | null;
 }
 
 // ── Favorites ─────────────────────────────────────

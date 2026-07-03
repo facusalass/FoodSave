@@ -87,23 +87,25 @@ export async function updateReservationStatus(reservationId: string, status: Res
   if (user.role === "client") {
     if (status !== "cancelled" || reservation.userId !== user.id || reservation.status !== "pending") return null;
     const updated = await updateReservationStatusById(reservationId, status);
+    if (!updated) return null;
     return enrichReservation(updated);
   }
 
   if (user.role !== "business" || reservation.businessId !== user.businessId) return null;
 
-  const updated = await updateReservationStatusById(reservationId, status);
+  const updatedBusiness = await updateReservationStatusById(reservationId, status);
+  if (!updatedBusiness) return null;
 
   if (status === "confirmed_paid") {
-    const code = normalizeCode(updated);
-    notifyPaymentConfirmed(reservationId, updated.userId, code).catch(() => {});
-    notifyPickupReminder(reservationId, updated.userId, code).catch(() => {});
+    const code = normalizeCode(updatedBusiness);
+    notifyPaymentConfirmed(reservationId, updatedBusiness.userId, code).catch(() => {});
+    notifyPickupReminder(reservationId, updatedBusiness.userId, code).catch(() => {});
 
-    const biz = await findBusinessById(updated.businessId);
+    const biz = await findBusinessById(updatedBusiness.businessId);
     if (biz?.ownerId) notifyBusinessPaymentReceived(reservationId, biz.ownerId, code).catch(() => {});
   }
 
-  return enrichReservation(updated);
+  return enrichReservation(updatedBusiness);
 }
 
 export async function createReservation(offerId: string, userId: string, quantity: number): Promise<ReservationWithDetails | { error: string }> {
@@ -127,6 +129,7 @@ export async function createReservation(offerId: string, userId: string, quantit
   };
 
   const created = await createReservationRepo(newReservation);
+  if (!created) return { error: "No se pudo crear la reserva." };
   notifyReservationCreated(created.id, userId, code).catch(() => {});
 
   const biz = await findBusinessById(offer.businessId);

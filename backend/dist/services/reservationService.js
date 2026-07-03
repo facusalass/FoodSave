@@ -67,20 +67,24 @@ export async function updateReservationStatus(reservationId, status, user) {
         if (status !== "cancelled" || reservation.userId !== user.id || reservation.status !== "pending")
             return null;
         const updated = await updateReservationStatusById(reservationId, status);
+        if (!updated)
+            return null;
         return enrichReservation(updated);
     }
     if (user.role !== "business" || reservation.businessId !== user.businessId)
         return null;
-    const updated = await updateReservationStatusById(reservationId, status);
+    const updatedBusiness = await updateReservationStatusById(reservationId, status);
+    if (!updatedBusiness)
+        return null;
     if (status === "confirmed_paid") {
-        const code = normalizeCode(updated);
-        notifyPaymentConfirmed(reservationId, updated.userId, code).catch(() => { });
-        notifyPickupReminder(reservationId, updated.userId, code).catch(() => { });
-        const biz = await findBusinessById(updated.businessId);
+        const code = normalizeCode(updatedBusiness);
+        notifyPaymentConfirmed(reservationId, updatedBusiness.userId, code).catch(() => { });
+        notifyPickupReminder(reservationId, updatedBusiness.userId, code).catch(() => { });
+        const biz = await findBusinessById(updatedBusiness.businessId);
         if (biz?.ownerId)
             notifyBusinessPaymentReceived(reservationId, biz.ownerId, code).catch(() => { });
     }
-    return enrichReservation(updated);
+    return enrichReservation(updatedBusiness);
 }
 export async function createReservation(offerId, userId, quantity) {
     const offer = await findOfferById(offerId);
@@ -102,6 +106,8 @@ export async function createReservation(offerId, userId, quantity) {
         status: "pending", createdAt: now.toISOString()
     };
     const created = await createReservationRepo(newReservation);
+    if (!created)
+        return { error: "No se pudo crear la reserva." };
     notifyReservationCreated(created.id, userId, code).catch(() => { });
     const biz = await findBusinessById(offer.businessId);
     if (biz?.ownerId)

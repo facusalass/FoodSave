@@ -30,6 +30,8 @@ export async function createOffer(data, businessId) {
         createdAt: now
     };
     const created = await createOfferRepo(newOffer);
+    if (!created)
+        throw new Error("No se pudo crear la oferta");
     return enrichOfferWithBusiness(created);
 }
 export async function updateOffer(id, businessId, data_update) {

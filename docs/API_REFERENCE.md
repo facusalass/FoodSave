@@ -80,9 +80,10 @@ Authorization: Bearer <token>
 
 ### `GET /offers`
 - **Auth:** ❌
-- **Query params opcionales:** `?category=Panadería` (parcial), `?type=mystery_box` (exacto), `?city=Resistencia, Chaco` (exacto)
-- **Respuesta (200):** `data: { offers: [...] }`
-- **DTO enriquecido:** Cada oferta incluye `storeName`, `storeAddress`, `logoUrl` del negocio.
+- **Query params opcionales:** `?category=Panadería` (parcial), `?type=mystery_box` (exacto), `?city=Resistencia, Chaco` (exacto), `?page=1&limit=10`
+- **Paginación:** devuelve `data.offers.items[]` + `.total`, `.page`, `.limit`, `.totalPages`. Default: `page=1, limit=20`, máximo 100.
+- **Respuesta (200):** `data: { offers: { items: [...], total, page, limit, totalPages } }`
+- **DTO enriquecido:** Cada oferta incluye `storeName`, `storeAddress`, `logoUrl`, `isVisible` del negocio.
 
 ### `GET /offers/:id`
 - **Auth:** ❌
@@ -195,19 +196,24 @@ Authorization: Bearer <token>
 
 | Método | Ruta | Auth | Rol |
 |---|---|---|---|
+| GET | `/` | ❌ | — |
 | GET | `/health` | ❌ | — |
 | POST | `/auth/register` | ❌ | — |
 | POST | `/auth/login` | ❌ | — |
 | POST | `/auth/google` | ❌ | — |
 | POST | `/auth/reset-password` | ❌ | — |
+| POST | `/auth/register-business` | `X-API-Key` | — |
 | GET | `/auth/me` | ✅ | cualquiera |
 | GET | `/cities` | ❌ | — |
 | GET | `/offers` | ❌ | — |
 | GET | `/offers/:id` | ❌ | — |
 | GET | `/business/stats` | ✅ | business |
+| GET | `/business/profile` | ✅ | business |
 | PUT | `/business/profile` | ✅ | business |
+| GET | `/business/offers` | ✅ | business |
 | POST | `/business/offers` | ✅ | business |
 | PUT | `/business/offers/:id` | ✅ | business |
+| PATCH | `/business/offers/:id/visibility` | ✅ | business |
 | DELETE | `/business/offers/:id` | ✅ | business |
 | GET | `/reservations` | ✅ | cualquiera |
 | POST | `/reservations` | ✅ | cualquiera |
@@ -215,4 +221,7 @@ Authorization: Bearer <token>
 | GET | `/favorites` | ✅ | client |
 | POST | `/favorites/:offerId` | ✅ | client |
 | DELETE | `/favorites/:offerId` | ✅ | client |
+| GET | `/notifications` | ✅ | cualquiera |
+| PATCH | `/notifications/:id/read` | ✅ | cualquiera |
+| PATCH | `/notifications/read-all` | ✅ | cualquiera |
 | POST | `/upload/image` | ✅ | business |

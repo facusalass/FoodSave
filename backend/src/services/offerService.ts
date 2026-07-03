@@ -67,6 +67,7 @@ export async function createOffer(
   };
 
   const created = await createOfferRepo(newOffer);
+  if (!created) throw new Error("No se pudo crear la oferta");
   return enrichOfferWithBusiness(created);
 }
 

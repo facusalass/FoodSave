@@ -163,7 +163,9 @@ export async function registerBusiness(params) {
         },
         createdAt: now
     };
-    await createBusinessRepo(newBusiness);
+    const business = await createBusinessRepo(newBusiness);
+    if (!business)
+        return { error: "No se pudo crear el comercio. Reintentá en unos minutos." };
     const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,

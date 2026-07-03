@@ -69,9 +69,13 @@ export async function registerBusinessController(request: Request, response: Res
 
   if (password.length < 6) return fail(response, 400, "La contrasena debe tener al menos 6 caracteres.");
 
-  handleRegisterResult(await registerBusiness({
-    email, password, businessName, businessAddress, businessCategory, businessCity, ownerName
-  }), response, 201);
+  try {
+    handleRegisterResult(await registerBusiness({
+      email, password, businessName, businessAddress, businessCategory, businessCity, ownerName
+    }), response, 201);
+  } catch (err) {
+    fail(response, 500, "Error interno al crear el comercio. Revisá los logs del servidor.");
+  }
 }
 
 export async function resetPasswordController(request: Request, response: Response) {

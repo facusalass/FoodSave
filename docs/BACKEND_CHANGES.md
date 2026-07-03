@@ -80,7 +80,7 @@ Todos los endpoints siguen devolviendo:
 
 ---
 
-## Endpoints completos (16)
+## Endpoints completos (22)
 
 ### Auth
 | Método | Ruta | Auth | Body |
@@ -89,27 +89,31 @@ Todos los endpoints siguen devolviendo:
 | POST | `/auth/login` | ❌ | `{ email, password }` |
 | POST | `/auth/google` | ❌ | `{ idToken }` |
 | POST | `/auth/reset-password` | ❌ | `{ email }` |
+| POST | `/auth/register-business` | `X-API-Key` | `{ email, password, businessName, businessAddress, businessCategory, ownerName, businessCity? }` |
 | GET | `/auth/me` | ✅ | — |
 
 ### Ofertas públicas
 | Método | Ruta | Auth | Notas |
 |---|---|---|---|
-| GET | `/offers` | ❌ | `?category=` (parcial), `?type=` (exacto) |
+| GET | `/offers` | ❌ | `?category=`, `?type=`, `?city=`, `?page=&limit=`. Paginado (`items[]` + `total/page/limit/totalPages`) |
 | GET | `/offers/:id` | ❌ | — |
 
 ### Ofertas del comercio (admin)
 | Método | Ruta | Auth | Body |
 |---|---|---|---|
+| GET | `/business/offers` | ✅ (business) | Lista solo ofertas del comercio logueado |
 | POST | `/business/offers` | ✅ (business) | `{ title, description, category, type, oldPrice, newPrice, stock, ... }` |
-| PUT | `/business/offers/:id` | ✅ (business) | `{ title?, description?, category?, type?, oldPrice?, newPrice?, stock?, pickupWindow?, pickupLimit?, allergens?, imageUrl?, estimatedWeightInKg? }` |
+| PUT | `/business/offers/:id` | ✅ (business) | `{ title?, description?, imageUrl?, stock?, ... }` |
+| PATCH | `/business/offers/:id/visibility` | ✅ (business) | `{ isVisible: true/false }` |
 | DELETE | `/business/offers/:id` | ✅ (business) | — |
-| PUT | `/business/profile` | ✅ (business) | `{ name?, category?, description?, address?, closingTime?, logoUrl? }` |
+| GET | `/business/profile` | ✅ (business) | Datos completos del comercio |
+| PUT | `/business/profile` | ✅ (business) | `{ name?, category?, description?, city?, address?, closingTime?, logoUrl?, paymentInfo? }` |
 
 ### Reservas
 | Método | Ruta | Auth | Notas |
 |---|---|---|---|
-| GET | `/reservations` | ✅ | Filtrado por rol |
-| POST | `/reservations` | ✅ | `{ offerId, quantity }`. DTO incluye `paymentInfo`, `code`, `expiresAt`, `whatsappPhone` |
+| GET | `/reservations` | ✅ | Filtrado por rol. `?page=&limit=`. Paginado |
+| POST | `/reservations` | ✅ | `{ offerId, quantity }`. DTO incluye `paymentInfo`, `code`, `expiresAt` (25 min), `whatsappPhone` |
 | PATCH | `/reservations/:id/status` | ✅ | `{ status }`. Client puede cancelar solo sus pending. Business cambia cualquiera |
 
 ### Favoritos
