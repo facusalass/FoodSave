@@ -199,13 +199,27 @@ export async function registerBusiness(params: {
   const existing = await findUserByEmail(normalizedEmail);
   if (existing) return { error: "Ya existe una cuenta con ese correo." };
 
+  // 1. Crear el auth user primero para tener un ID real
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizedEmail,
+    password,
+    options: {
+      data: { name: ownerName, role: "business", phone: "" }
+    }
+  });
+
+  if (error) return { error: normalizeSignUpError(error.message) };
+  if (!data.session || !data.user) return { emailConfirmationRequired: true, message: "Revisá tu correo para confirmar la cuenta." };
+
+  const userId = data.user.id;
   const now = new Date().toISOString();
   const businessId = `business-${Date.now()}`;
 
+  // 2. Crear el negocio con el ownerId real
   const newBusiness: Business = {
     id: businessId,
     name: businessName,
-    ownerId: businessId,
+    ownerId: userId,
     category: businessCategory,
     description: "",
     city: businessCity ?? "",
@@ -222,20 +236,10 @@ export async function registerBusiness(params: {
   const business = await createBusinessRepo(newBusiness);
   if (!business) return { error: "No se pudo crear el comercio. Reintentá en unos minutos." };
 
-  const { data, error } = await supabase.auth.signUp({
-    email: normalizedEmail,
-    password,
-    options: {
-      data: { name: ownerName, role: "business", businessId, phone: "" }
-    }
-  });
+  // 3. Actualizar businessId en el usuario (el trigger ya creó la fila en users)
+  await supabase.from("users").update({ businessId }).eq("id", userId);
 
-  if (error) return { error: normalizeSignUpError(error.message) };
-  if (!data.session || !data.user) return { emailConfirmationRequired: true, message: "Revisá tu correo para confirmar la cuenta." };
-
-  await supabase.from("businesses").update({ ownerId: data.user.id }).eq("id", businessId);
-
-  const user = await findUserById(data.user.id);
+  const user = await findUserById(userId);
 
   return {
     token: data.session.access_token,
