@@ -32,12 +32,12 @@ export async function findBusinessById(id: string) {
 }
 
 export async function createBusinessRepo(business: Business) {
-  const { data, error } = await supabase.from("businesses").insert(business as Record<string, unknown>).select("*").single();
+  const { error } = await supabase.from("businesses").insert(business as Record<string, unknown>);
   if (error) {
     console.error("[createBusinessRepo]", JSON.stringify(error));
     return null;
   }
-  if (!data) console.error("[createBusinessRepo] sin data ni error");
+  const { data } = await supabase.from("businesses").select("*").eq("id", business.id).single();
   return data as Business | null;
 }
 

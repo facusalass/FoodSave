@@ -15,7 +15,7 @@ BEGIN
     NEW.email,
     '',
     COALESCE((NEW.raw_user_meta_data->>'role')::public.user_role, 'client'::public.user_role),
-    NEW.raw_user_meta_data->>'phone',
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
     NEW.raw_user_meta_data->>'businessId',
     NOW()
   );

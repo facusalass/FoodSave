@@ -150,7 +150,7 @@ export async function registerBusiness(params) {
         email: normalizedEmail,
         password,
         options: {
-            data: { name: ownerName, role: "business", phone: "" }
+            data: { name: ownerName, role: "business", phone: "+54 9 000 0000000" }
         }
     });
     if (error)
