@@ -28,7 +28,8 @@ export type Reservation = {
   bankAlias?: string;
   whatsappPhone?: string;
   paymentInfo?: {
-    cvu: string;
-    alias: string;
+    ownerName?: string;
+    cvu?: string;
+    alias?: string;
   };
 };

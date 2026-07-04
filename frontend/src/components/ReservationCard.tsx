@@ -10,6 +10,7 @@ import {
 import { type AppColors, radii, spacing } from "../constants/theme";
 import { useTheme } from "../context/ThemeContext";
 import type { Reservation } from "../types/reservation";
+import { getReservationPaymentDetails } from "../utils/reservationPayment";
 import {
   formatRemainingTime,
   getRemainingMilliseconds,
@@ -41,11 +42,7 @@ export function ReservationCard({
   const reservationCode = getReservationCode(reservation);
   const isPendingPayment =
     reservation.status === "pending" && !visualState.isExpired;
-  const paymentAlias =
-    reservation.paymentAlias ??
-    reservation.bankAlias ??
-    reservation.paymentInfo?.alias ??
-    "";
+  const paymentDetails = getReservationPaymentDetails(reservation);
   const canOpenWhatsapp = isPendingPayment && hasReservationWhatsapp(reservation);
 
   useEffect(() => {
@@ -110,10 +107,18 @@ export function ReservationCard({
 
         {statusHint ? <Text style={styles.statusHint}>{statusHint}</Text> : null}
 
-        {isPendingPayment && paymentAlias ? (
-          <View style={styles.paymentRow}>
-            <CreditCard color={theme.secondaryDark} size={16} />
-            <Text style={styles.paymentText}>Alias: {paymentAlias}</Text>
+        {isPendingPayment ? (
+          <View style={styles.paymentBox}>
+            <View style={styles.paymentHeader}>
+              <CreditCard color={theme.secondaryDark} size={16} />
+              <Text style={styles.paymentTitle}>Datos para pagar</Text>
+            </View>
+            <PaymentDetail label="Alias bancario" value={paymentDetails.alias} />
+            <PaymentDetail label="CVU" value={paymentDetails.cvu} />
+            <PaymentDetail
+              label="Nombre del titular"
+              value={paymentDetails.ownerName}
+            />
           </View>
         ) : null}
 
@@ -150,6 +155,20 @@ export function ReservationCard({
           </Text>
         ) : null}
       </View>
+    </View>
+  );
+}
+
+function PaymentDetail({ label, value }: { label: string; value: string }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
+  return (
+    <View style={styles.paymentDetailRow}>
+      <Text style={styles.paymentDetailLabel}>{label}</Text>
+      <Text selectable style={styles.paymentDetailValue}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -318,22 +337,38 @@ function createStyles(theme: AppColors) {
     fontSize: 12,
     fontWeight: "700"
   },
-  paymentRow: {
-    alignItems: "center",
+  paymentBox: {
     backgroundColor: `${theme.secondary}14`,
     borderColor: `${theme.secondary}33`,
     borderRadius: radii.sm,
     borderWidth: 1,
-    flexDirection: "row",
     gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm
+    padding: spacing.sm
   },
-  paymentText: {
+  paymentDetailLabel: {
+    color: theme.mutedText,
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase"
+  },
+  paymentDetailRow: {
+    gap: 2
+  },
+  paymentDetailValue: {
     color: theme.text,
     flexShrink: 1,
     fontSize: 13,
     fontWeight: "800"
+  },
+  paymentHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  paymentTitle: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: "900"
   },
   separator: {
     backgroundColor: theme.border,

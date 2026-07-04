@@ -27,6 +27,7 @@ import {
   getReservationCode,
   getReservationVisualState
 } from "../../src/utils/reservationStatus";
+import { getReservationPaymentDetails } from "../../src/utils/reservationPayment";
 import {
   hasReservationWhatsapp,
   openReservationWhatsapp
@@ -165,11 +166,7 @@ export default function ReservationConfirmedScreen() {
 
   const visualState = getReservationVisualState(reservation);
   const code = getReservationCode(reservation);
-  const paymentAlias =
-    reservation.paymentAlias ??
-    reservation.bankAlias ??
-    reservation.paymentInfo?.alias ??
-    "";
+  const paymentDetails = getReservationPaymentDetails(reservation);
   const isWhatsappDisabled =
     visualState.isExpired || !hasReservationWhatsapp(reservation);
 
@@ -227,9 +224,14 @@ export default function ReservationConfirmedScreen() {
           <CreditCard color={theme.secondaryDark} size={18} />
           <Text style={styles.sectionTitle}>Datos bancarios</Text>
         </View>
-        <Text style={styles.aliasText}>
-          Alias: {paymentAlias || "No configurado"}
-        </Text>
+        <View style={styles.paymentDetails}>
+          <PaymentDetail label="Alias bancario" value={paymentDetails.alias} />
+          <PaymentDetail label="CVU" value={paymentDetails.cvu} />
+          <PaymentDetail
+            label="Nombre del titular"
+            value={paymentDetails.ownerName}
+          />
+        </View>
       </View>
 
       {hasReservationWhatsapp(reservation) ? null : (
@@ -256,13 +258,22 @@ export default function ReservationConfirmedScreen() {
   );
 }
 
+function PaymentDetail({ label, value }: { label: string; value: string }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
+  return (
+    <View style={styles.paymentDetailRow}>
+      <Text style={styles.paymentDetailLabel}>{label}</Text>
+      <Text selectable style={styles.paymentDetailValue}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 function createStyles(theme: AppColors) {
   return StyleSheet.create({
-  aliasText: {
-    color: theme.text,
-    fontSize: 16,
-    fontWeight: "700"
-  },
   code: {
     color: theme.text,
     fontSize: 34,
@@ -315,6 +326,29 @@ function createStyles(theme: AppColors) {
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.md
+  },
+  paymentDetailLabel: {
+    color: theme.mutedText,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase"
+  },
+  paymentDetailRow: {
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm
+  },
+  paymentDetails: {
+    gap: spacing.sm
+  },
+  paymentDetailValue: {
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: "800"
   },
   row: {
     alignItems: "center",

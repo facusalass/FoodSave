@@ -8,7 +8,7 @@ export type ReservationWithDetails = Reservation & {
   code: string; customerName: string; customerPhone: string;
   storeName: string; address: string; offerTitle: string; pickupTime: string;
   date: string; month: string; paymentAlias: string; bankAlias: string;
-  whatsappPhone: string; paymentInfo: { cvu: string; alias: string };
+  whatsappPhone: string; paymentInfo: { ownerName: string; cvu: string; alias: string };
 };
 
 const allowedStatuses: ReservationStatus[] = ["pending", "confirmed_paid", "picked_up", "cancelled"];
@@ -53,7 +53,7 @@ async function enrichReservation(reservation: Reservation): Promise<ReservationW
     paymentAlias: alias,
     bankAlias: alias,
     whatsappPhone: businessOwner?.phone ?? "",
-    paymentInfo: business?.paymentInfo ? { cvu: business.paymentInfo.cvu, alias: business.paymentInfo.alias } : { cvu: "", alias: "" },
+    paymentInfo: business?.paymentInfo ? { ownerName: business.paymentInfo.ownerName, cvu: business.paymentInfo.cvu, alias: business.paymentInfo.alias } : { ownerName: "", cvu: "", alias: "" },
     date: formatDate(reservation.createdAt),
     month: new Date(reservation.createdAt).toLocaleDateString("es-AR", { month: "long", year: "numeric" })
   };
