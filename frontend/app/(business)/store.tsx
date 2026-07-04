@@ -6,8 +6,10 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  Moon,
   Pencil,
   Plus,
+  Sun,
   Upload
 } from "lucide-react-native";
 import { useCallback, useState, type ReactNode } from "react";
@@ -52,7 +54,7 @@ const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
 export default function BusinessStoreScreen() {
   const router = useRouter();
   const { session } = useAuth();
-  const { theme } = useTheme();
+  const { setThemeMode, theme, themeMode } = useTheme();
   const styles = createStyles(theme);
   const [activeTab, setActiveTab] = useState<StoreTab>("settings");
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -408,6 +410,63 @@ export default function BusinessStoreScreen() {
             </View>
           </View>
 
+          <View style={styles.themeCard}>
+            <View style={styles.themeTextBlock}>
+              <Text style={styles.themeCardTitle}>Tema de la aplicacion</Text>
+              <Text style={styles.themeCardDescription}>
+                Cambia entre modo claro y oscuro
+              </Text>
+            </View>
+            <View style={styles.segmented}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  void setThemeMode("light");
+                }}
+                style={[
+                  styles.segmentButton,
+                  themeMode === "light" ? styles.activeSegment : null
+                ]}
+              >
+                <Sun
+                  color={themeMode === "light" ? theme.inverseText : theme.mutedText}
+                  size={15}
+                />
+                <Text
+                  style={[
+                    styles.segmentText,
+                    themeMode === "light" ? styles.activeSegmentText : null
+                  ]}
+                >
+                  Claro
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  void setThemeMode("dark");
+                }}
+                style={[
+                  styles.segmentButton,
+                  themeMode === "dark" ? styles.activeSegment : null
+                ]}
+              >
+                <Moon
+                  color={themeMode === "dark" ? theme.inverseText : theme.mutedText}
+                  size={15}
+                />
+                <Text
+                  style={[
+                    styles.segmentText,
+                    themeMode === "dark" ? styles.activeSegmentText : null
+                  ]}
+                >
+                  Oscuro
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.paymentCard}>
             <View style={styles.paymentTitleRow}>
               <CreditCard color={theme.secondary} size={18} />
@@ -658,6 +717,12 @@ function isAllowedImageType(mimeType: string) {
 
 function createStyles(theme: AppColors) {
   return StyleSheet.create({
+  activeSegment: {
+    backgroundColor: theme.primary
+  },
+  activeSegmentText: {
+    color: theme.inverseText
+  },
   chip: {
     backgroundColor: theme.subtleSurface,
     borderColor: theme.border,
@@ -730,8 +795,8 @@ function createStyles(theme: AppColors) {
     fontSize: 30,
     fontWeight: "900",
     minHeight: 42,
-    minWidth: 120,
-    padding: 0
+    padding: 0,
+    width: 78
   },
   content: {
     gap: spacing.md
@@ -942,6 +1007,27 @@ function createStyles(theme: AppColors) {
     shadowOpacity: 0.06,
     shadowRadius: 4
   },
+  segmentButton: {
+    alignItems: "center",
+    borderRadius: radii.sm,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minHeight: 32,
+    paddingHorizontal: spacing.sm
+  },
+  segmented: {
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    padding: 2
+  },
+  segmentText: {
+    color: theme.mutedText,
+    fontSize: 13,
+    fontWeight: "800"
+  },
   tabButton: {
     alignItems: "center",
     backgroundColor: theme.subtleSurface,
@@ -976,6 +1062,31 @@ function createStyles(theme: AppColors) {
   textArea: {
     minHeight: 120,
     paddingTop: spacing.md
+  },
+  themeCard: {
+    alignItems: "center",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    padding: spacing.md
+  },
+  themeCardDescription: {
+    color: theme.mutedText,
+    fontSize: 13,
+    lineHeight: 18
+  },
+  themeCardTitle: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  themeTextBlock: {
+    flex: 1,
+    gap: spacing.xs
   },
   topBar: {
     alignItems: "center",
