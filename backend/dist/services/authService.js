@@ -169,6 +169,7 @@ export async function registerBusiness(params) {
         city: businessCity ?? "",
         address: businessAddress,
         closingTime: "22:00",
+        isActive: true,
         paymentInfo: {
             ownerName,
             cvu: `000000310001${String(Date.now()).slice(0, 10)}`,

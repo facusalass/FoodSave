@@ -1,6 +1,6 @@
 import { supabase } from "../config/supabase.js";
 import { googleLogin, login, registerBusiness, registerClient } from "../services/authService.js";
-import { findUserByEmail } from "../services/repository.js";
+import { findUserByEmail, setBusinessActive } from "../services/repository.js";
 function fail(response, status, message) {
     response.status(status).json({ success: false, error: { message } });
 }
@@ -65,6 +65,16 @@ export async function registerBusinessController(request, response) {
     catch (err) {
         fail(response, 500, "Error interno al crear el comercio. Revisá los logs del servidor.");
     }
+}
+export async function toggleBusinessActiveController(request, response) {
+    const { businessId, isActive } = request.body;
+    if (!businessId || typeof isActive !== "boolean") {
+        return fail(response, 400, "businessId e isActive (true/false) son requeridos.");
+    }
+    const ok = await setBusinessActive(businessId, isActive);
+    if (!ok)
+        return fail(response, 404, "Comercio no encontrado.");
+    response.json({ success: true, data: { businessId, isActive, message: isActive ? "Comercio reactivado." : "Comercio suspendido." } });
 }
 export async function resetPasswordController(request, response) {
     const { email } = request.body;

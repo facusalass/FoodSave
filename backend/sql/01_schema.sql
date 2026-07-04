@@ -29,6 +29,7 @@ CREATE TABLE businesses (
   address TEXT NOT NULL,
   "closingTime" TEXT NOT NULL DEFAULT '22:00',
   "logoUrl" TEXT,
+  "isActive" BOOLEAN NOT NULL DEFAULT true,
   "paymentInfo" JSONB NOT NULL DEFAULT '{}',
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
 );

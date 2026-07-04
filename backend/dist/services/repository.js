@@ -32,6 +32,10 @@ export async function updateBusinessById(id, data_update) {
         return null;
     return single(data);
 }
+export async function setBusinessActive(id, isActive) {
+    const { error } = await supabase.from("businesses").update({ isActive }).eq("id", id);
+    return !error;
+}
 // ── Offers ────────────────────────────────────────
 export async function listOffersRepo(filters) {
     const page = Math.max(1, filters?.page ?? 1);
@@ -44,6 +48,13 @@ export async function listOffersRepo(filters) {
         businessIds = (cityBusinesses ?? []).map((b) => b.id);
     }
     let query = supabase.from("offers").select("*", { count: "exact" }).eq("isVisible", true);
+    // Solo ofertas de negocios activos
+    const { data: activeBusinesses } = await supabase.from("businesses").select("id").eq("isActive", true);
+    const activeIds = (activeBusinesses ?? []).map((b) => b.id);
+    if (activeIds.length > 0)
+        query = query.in("businessId", activeIds);
+    else
+        return buildPaginatedResult([], 0, page, limit);
     if (businessIds && businessIds.length > 0)
         query = query.in("businessId", businessIds);
     else if (businessIds?.length === 0)

@@ -5,7 +5,8 @@ import {
   meController,
   registerBusinessController,
   registerController,
-  resetPasswordController
+  resetPasswordController,
+  toggleBusinessActiveController
 } from "../controllers/authController.js";
 import { isAuth } from "../middlewares/guards.js";
 import { requireApiKey } from "../middlewares/apiKey.js";
@@ -16,5 +17,6 @@ authRoutes.post("/google", googleLoginController);
 authRoutes.post("/register", registerController);
 authRoutes.post("/login", loginController);
 authRoutes.post("/register-business", requireApiKey, registerBusinessController);
+authRoutes.patch("/register-business/toggle-active", requireApiKey, toggleBusinessActiveController);
 authRoutes.post("/reset-password", resetPasswordController);
 authRoutes.get("/me", isAuth, meController);

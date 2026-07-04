@@ -21,6 +21,7 @@ export type Business = {
   address: string;
   closingTime: string;
   logoUrl?: string;
+  isActive: boolean;
   paymentInfo: {
     ownerName: string;
     cvu: string;

@@ -47,6 +47,11 @@ export async function updateBusinessById(id: string, data_update: BusinessUpdate
   return single<Business>(data);
 }
 
+export async function setBusinessActive(id: string, isActive: boolean) {
+  const { error } = await supabase.from("businesses").update({ isActive }).eq("id", id);
+  return !error;
+}
+
 // ── Offers ────────────────────────────────────────
 
 export async function listOffersRepo(filters?: { category?: string; type?: string; city?: string; page?: number; limit?: number }): Promise<PaginatedResult<Offer>> {
@@ -62,6 +67,12 @@ export async function listOffersRepo(filters?: { category?: string; type?: strin
   }
 
   let query = supabase.from("offers").select("*", { count: "exact" }).eq("isVisible", true);
+
+  // Solo ofertas de negocios activos
+  const { data: activeBusinesses } = await supabase.from("businesses").select("id").eq("isActive", true);
+  const activeIds = (activeBusinesses ?? []).map((b: { id: string }) => b.id);
+  if (activeIds.length > 0) query = query.in("businessId", activeIds);
+  else return buildPaginatedResult([], 0, page, limit);
   if (businessIds && businessIds.length > 0) query = query.in("businessId", businessIds);
   else if (businessIds?.length === 0) return buildPaginatedResult([], 0, page, limit);
   if (filters?.category) query = query.ilike("category", `%${filters.category}%`);
