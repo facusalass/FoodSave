@@ -145,12 +145,13 @@ export async function registerBusiness(params) {
     const existing = await findUserByEmail(normalizedEmail);
     if (existing)
         return { error: "Ya existe una cuenta con ese correo." };
-    // 1. Crear el usuario con email ya confirmado (admin API)
+    const businessId = `business-${Date.now()}`;
+    // 1. Crear el usuario con businessId en metadata (admin API)
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email: normalizedEmail,
         password,
         email_confirm: true,
-        user_metadata: { name: ownerName, role: "business", phone: ownerPhone ?? "" }
+        user_metadata: { name: ownerName, role: "business", phone: ownerPhone ?? "", businessId }
     });
     if (error)
         return { error: normalizeSignUpError(error.message) };
@@ -158,8 +159,7 @@ export async function registerBusiness(params) {
         return { error: "No se pudo crear el usuario." };
     const userId = data.user.id;
     const now = new Date().toISOString();
-    const businessId = `business-${Date.now()}`;
-    // 2. Crear el negocio (siempre, aunque el mail no esté confirmado)
+    // 2. Crear el negocio
     const newBusiness = {
         id: businessId,
         name: businessName,
