@@ -89,9 +89,15 @@ function createStyles(theme: AppColors) {
   tabBar: {
     backgroundColor: theme.header,
     borderTopColor: theme.border,
-    minHeight: 72,
-    paddingBottom: 12,
-    paddingTop: 8
+    borderTopWidth: 1,
+    bottom: 0,
+    elevation: 0,
+    height: 64,
+    left: 0,
+    paddingBottom: 4,
+    paddingTop: 4,
+    position: "absolute",
+    right: 0
   },
   tabLabel: {
     fontSize: 12,

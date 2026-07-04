@@ -561,7 +561,8 @@ function createStyles(theme: AppColors) {
     fontWeight: "800"
   },
   content: {
-    gap: spacing.md
+    gap: spacing.md,
+    paddingBottom: 96
   },
   dateTitle: {
     color: theme.text,

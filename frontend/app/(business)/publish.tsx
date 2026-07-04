@@ -575,7 +575,8 @@ function isAllowedImageType(mimeType: string) {
 function createStyles(theme: AppColors) {
   return StyleSheet.create({
   content: {
-    gap: spacing.md
+    gap: spacing.md,
+    paddingBottom: 96
   },
   fieldGroup: {
     gap: spacing.sm

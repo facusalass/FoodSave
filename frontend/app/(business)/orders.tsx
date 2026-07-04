@@ -525,7 +525,8 @@ function createStyles(theme: AppColors) {
     fontWeight: "900"
   },
   content: {
-    gap: spacing.md
+    gap: spacing.md,
+    paddingBottom: 96
   },
   customerText: {
     color: theme.mutedText,

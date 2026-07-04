@@ -328,7 +328,8 @@ function createStyles(theme: AppColors) {
     fontWeight: "900"
   },
   content: {
-    gap: spacing.lg
+    gap: spacing.lg,
+    paddingBottom: 96
   },
   errorText: {
     color: theme.danger,

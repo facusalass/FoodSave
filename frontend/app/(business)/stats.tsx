@@ -790,7 +790,8 @@ function createStyles(theme: AppColors) {
     shadowRadius: 5
   },
   content: {
-    gap: spacing.md
+    gap: spacing.md,
+    paddingBottom: 96
   },
   customDateField: {
     flex: 1,
