@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   BarChart3,
   ClipboardList,
@@ -7,7 +7,7 @@ import {
   Plus,
   Store
 } from "lucide-react-native";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -32,6 +32,8 @@ import type { Offer } from "../../src/types/offer";
 import type { Reservation } from "../../src/types/reservation";
 import { formatClosingTimeDisplay } from "../../src/utils/closingTime";
 
+const DASHBOARD_REFRESH_MS = 5000;
+
 export default function BusinessDashboardScreen() {
   const router = useRouter();
   const { session } = useAuth();
@@ -46,38 +48,64 @@ export default function BusinessDashboardScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadDashboard() {
-      if (!session) {
-        setIsLoading(false);
-        return;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadDashboard(showLoading: boolean) {
+        if (!session) {
+          if (isActive) {
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        try {
+          if (isActive) {
+            setError(null);
+            setIsLoading((current) => (showLoading ? true : current));
+          }
+          const [nextOffers, nextReservations, businessProfile] =
+            await Promise.all([
+              getBusinessOffers(session.token),
+              getReservations(session.token),
+              getBusinessProfile(session.token)
+            ]);
+
+          if (!isActive) {
+            return;
+          }
+
+          setOffers(nextOffers);
+          setReservations(nextReservations);
+          setBusinessLogoUrl(businessProfile.logoUrl ?? "");
+          setBusinessClosingTime(businessProfile.closingTime ?? null);
+        } catch (loadError) {
+          const message =
+            loadError instanceof Error
+              ? loadError.message
+              : "No pudimos cargar el panel del comercio.";
+          if (isActive) {
+            setError(message);
+          }
+        } finally {
+          if (isActive) {
+            setIsLoading(false);
+          }
+        }
       }
 
-      try {
-        setError(null);
-        setIsLoading(true);
-        const [nextOffers, nextReservations, businessProfile] = await Promise.all([
-          getBusinessOffers(session.token),
-          getReservations(session.token),
-          getBusinessProfile(session.token)
-        ]);
-        setOffers(nextOffers);
-        setReservations(nextReservations);
-        setBusinessLogoUrl(businessProfile.logoUrl ?? "");
-        setBusinessClosingTime(businessProfile.closingTime ?? null);
-      } catch (loadError) {
-        const message =
-          loadError instanceof Error
-            ? loadError.message
-            : "No pudimos cargar el panel del comercio.";
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+      void loadDashboard(true);
+      const refreshIntervalId = setInterval(() => {
+        void loadDashboard(false);
+      }, DASHBOARD_REFRESH_MS);
 
-    void loadDashboard();
-  }, [session]);
+      return () => {
+        isActive = false;
+        clearInterval(refreshIntervalId);
+      };
+    }, [session])
+  );
 
   const activeOffersCount = useMemo(() => {
     return offers.filter((offer) => offer.isVisible !== false && offer.stock > 0)
