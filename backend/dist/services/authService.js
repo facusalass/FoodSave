@@ -1,6 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import { env } from "../config/env.js";
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 import { findUserByEmail, findUserById, createBusinessRepo } from "./repository.js";
 import { toPublicUser } from "../utils/publicUser.js";
 const googleClient = new OAuth2Client();
@@ -145,22 +145,21 @@ export async function registerBusiness(params) {
     const existing = await findUserByEmail(normalizedEmail);
     if (existing)
         return { error: "Ya existe una cuenta con ese correo." };
-    // 1. Crear el auth user primero para tener un ID real
-    const { data, error } = await supabase.auth.signUp({
+    // 1. Crear el usuario con email ya confirmado (admin API)
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email: normalizedEmail,
         password,
-        options: {
-            data: { name: ownerName, role: "business", phone: "+54 9 000 0000000" }
-        }
+        email_confirm: true,
+        user_metadata: { name: ownerName, role: "business", phone: "+54 9 000 0000000" }
     });
     if (error)
         return { error: normalizeSignUpError(error.message) };
-    if (!data.session || !data.user)
-        return { emailConfirmationRequired: true, message: "Revisá tu correo para confirmar la cuenta." };
+    if (!data.user)
+        return { error: "No se pudo crear el usuario." };
     const userId = data.user.id;
     const now = new Date().toISOString();
     const businessId = `business-${Date.now()}`;
-    // 2. Crear el negocio con el ownerId real
+    // 2. Crear el negocio (siempre, aunque el mail no esté confirmado)
     const newBusiness = {
         id: businessId,
         name: businessName,
@@ -180,11 +179,22 @@ export async function registerBusiness(params) {
     const business = await createBusinessRepo(newBusiness);
     if (!business)
         return { error: "No se pudo crear el comercio. Reintentá en unos minutos." };
-    // 3. Actualizar businessId en el usuario (el trigger ya creó la fila en users)
+    // 3. Actualizar businessId en el usuario
     await supabase.from("users").update({ businessId }).eq("id", userId);
+    // 4. Loguear al usuario para obtener un token
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password
+    });
     const user = await findUserById(userId);
+    if (loginError || !loginData.session) {
+        return {
+            token: `mock-token-${userId}`,
+            user: user ? toPublicUser(user) : buildUserFromAuth(data.user, ownerName, "business")
+        };
+    }
     return {
-        token: data.session.access_token,
+        token: loginData.session.access_token,
         user: user ? toPublicUser(user) : buildUserFromAuth(data.user, ownerName, "business")
     };
 }
