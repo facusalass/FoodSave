@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radii, spacing } from "../constants/theme";
+import { type AppColors, radii, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 type AdminMetricCardProps = {
   label: string;
@@ -9,19 +10,20 @@ type AdminMetricCardProps = {
   accent?: "primary" | "secondary" | "info" | "warning";
 };
 
-const accentColors = {
-  info: colors.info,
-  primary: colors.primary,
-  secondary: colors.secondary,
-  warning: colors.warning
-};
-
 export function AdminMetricCard({
   label,
   value,
   icon,
   accent = "primary"
 }: AdminMetricCardProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+  const accentColors = {
+    info: theme.info,
+    primary: theme.primary,
+    secondary: theme.secondary,
+    warning: theme.warning
+  };
   const color = accentColors[accent];
 
   return (
@@ -35,10 +37,11 @@ export function AdminMetricCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     flex: 1,
@@ -54,7 +57,7 @@ const styles = StyleSheet.create({
     width: 38
   },
   label: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -62,4 +65,5 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "900"
   }
-});
+  });
+}

@@ -17,7 +17,8 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { colors, spacing } from "../constants/theme";
+import { type AppColors, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { LogoutConfirmModal } from "./LogoutConfirmModal";
 
 export type ClientMenuRoute =
@@ -41,6 +42,8 @@ export function ClientSideMenu({
   onLogout
 }: ClientSideMenuProps) {
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   function handleConfirmLogout() {
     setIsLogoutModalVisible(false);
@@ -67,40 +70,46 @@ export function ClientSideMenu({
               onPress={onClose}
               style={styles.closeButton}
             >
-              <X color={colors.text} size={24} />
+              <X color={theme.text} size={24} />
             </Pressable>
           </View>
 
           <View style={styles.items}>
             <MenuItem
-              icon={<Home color={colors.text} size={21} />}
+              icon={<Home color={theme.text} size={21} />}
               label="Inicio"
               onPress={() => onNavigate("/(client)/home")}
+              styles={styles}
             />
             <MenuItem
-              icon={<Search color={colors.text} size={21} />}
+              icon={<Search color={theme.text} size={21} />}
               label="Explorar ofertas"
               onPress={() => onNavigate("/(client)/home")}
+              styles={styles}
             />
             <MenuItem
-              icon={<Clock color={colors.text} size={21} />}
+              icon={<Clock color={theme.text} size={21} />}
               label="Mis reservas"
               onPress={() => onNavigate("/(client)/reservations")}
+              styles={styles}
             />
             <MenuItem
-              icon={<Star color={colors.text} size={21} />}
+              icon={<Star color={theme.text} size={21} />}
               label="Favoritos"
               onPress={() => onNavigate("/(client)/favorites")}
+              styles={styles}
             />
             <MenuItem
-              icon={<User color={colors.text} size={21} />}
+              icon={<User color={theme.text} size={21} />}
               label="Perfil"
               onPress={() => onNavigate("/(client)/profile")}
+              styles={styles}
             />
             <MenuItem
-              icon={<CircleHelp color={colors.text} size={21} />}
+              icon={<CircleHelp color={theme.text} size={21} />}
               label="Ayuda"
               onPress={() => onNavigate("/(client)/help")}
+              styles={styles}
             />
           </View>
 
@@ -109,7 +118,7 @@ export function ClientSideMenu({
             onPress={() => setIsLogoutModalVisible(true)}
             style={styles.logoutButton}
           >
-            <LogOut color={colors.danger} size={21} />
+            <LogOut color={theme.danger} size={21} />
             <Text style={styles.logoutText}>Cerrar sesion</Text>
           </TouchableOpacity>
         </View>
@@ -127,12 +136,14 @@ function MenuItem({
   icon,
   label,
   muted = false,
-  onPress
+  onPress,
+  styles
 }: {
   icon: ReactNode;
   label: string;
   muted?: boolean;
   onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
 }) {
   return (
     <TouchableOpacity
@@ -148,7 +159,8 @@ function MenuItem({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject
   },
@@ -159,7 +171,7 @@ const styles = StyleSheet.create({
     width: 44
   },
   drawer: {
-    backgroundColor: colors.card,
+    backgroundColor: theme.card,
     flex: 1,
     maxWidth: 360,
     paddingBottom: spacing.xl,
@@ -167,7 +179,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -182,7 +194,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg
   },
   itemText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 15,
     fontWeight: "700"
   },
@@ -191,13 +203,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg
   },
   logo: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: 3
   },
   logoAccent: {
-    color: colors.primary
+    color: theme.primary
   },
   logoutButton: {
     alignItems: "center",
@@ -208,16 +220,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg
   },
   logoutText: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 15,
     fontWeight: "800"
   },
   mutedItemText: {
-    color: colors.mutedText
+    color: theme.mutedText
   },
   overlay: {
-    backgroundColor: "#00000033",
+    backgroundColor: theme.overlay,
     flex: 1,
     flexDirection: "row"
   }
-});
+  });
+}

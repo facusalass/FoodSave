@@ -19,14 +19,17 @@ import {
   googleAuthConfig,
   hasGoogleClientId
 } from "../../src/config/googleAuth";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, loginWithGoogle, session, isLoading } = useAuth();
+  const { isDark, theme } = useTheme();
+  const styles = createStyles(theme, isDark);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -180,7 +183,7 @@ export default function LoginScreen() {
               <GoogleLogo />
             </View>
             {isGoogleSubmitting ? (
-              <ActivityIndicator color={colors.text} />
+              <ActivityIndicator color={theme.text} />
             ) : (
               <Text style={styles.googleText}>CONTINUAR CON GOOGLE</Text>
             )}
@@ -227,7 +230,7 @@ export default function LoginScreen() {
             style={[styles.loginButton, isSubmitting ? styles.disabled : null]}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={theme.inverseText} />
             ) : (
               <Text style={styles.loginButtonText}>INGRESAR</Text>
             )}
@@ -294,15 +297,16 @@ function GoogleLogo() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors, isDark: boolean) {
+  return StyleSheet.create({
   brandAccent: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: 0
   },
   brandPrimary: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: 0
@@ -317,7 +321,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg
   },
   createAccount: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "800",
     marginTop: spacing.sm,
@@ -325,7 +329,7 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline"
   },
   forgotPassword: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     fontWeight: "800",
     marginTop: -spacing.xs,
@@ -336,7 +340,7 @@ const styles = StyleSheet.create({
     opacity: 0.64
   },
   dividerLine: {
-    backgroundColor: colors.border,
+    backgroundColor: theme.border,
     flex: 1,
     height: 1
   },
@@ -347,12 +351,12 @@ const styles = StyleSheet.create({
     marginVertical: spacing.sm
   },
   dividerText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "600"
   },
   error: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "600",
     marginTop: -spacing.xs,
@@ -360,8 +364,8 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#E2E8F0",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     elevation: 2,
@@ -377,7 +381,7 @@ const styles = StyleSheet.create({
   googleLogo: {
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderColor: colors.border,
+    borderColor: theme.border,
     borderRadius: 17,
     borderWidth: 1,
     height: 34,
@@ -385,7 +389,7 @@ const styles = StyleSheet.create({
     width: 34
   },
   googleText: {
-    color: "#0F172A",
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900",
     letterSpacing: 0
@@ -395,7 +399,7 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: isDark ? theme.primary : "#1F2937",
     borderRadius: radii.md,
     height: 54,
     justifyContent: "center"
@@ -408,8 +412,8 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.sm,
@@ -417,13 +421,13 @@ const styles = StyleSheet.create({
     paddingVertical: 26
   },
   profileText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 21,
     textAlign: "center"
   },
   profileTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 20,
     fontWeight: "900",
     textAlign: "center"
@@ -434,7 +438,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: "center",
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     height: 68,
@@ -442,4 +446,5 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.lg,
     paddingHorizontal: spacing.lg
   }
-});
+  });
+}

@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { colors, radii, spacing } from "../constants/theme";
+import { type AppColors, radii, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 type PrimaryButtonProps = {
   label: string;
@@ -26,6 +27,9 @@ export function PrimaryButton({
   variant = "primary"
 }: PrimaryButtonProps) {
   const isDisabled = disabled || isLoading;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+  const variantStyles = createVariantStyles(theme);
 
   return (
     <TouchableOpacity
@@ -39,7 +43,7 @@ export function PrimaryButton({
       ]}
     >
       {isLoading ? (
-        <ActivityIndicator color={variant === "outline" ? colors.primary : "#fff"} />
+        <ActivityIndicator color={variant === "outline" ? theme.primary : "#fff"} />
       ) : (
         <View style={styles.content}>
           {icon}
@@ -57,7 +61,8 @@ export function PrimaryButton({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   button: {
     alignItems: "center",
     borderRadius: radii.md,
@@ -83,23 +88,26 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   outlineLabel: {
-    color: colors.primary
+    color: theme.primary
   }
-});
+  });
+}
 
-const variantStyles = StyleSheet.create({
+function createVariantStyles(theme: AppColors) {
+  return StyleSheet.create({
   danger: {
-    backgroundColor: colors.danger
+    backgroundColor: theme.danger
   },
   outline: {
-    backgroundColor: colors.card,
-    borderColor: colors.primary,
+    backgroundColor: theme.card,
+    borderColor: theme.primary,
     borderWidth: 1
   },
   primary: {
-    backgroundColor: colors.primary
+    backgroundColor: theme.primary
   },
   secondary: {
-    backgroundColor: colors.secondary
+    backgroundColor: theme.secondary
   }
-});
+  });
+}

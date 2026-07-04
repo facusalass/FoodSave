@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { colors, radii, spacing } from "../constants/theme";
+import { type AppColors, radii, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 type LogoutConfirmModalProps = {
   onCancel: () => void;
@@ -20,6 +21,9 @@ export function LogoutConfirmModal({
   onConfirm,
   visible
 }: LogoutConfirmModalProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <Modal
       animationType="fade"
@@ -36,7 +40,7 @@ export function LogoutConfirmModal({
         />
         <View style={styles.card}>
           <View style={styles.iconBox}>
-            <LogOut color={colors.danger} size={26} />
+            <LogOut color={theme.danger} size={26} />
           </View>
           <Text style={styles.title}>Cerrar sesion</Text>
           <Text style={styles.message}>Seguro que queres cerrar tu sesion?</Text>
@@ -61,14 +65,15 @@ export function LogoutConfirmModal({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject
   },
   cancelButton: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderColor: colors.border,
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     justifyContent: "center",
@@ -76,13 +81,13 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   cancelText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 15,
     fontWeight: "900"
   },
   card: {
     alignItems: "center",
-    backgroundColor: colors.card,
+    backgroundColor: theme.card,
     borderRadius: radii.lg,
     elevation: 8,
     gap: spacing.md,
@@ -97,7 +102,7 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     alignItems: "center",
-    backgroundColor: colors.danger,
+    backgroundColor: theme.danger,
     borderRadius: radii.md,
     justifyContent: "center",
     minHeight: 50,
@@ -110,14 +115,14 @@ const styles = StyleSheet.create({
   },
   iconBox: {
     alignItems: "center",
-    backgroundColor: "#FEE2E2",
+    backgroundColor: `${theme.danger}1A`,
     borderRadius: 28,
     height: 56,
     justifyContent: "center",
     width: 56
   },
   message: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 15,
     lineHeight: 21,
     marginBottom: spacing.xs,
@@ -125,14 +130,15 @@ const styles = StyleSheet.create({
   },
   overlay: {
     alignItems: "center",
-    backgroundColor: "#00000066",
+    backgroundColor: theme.overlay,
     flex: 1,
     justifyContent: "center"
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 22,
     fontWeight: "900",
     textAlign: "center"
   }
-});
+  });
+}

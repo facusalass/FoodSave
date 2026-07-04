@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { colors, radii, spacing } from "../constants/theme";
+import { type AppColors, radii, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import type { Offer } from "../types/offer";
 import { formatCurrency } from "../utils/formatCurrency";
 import { getOfferPickupText } from "../utils/offerPickup";
@@ -24,6 +25,9 @@ export function OfferCard({
   onFavoritePress,
   onPress
 }: OfferCardProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.card}>
       <Image source={{ uri: offer.imageUrl }} style={styles.image} />
@@ -51,8 +55,8 @@ export function OfferCard({
               ]}
             >
               <Heart
-                color={isFavorite ? colors.primary : colors.mutedText}
-                fill={isFavorite ? colors.primary : "transparent"}
+                color={isFavorite ? theme.primary : theme.mutedText}
+                fill={isFavorite ? theme.primary : "transparent"}
                 size={18}
               />
             </TouchableOpacity>
@@ -69,7 +73,7 @@ export function OfferCard({
 
         <View style={styles.footer}>
           <View style={styles.metaItem}>
-            <Clock color={colors.mutedText} size={15} />
+            <Clock color={theme.mutedText} size={15} />
             <Text style={styles.metaText}>{getOfferPickupText(offer)}</Text>
           </View>
           <TouchableOpacity
@@ -85,11 +89,12 @@ export function OfferCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   card: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.elevatedCard,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
@@ -103,7 +108,7 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     alignItems: "center",
-    borderColor: colors.secondary,
+    borderColor: theme.secondary,
     borderRadius: radii.sm,
     borderWidth: 1,
     minHeight: 28,
@@ -111,12 +116,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm
   },
   ctaText: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "800"
   },
   description: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 18
   },
@@ -127,8 +132,8 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: 18,
     borderWidth: 1,
     height: 34,
@@ -136,18 +141,18 @@ const styles = StyleSheet.create({
     width: 34
   },
   favoriteButtonActive: {
-    backgroundColor: "#FF6B351A",
-    borderColor: "#FF6B3555"
+    backgroundColor: `${theme.primary}1A`,
+    borderColor: `${theme.primary}55`
   },
   image: {
-    backgroundColor: colors.border,
+    backgroundColor: theme.border,
     borderRadius: radii.md,
     height: 94,
     width: 94
   },
   logo: {
-    backgroundColor: colors.border,
-    borderColor: colors.border,
+    backgroundColor: theme.border,
+    borderColor: theme.border,
     borderRadius: 14,
     borderWidth: 1,
     height: 28,
@@ -160,18 +165,18 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   metaText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     flexShrink: 1,
     fontSize: 13
   },
   newPrice: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 20,
     fontWeight: "900",
     textAlign: "right"
   },
   oldPrice: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     textAlign: "right",
     textDecorationLine: "line-through"
@@ -182,7 +187,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   store: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 17,
     fontWeight: "900",
@@ -199,4 +204,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm
   }
-});
+  });
+}

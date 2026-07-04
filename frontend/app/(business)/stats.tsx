@@ -19,8 +19,9 @@ import {
 } from "react-native";
 import { EmptyState } from "../../src/components/EmptyState";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import { getBusinessOffers } from "../../src/services/offerService";
 import { getReservationsPage } from "../../src/services/reservationService";
 import type { BusinessStatistics } from "../../src/types/statistics";
@@ -37,6 +38,8 @@ const DATE_INPUT_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export default function BusinessStatsScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [period, setPeriod] = useState<StatsPeriod>("currentMonth");
@@ -115,7 +118,7 @@ export default function BusinessStatsScreen() {
         onPress={() => router.push("/(business)/dashboard")}
         style={styles.backLink}
       >
-        <ChevronLeft color={colors.primary} size={18} />
+        <ChevronLeft color={theme.primary} size={18} />
         <Text style={styles.backText}>Volver al inicio</Text>
       </TouchableOpacity>
 
@@ -128,7 +131,7 @@ export default function BusinessStatsScreen() {
           <Text style={styles.periodText}>
             {getPeriodLabel(period, customFrom, customTo)}
           </Text>
-          <ChevronDown color={colors.text} size={18} />
+          <ChevronDown color={theme.text} size={18} />
         </TouchableOpacity>
 
         {isPeriodMenuOpen ? (
@@ -176,7 +179,7 @@ export default function BusinessStatsScreen() {
                   onBlur={showCustomRangeErrorIfNeeded}
                   onChangeText={setCustomFrom}
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.placeholder}
                   style={styles.customRangeInput}
                   value={customFrom}
                 />
@@ -188,7 +191,7 @@ export default function BusinessStatsScreen() {
                   onBlur={showCustomRangeErrorIfNeeded}
                   onChangeText={setCustomTo}
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.placeholder}
                   style={styles.customRangeInput}
                   value={customTo}
                 />
@@ -203,7 +206,7 @@ export default function BusinessStatsScreen() {
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando estadisticas...</Text>
         </View>
       ) : error ? (
@@ -225,8 +228,8 @@ export default function BusinessStatsScreen() {
           </View>
 
           <MetricCard
-            icon={<Leaf color={colors.secondary} size={28} />}
-            iconBackground="#14B8A61A"
+            icon={<Leaf color={theme.secondary} size={28} />}
+            iconBackground={`${theme.secondary}1A`}
             label="Comida Salvada"
             value={
               statistics.savedFoodKg === null
@@ -242,8 +245,8 @@ export default function BusinessStatsScreen() {
           />
           <MetricCard
             isMuted
-            icon={<XCircle color="#94A3B8" size={28} />}
-            iconBackground="#E5E7EB"
+            icon={<XCircle color={theme.placeholder} size={28} />}
+            iconBackground={theme.subtleSurface}
             label="Cancelados"
             value={String(statistics.cancelledCount)}
           />
@@ -306,6 +309,9 @@ function PeriodOption({
   label: string;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <TouchableOpacity
       activeOpacity={0.85}
@@ -346,6 +352,9 @@ function MetricCard({
   label: string;
   value: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={[styles.metricCard, isMuted ? styles.metricCardMuted : null]}>
       <View>
@@ -368,6 +377,9 @@ function WeeklySalesChart({
 }: {
   weeklySales: BusinessStatistics["weeklySales"];
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   const maxValue = Math.max(...weeklySales.map((item) => item.total), 1);
   const yAxisValues = [maxValue, maxValue * 0.75, maxValue * 0.5, maxValue * 0.25, 0];
 
@@ -707,9 +719,10 @@ function formatAxisValue(value: number) {
   return String(Math.round(value));
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   axisText: {
-    color: "#94A3B8",
+    color: theme.placeholder,
     fontSize: 12,
     textAlign: "right"
   },
@@ -721,18 +734,18 @@ const styles = StyleSheet.create({
     minHeight: 36
   },
   backText: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 14,
     fontWeight: "800"
   },
   bar: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: 7,
     minHeight: 8,
     width: "78%"
   },
   barLabel: {
-    color: "#94A3B8",
+    color: theme.placeholder,
     fontSize: 14,
     fontWeight: "700"
   },
@@ -751,9 +764,9 @@ const styles = StyleSheet.create({
     zIndex: 1
   },
   chartArea: {
-    borderBottomColor: "#CBD5E1",
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
-    borderLeftColor: "#CBD5E1",
+    borderLeftColor: theme.border,
     borderLeftWidth: 1,
     flex: 1,
     height: 164,
@@ -765,8 +778,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   chartCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -784,26 +797,26 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   customRangeBox: {
-    backgroundColor: colors.card,
-    borderColor: "#FED7AA",
+    backgroundColor: theme.card,
+    borderColor: `${theme.primary}55`,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.sm
   },
   customRangeInput: {
-    backgroundColor: colors.background,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "800",
     minHeight: 44,
     paddingHorizontal: spacing.sm
   },
   customRangeLabel: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 12,
     fontWeight: "900"
   },
@@ -812,7 +825,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   emptyTopText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     fontWeight: "700"
   },
@@ -820,7 +833,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   gridLine: {
-    borderTopColor: "#E5E7EB",
+    borderTopColor: theme.border,
     borderTopWidth: 1,
     flex: 1
   },
@@ -837,13 +850,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   metricCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -867,22 +880,22 @@ const styles = StyleSheet.create({
     width: 56
   },
   metricLabel: {
-    color: "#64748B",
+    color: theme.mutedText,
     fontSize: 14,
     fontWeight: "900"
   },
   metricValue: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 30,
     fontWeight: "900"
   },
   mutedText: {
-    color: "#94A3B8"
+    color: theme.placeholder
   },
   periodButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     elevation: 2,
@@ -896,14 +909,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4
   },
   periodMenu: {
-    backgroundColor: colors.card,
-    borderColor: "#FED7AA",
+    backgroundColor: theme.card,
+    borderColor: `${theme.primary}55`,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 3,
     gap: spacing.xs,
     padding: spacing.sm,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 3, width: 0 },
     shadowOpacity: 0.12,
     shadowRadius: 8
@@ -919,43 +932,43 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm
   },
   periodOptionActive: {
-    backgroundColor: "#FF6B3512"
+    backgroundColor: `${theme.primary}12`
   },
   periodOptionDescription: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     lineHeight: 17
   },
   periodOptionDot: {
-    borderColor: "#CBD5E1",
+    borderColor: theme.border,
     borderRadius: 7,
     borderWidth: 2,
     height: 14,
     width: 14
   },
   periodOptionDotActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary
+    backgroundColor: theme.primary,
+    borderColor: theme.primary
   },
   periodOptionLabel: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   periodOptionLabelActive: {
-    color: colors.primary
+    color: theme.primary
   },
   periodOptionTextBlock: {
     flex: 1,
     gap: 2
   },
   periodText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "800"
   },
   rangeErrorText: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 12,
     fontWeight: "800",
     lineHeight: 17
@@ -967,13 +980,13 @@ const styles = StyleSheet.create({
     lineHeight: 44
   },
   revenueCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: radii.lg,
     elevation: 3,
     gap: spacing.sm,
     minHeight: 116,
     padding: spacing.lg,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 3, width: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 8
@@ -989,14 +1002,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   sectionTitle: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 15,
     fontWeight: "900"
   },
   topBar: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
+    backgroundColor: theme.header,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     justifyContent: "center",
     marginHorizontal: -spacing.md,
@@ -1005,18 +1018,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   topBarTitle: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900"
   },
   topOfferCount: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 24,
     fontWeight: "900"
   },
   topOfferRow: {
     alignItems: "center",
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: spacing.md,
@@ -1027,14 +1040,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0
   },
   topOfferTitle: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 14,
     fontWeight: "900"
   },
   topOffersCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -1050,4 +1063,5 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: 48
   }
-});
+  });
+}

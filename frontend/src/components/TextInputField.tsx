@@ -7,7 +7,8 @@ import {
   type TextInputProps,
   View
 } from "react-native";
-import { colors, radii, spacing } from "../constants/theme";
+import { type AppColors, radii, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 type TextInputFieldProps = TextInputProps & {
   label?: string;
@@ -25,6 +26,8 @@ export function TextInputField({
   ...props
 }: TextInputFieldProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.container}>
@@ -38,7 +41,7 @@ export function TextInputField({
       >
         {icon}
         <TextInput
-          placeholderTextColor={colors.mutedText}
+          placeholderTextColor={theme.placeholder}
           onBlur={(event) => {
             setIsFocused(false);
             onBlur?.(event);
@@ -57,31 +60,32 @@ export function TextInputField({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   container: {
     gap: spacing.xs
   },
   error: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 12
   },
   input: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 15,
     minHeight: 46,
     paddingVertical: 0
   },
   inputError: {
-    borderColor: colors.danger
+    borderColor: theme.danger
   },
   inputFocused: {
-    borderColor: colors.primary
+    borderColor: theme.primary
   },
   inputWrapper: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -90,9 +94,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   label: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0
   }
-});
+  });
+}

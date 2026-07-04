@@ -18,8 +18,9 @@ import {
 import { EmptyState } from "../../../src/components/EmptyState";
 import { PrimaryButton } from "../../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../../src/constants/theme";
 import { useAuth } from "../../../src/context/AuthContext";
+import { useTheme } from "../../../src/context/ThemeContext";
 import {
   addFavorite,
   getFavorites,
@@ -35,6 +36,8 @@ export default function OfferDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
@@ -147,7 +150,7 @@ export default function OfferDetailScreen() {
     return (
       <ScreenContainer>
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.metaText}>Cargando oferta...</Text>
         </View>
       </ScreenContainer>
@@ -169,7 +172,7 @@ export default function OfferDetailScreen() {
     <ScreenContainer>
       <View style={styles.topActions}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft color={colors.text} size={20} />
+          <ArrowLeft color={theme.text} size={20} />
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityLabel={
@@ -186,8 +189,8 @@ export default function OfferDetailScreen() {
           ]}
         >
           <Heart
-            color={isFavorite ? colors.primary : colors.mutedText}
-            fill={isFavorite ? colors.primary : "transparent"}
+            color={isFavorite ? theme.primary : theme.mutedText}
+            fill={isFavorite ? theme.primary : "transparent"}
             size={22}
           />
         </TouchableOpacity>
@@ -216,17 +219,17 @@ export default function OfferDetailScreen() {
 
       <View style={styles.infoGrid}>
         <InfoItem
-          icon={<PackageCheck color={colors.secondary} size={19} />}
+          icon={<PackageCheck color={theme.secondary} size={19} />}
           label="Cupos disponibles"
           value={`${offer.stock} disponibles`}
         />
         <InfoItem
-          icon={<Clock color={colors.secondary} size={19} />}
+          icon={<Clock color={theme.secondary} size={19} />}
           label="Horario de retiro"
           value={getOfferPickupText(offer)}
         />
         <InfoItem
-          icon={<MapPin color={colors.secondary} size={19} />}
+          icon={<MapPin color={theme.secondary} size={19} />}
           label="Direccion"
           value={getOfferAddress(offer)}
         />
@@ -273,6 +276,9 @@ function InfoItem({
   label: string;
   value: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.infoItem}>
       {icon}
@@ -284,10 +290,11 @@ function InfoItem({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   allergensCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.xs,
@@ -296,8 +303,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     height: 42,
@@ -306,8 +313,8 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     height: 42,
@@ -315,42 +322,42 @@ const styles = StyleSheet.create({
     width: 42
   },
   favoriteButtonActive: {
-    backgroundColor: "#FF6B351A",
-    borderColor: "#FF6B3555"
+    backgroundColor: `${theme.primary}1A`,
+    borderColor: `${theme.primary}55`
   },
   favoriteError: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "700",
     marginBottom: spacing.md
   },
   badge: {
     alignSelf: "flex-start",
-    backgroundColor: "#14B8A61A",
+    backgroundColor: `${theme.secondary}1A`,
     borderRadius: radii.sm,
     marginBottom: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs
   },
   badgeText: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "900"
   },
   description: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 15,
     lineHeight: 22,
     marginBottom: spacing.md
   },
   errorText: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 14,
     fontWeight: "700",
     marginBottom: spacing.md
   },
   image: {
-    backgroundColor: colors.border,
+    backgroundColor: theme.border,
     borderRadius: radii.lg,
     height: 220,
     marginBottom: spacing.md,
@@ -362,8 +369,8 @@ const styles = StyleSheet.create({
   },
   infoItem: {
     alignItems: "flex-start",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
@@ -371,7 +378,7 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   infoLabel: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -380,7 +387,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   infoValue: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 15,
     fontWeight: "700"
   },
@@ -390,16 +397,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   metaText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   newPrice: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 30,
     fontWeight: "900"
   },
   oldPrice: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 18,
     textDecorationLine: "line-through"
   },
@@ -410,14 +417,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md
   },
   store: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 14,
     fontWeight: "900",
   },
   storeLogo: {
-    backgroundColor: colors.border,
-    borderColor: colors.border,
+    backgroundColor: theme.border,
+    borderColor: theme.border,
     borderRadius: 16,
     borderWidth: 1,
     height: 32,
@@ -430,7 +437,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 28,
     fontWeight: "900",
     marginBottom: spacing.sm
@@ -441,4 +448,5 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: spacing.md
   }
-});
+  });
+}

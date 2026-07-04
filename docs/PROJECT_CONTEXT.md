@@ -243,6 +243,8 @@ npx expo start -c
   - Fondo: `#F9FAFB`
   - Texto principal: `#1F2937`
   - Texto secundario: `#6B7280`
+- Dark mode mobile global con fondo navy, superficies/cards oscuras, texto blanco/gris azulado, naranja FoodSave y teal para acentos secundarios.
+- La preferencia de tema se guarda localmente en el frontend con la key `foodsave.themeMode` usando SecureStore en mobile y `localStorage` en web; no se sincroniza con backend.
 - Tipografía sans serif moderna usando la fuente del sistema.
 - Márgenes consistentes en múltiplos de 8 y 16 px.
 - Textos visibles en español.

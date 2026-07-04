@@ -19,8 +19,9 @@ import {
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import {
   getBusinessOffers,
   getBusinessProfile
@@ -33,6 +34,8 @@ import { formatClosingTimeDisplay } from "../../src/utils/closingTime";
 export default function BusinessDashboardScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [businessLogoUrl, setBusinessLogoUrl] = useState("");
@@ -123,7 +126,7 @@ export default function BusinessDashboardScreen() {
           </View>
         </View>
         <View style={styles.closingBadge}>
-          <Clock color={colors.secondaryDark} size={14} />
+          <Clock color={theme.secondaryDark} size={14} />
           <Text style={styles.closingText}>
             Cierre hoy: {formatClosingTimeDisplay(businessClosingTime)}
           </Text>
@@ -132,7 +135,7 @@ export default function BusinessDashboardScreen() {
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando panel...</Text>
         </View>
       ) : (
@@ -142,13 +145,13 @@ export default function BusinessDashboardScreen() {
           <View style={styles.metricsGrid}>
             <MetricCard
               accent="primary"
-              icon={<BarChart3 color={colors.primary} size={22} />}
+              icon={<BarChart3 color={theme.primary} size={22} />}
               label="Ofertas Activas"
               value={String(activeOffersCount)}
             />
             <MetricCard
               accent="secondary"
-              icon={<Store color={colors.secondaryDark} size={22} />}
+              icon={<Store color={theme.secondaryDark} size={22} />}
               label="Reservas Hoy"
               value={String(todayReservationsCount)}
             />
@@ -168,19 +171,19 @@ export default function BusinessDashboardScreen() {
             <View style={styles.quickGrid}>
               <QuickAction
                 accent="primary"
-                icon={<ClipboardList color={colors.primary} size={24} />}
+                icon={<ClipboardList color={theme.primary} size={24} />}
                 label="Ver pedidos"
                 onPress={() => router.push("/(business)/orders")}
               />
               <QuickAction
                 accent="secondary"
-                icon={<FileText color={colors.secondaryDark} size={24} />}
+                icon={<FileText color={theme.secondaryDark} size={24} />}
                 label="Historial"
                 onPress={() => router.push("/(business)/history")}
               />
               <QuickAction
                 accent="info"
-                icon={<BarChart3 color={colors.info} size={24} />}
+                icon={<BarChart3 color={theme.info} size={24} />}
                 label="Estadísticas"
                 onPress={() => router.push("/(business)/stats")}
               />
@@ -209,15 +212,17 @@ function MetricCard({
   label: string;
   value: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const accentColor =
-    accent === "primary" ? colors.primary : colors.secondaryDark;
+    accent === "primary" ? theme.primary : theme.secondaryDark;
 
   return (
     <View style={styles.metricCard}>
       <View
         style={[
           styles.metricIcon,
-          { backgroundColor: accent === "primary" ? "#FF6B3514" : "#14B8A61A" }
+          { backgroundColor: `${accentColor}1A` }
         ]}
       >
         {icon}
@@ -239,11 +244,20 @@ function QuickAction({
   label: string;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+  const purple = "#A855F7";
+  const accentColor = {
+    info: theme.info,
+    primary: theme.primary,
+    purple,
+    secondary: theme.secondary
+  }[accent];
   const accentBackground = {
-    info: "#6366F114",
-    primary: "#FF6B3514",
-    purple: "#A855F714",
-    secondary: "#14B8A61A"
+    info: `${theme.info}14`,
+    primary: `${theme.primary}14`,
+    purple: `${purple}14`,
+    secondary: `${theme.secondary}1A`
   }[accent];
 
   return (
@@ -279,17 +293,18 @@ function toTitleCase(value: string) {
     .join(" ");
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   businessName: {
-    color: colors.text,
+    color: theme.text,
     flexShrink: 1,
     fontSize: 22,
     fontWeight: "900",
     lineHeight: 28
   },
   businessLogo: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: 24,
     borderWidth: 1,
     height: 48,
@@ -298,8 +313,8 @@ const styles = StyleSheet.create({
   closingBadge: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: "#14B8A61A",
-    borderColor: "#14B8A655",
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}55`,
     borderRadius: 18,
     borderWidth: 1,
     flexDirection: "row",
@@ -308,7 +323,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs
   },
   closingText: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "900"
   },
@@ -316,7 +331,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg
   },
   errorText: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "800"
   },
@@ -338,13 +353,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   metricCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -367,12 +382,12 @@ const styles = StyleSheet.create({
     width: 36
   },
   metricLabel: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "800"
   },
   metricValue: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 28,
     fontWeight: "900"
   },
@@ -382,8 +397,8 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   notificationDot: {
-    backgroundColor: colors.primary,
-    borderColor: colors.card,
+    backgroundColor: theme.primary,
+    borderColor: theme.card,
     borderRadius: 5,
     borderWidth: 1,
     height: 9,
@@ -394,7 +409,7 @@ const styles = StyleSheet.create({
   },
   publishButton: {
     alignItems: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: radii.md,
     elevation: 2,
     flexDirection: "row",
@@ -402,7 +417,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 58,
     paddingHorizontal: spacing.md,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.24,
     shadowRadius: 5
@@ -414,8 +429,8 @@ const styles = StyleSheet.create({
   },
   quickAction: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -431,7 +446,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5
   },
   quickActionText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "900",
     textAlign: "center"
@@ -452,14 +467,14 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   sectionTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   topBar: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
+    backgroundColor: theme.header,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -475,8 +490,9 @@ const styles = StyleSheet.create({
     width: 44
   },
   topBarTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 17,
     fontWeight: "900"
   }
-});
+  });
+}

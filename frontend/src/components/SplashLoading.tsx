@@ -1,8 +1,12 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import Svg, { Path, Rect } from "react-native-svg";
-import { colors, spacing } from "../constants/theme";
+import { type AppColors, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 export function SplashLoading() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
       <View style={styles.logoCard}>
@@ -26,7 +30,7 @@ export function SplashLoading() {
           <Path
             d="M38 79C43 103 89 103 94 79"
             fill="none"
-            stroke={colors.primary}
+            stroke={theme.primary}
             strokeLinecap="round"
             strokeWidth={10}
           />
@@ -49,21 +53,22 @@ export function SplashLoading() {
         <Text style={styles.message}>Rescatando comida cerca tuyo...</Text>
       </View>
 
-      <ActivityIndicator color={colors.primary} />
+      <ActivityIndicator color={theme.primary} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   brand: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 30,
     fontWeight: "900",
     letterSpacing: 0
   },
   container: {
     alignItems: "center",
-    backgroundColor: colors.background,
+    backgroundColor: theme.background,
     flex: 1,
     justifyContent: "center",
     padding: spacing.xl
@@ -76,8 +81,8 @@ const styles = StyleSheet.create({
   },
   logoCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: 36,
     borderWidth: 1,
     elevation: 4,
@@ -90,8 +95,9 @@ const styles = StyleSheet.create({
     width: 164
   },
   message: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 15,
     textAlign: "center"
   }
-});
+  });
+}

@@ -2,11 +2,14 @@ import { Redirect, Tabs } from "expo-router";
 import { ClipboardList, LayoutDashboard, Plus } from "lucide-react-native";
 import { StyleSheet } from "react-native";
 import { SplashLoading } from "../../src/components/SplashLoading";
-import { colors } from "../../src/constants/theme";
+import { type AppColors } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 
 export default function BusinessLayout() {
   const { session, isLoading } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   if (isLoading) {
     return <SplashLoading />;
@@ -28,8 +31,8 @@ export default function BusinessLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedText,
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.mutedText,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabLabel
       }}
@@ -81,10 +84,11 @@ export default function BusinessLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.card,
-    borderTopColor: colors.border,
+    backgroundColor: theme.header,
+    borderTopColor: theme.border,
     minHeight: 72,
     paddingBottom: 12,
     paddingTop: 8
@@ -93,4 +97,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600"
   }
-});
+  });
+}

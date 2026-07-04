@@ -24,8 +24,9 @@ import {
 import { EmptyState } from "../../src/components/EmptyState";
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import {
   getBusinessOffers,
   getBusinessProfile,
@@ -51,6 +52,8 @@ const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
 export default function BusinessStoreScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [activeTab, setActiveTab] = useState<StoreTab>("settings");
   const [offers, setOffers] = useState<Offer[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -317,7 +320,7 @@ export default function BusinessStoreScreen() {
 
       {activeTab === "settings" && isLoadingProfile ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando datos del local...</Text>
         </View>
       ) : activeTab === "settings" && profileError && !businessName ? (
@@ -332,11 +335,11 @@ export default function BusinessStoreScreen() {
             style={[styles.logoBox, isUploadingLogo ? styles.disabledButton : null]}
           >
             {isUploadingLogo ? (
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={theme.primary} />
             ) : logoUrl ? (
               <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
             ) : (
-              <Upload color="#94A3B8" size={34} />
+              <Upload color={theme.placeholder} size={34} />
             )}
             <Text style={styles.logoText}>
               {isUploadingLogo ? "Subiendo logo..." : "Cargar Logo"}
@@ -364,7 +367,7 @@ export default function BusinessStoreScreen() {
                 style={styles.selectInput}
                 value={category}
               />
-              <ChevronDown color={colors.text} size={18} />
+              <ChevronDown color={theme.text} size={18} />
             </TouchableOpacity>
           </View>
 
@@ -390,7 +393,7 @@ export default function BusinessStoreScreen() {
                     )
                   }
                   placeholder="22:00"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.placeholder}
                   style={styles.closingTimeInput}
                   value={closingTime}
                 />
@@ -401,13 +404,13 @@ export default function BusinessStoreScreen() {
               </Text>
             </View>
             <View style={styles.clockBox}>
-              <Clock color={colors.primary} size={30} />
+              <Clock color={theme.primary} size={30} />
             </View>
           </View>
 
           <View style={styles.paymentCard}>
             <View style={styles.paymentTitleRow}>
-              <CreditCard color={colors.secondary} size={18} />
+              <CreditCard color={theme.secondary} size={18} />
               <Text style={styles.paymentTitle}>Datos para Recibir Pagos</Text>
             </View>
             <InputField
@@ -462,7 +465,7 @@ export default function BusinessStoreScreen() {
 
           {isLoadingOffers ? (
             <View style={styles.loadingBlock}>
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={theme.primary} />
               <Text style={styles.loadingText}>Cargando publicaciones...</Text>
             </View>
           ) : offersError ? (
@@ -496,6 +499,9 @@ function StoreTabButton({
   label: string;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <TouchableOpacity
       activeOpacity={0.86}
@@ -524,6 +530,9 @@ function InputField({
   placeholder?: string;
   value: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.label}>{label}</Text>
@@ -531,7 +540,7 @@ function InputField({
         multiline={multiline}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={theme.placeholder}
         style={[styles.input, inputStyle]}
         textAlignVertical={multiline ? "top" : "center"}
         value={value}
@@ -541,6 +550,8 @@ function InputField({
 }
 
 function Chip({ accent, label }: { accent?: "primary"; label: string }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const isPrimary = accent === "primary";
   return (
     <View style={[styles.chip, isPrimary ? styles.chipPrimary : null]}>
@@ -560,6 +571,8 @@ function PublicationCard({
   offer: Offer;
   onToggleVisibility: (offer: Offer) => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const isHidden = offer.isVisible === false;
   const isMuted = isHidden || offer.stock <= 0;
 
@@ -578,7 +591,7 @@ function PublicationCard({
       </View>
       <View style={styles.publicationActions}>
         <IconButton
-          icon={<Pencil color={colors.text} size={20} />}
+          icon={<Pencil color={theme.text} size={20} />}
           onPress={() =>
             Alert.alert("Proximamente", "La edicion de publicaciones se conectara mas adelante.")
           }
@@ -587,11 +600,11 @@ function PublicationCard({
           disabled={isUpdatingVisibility}
           icon={
             isUpdatingVisibility ? (
-              <ActivityIndicator color={colors.primary} size="small" />
+              <ActivityIndicator color={theme.primary} size="small" />
             ) : isHidden ? (
-              <EyeOff color="#94A3B8" size={20} />
+              <EyeOff color={theme.placeholder} size={20} />
             ) : (
-              <Eye color={colors.secondary} size={20} />
+              <Eye color={theme.secondary} size={20} />
             )
           }
           onPress={() => onToggleVisibility(offer)}
@@ -610,6 +623,9 @@ function IconButton({
   icon: ReactNode;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <TouchableOpacity
       activeOpacity={0.85}
@@ -640,26 +656,27 @@ function isAllowedImageType(mimeType: string) {
   return mimeType === "image/jpeg" || mimeType === "image/png";
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   chip: {
-    backgroundColor: "#F8FAFC",
-    borderColor: colors.border,
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border,
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs
   },
   chipPrimary: {
-    backgroundColor: "#FF6B3512",
-    borderColor: "#FDBA74"
+    backgroundColor: `${theme.primary}12`,
+    borderColor: `${theme.primary}55`
   },
   chipText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 12,
     fontWeight: "900"
   },
   chipTextPrimary: {
-    color: colors.primary
+    color: theme.primary
   },
   chipsRow: {
     flexDirection: "row",
@@ -667,7 +684,7 @@ const styles = StyleSheet.create({
   },
   clockBox: {
     alignItems: "center",
-    backgroundColor: "#FF6B3514",
+    backgroundColor: `${theme.primary}14`,
     borderRadius: radii.lg,
     height: 56,
     justifyContent: "center",
@@ -675,8 +692,8 @@ const styles = StyleSheet.create({
   },
   closingCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -689,12 +706,12 @@ const styles = StyleSheet.create({
     shadowRadius: 5
   },
   closingLabel: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     fontWeight: "800"
   },
   closingHint: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     fontWeight: "700"
   },
@@ -704,12 +721,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   closingSuffix: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900"
   },
   closingTimeInput: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 30,
     fontWeight: "900",
     minHeight: 42,
@@ -723,7 +740,7 @@ const styles = StyleSheet.create({
     opacity: 0.72
   },
   errorText: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "800"
   },
@@ -734,14 +751,14 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   hiddenPrice: {
-    color: "#94A3B8"
+    color: theme.placeholder
   },
   hiddenText: {
-    color: "#94A3B8"
+    color: theme.placeholder
   },
   iconButton: {
     alignItems: "center",
-    borderColor: "#CBD5E1",
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     height: 40,
@@ -749,17 +766,17 @@ const styles = StyleSheet.create({
     width: 40
   },
   input: {
-    backgroundColor: colors.card,
-    borderColor: "#CBD5E1",
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    color: colors.text,
+    color: theme.text,
     fontSize: 16,
     minHeight: 50,
     paddingHorizontal: spacing.md
   },
   label: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
@@ -769,13 +786,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   logoBox: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#CBD5E1",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderStyle: "dashed",
     borderWidth: 1.5,
@@ -795,18 +812,18 @@ const styles = StyleSheet.create({
     width: 72
   },
   logoHint: {
-    color: "#94A3B8",
+    color: theme.placeholder,
     fontSize: 12,
     fontWeight: "900"
   },
   logoText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   newButton: {
     alignItems: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: radii.md,
     justifyContent: "center",
     minHeight: 38,
@@ -821,29 +838,29 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   offerPrice: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 26,
     fontWeight: "900"
   },
   offerStock: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14
   },
   offerTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 15,
     fontWeight: "900"
   },
   paymentCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md
   },
   paymentTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
@@ -857,8 +874,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   publicationCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -886,13 +903,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   publicationsTitle: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 20,
     fontWeight: "900"
   },
   saveButton: {
     alignItems: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: radii.md,
     justifyContent: "center",
     minHeight: 60
@@ -903,7 +920,7 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   },
   selectInput: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 15,
     fontWeight: "800",
@@ -912,8 +929,8 @@ const styles = StyleSheet.create({
   },
   selectLike: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#CBD5E1",
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     elevation: 2,
@@ -927,22 +944,22 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: theme.subtleSurface,
     borderRadius: radii.md,
     flex: 1,
     justifyContent: "center",
     minHeight: 46
   },
   tabButtonActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     elevation: 2,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.18,
     shadowRadius: 4
   },
   tabText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
@@ -962,8 +979,8 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
+    backgroundColor: theme.header,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -976,8 +993,9 @@ const styles = StyleSheet.create({
     width: 44
   },
   topBarTitle: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900"
   }
-});
+  });
+}

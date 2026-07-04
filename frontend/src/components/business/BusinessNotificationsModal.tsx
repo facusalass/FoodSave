@@ -15,8 +15,9 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { colors, spacing } from "../../constants/theme";
+import { type AppColors, spacing } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import { useBusinessNotifications } from "../../hooks/useBusinessNotifications";
 import type {
   AppNotification,
@@ -33,6 +34,8 @@ export function BusinessNotificationsModal({
   visible
 }: BusinessNotificationsModalProps) {
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { error, isLoading, notifications, refresh } =
     useBusinessNotifications({ enabled: visible });
 
@@ -55,14 +58,14 @@ export function BusinessNotificationsModal({
               onPress={onClose}
               style={styles.closeButton}
             >
-              <X color={colors.text} size={22} />
+              <X color={theme.text} size={22} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.list}>
             {isLoading ? (
               <View style={styles.loadingBlock}>
-                <ActivityIndicator color={colors.primary} />
+                <ActivityIndicator color={theme.primary} />
                 <Text style={styles.loadingText}>Cargando notificaciones...</Text>
               </View>
             ) : error ? (
@@ -82,6 +85,8 @@ export function BusinessNotificationsModal({
                 <NotificationRow
                   key={notification.id}
                   notification={notification}
+                  theme={theme}
+                  styles={styles}
                 />
               ))
             )}
@@ -107,10 +112,18 @@ export function BusinessNotificationsModal({
   );
 }
 
-function NotificationRow({ notification }: { notification: AppNotification }) {
+function NotificationRow({
+  notification,
+  styles,
+  theme
+}: {
+  notification: AppNotification;
+  styles: ReturnType<typeof createStyles>;
+  theme: AppColors;
+}) {
   return (
     <View style={styles.row}>
-      <View style={styles.iconBox}>{getNotificationIcon(notification.type)}</View>
+      <View style={styles.iconBox}>{getNotificationIcon(notification.type, theme)}</View>
       <Text numberOfLines={2} style={styles.message}>
         {notification.title || notification.message}
       </Text>
@@ -119,27 +132,28 @@ function NotificationRow({ notification }: { notification: AppNotification }) {
   );
 }
 
-function getNotificationIcon(type: NotificationType): ReactNode {
+function getNotificationIcon(type: NotificationType, theme: AppColors): ReactNode {
   if (type === "payment_received") {
-    return <CheckCircle2 color={colors.secondaryDark} size={21} />;
+    return <CheckCircle2 color={theme.secondaryDark} size={21} />;
   }
 
   if (type === "reservation_received") {
-    return <PackageCheck color={colors.primary} size={21} />;
+    return <PackageCheck color={theme.primary} size={21} />;
   }
 
   if (type === "pickup_reminder") {
-    return <Clock color={colors.text} size={21} />;
+    return <Clock color={theme.text} size={21} />;
   }
 
   if (type === "reservation_expired") {
-    return <AlertTriangle color={colors.text} size={21} />;
+    return <AlertTriangle color={theme.text} size={21} />;
   }
 
-  return <PackageCheck color={colors.text} size={21} />;
+  return <PackageCheck color={theme.text} size={21} />;
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   closeButton: {
     alignItems: "center",
     height: 44,
@@ -151,25 +165,25 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   emptyText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     lineHeight: 18
   },
   emptyTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   footer: {
     alignItems: "center",
-    borderTopColor: colors.border,
+    borderTopColor: theme.border,
     borderTopWidth: 1,
     minHeight: 64,
     justifyContent: "center"
   },
   header: {
     alignItems: "center",
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -179,7 +193,7 @@ const styles = StyleSheet.create({
   },
   iconBox: {
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: theme.subtleSurface,
     borderRadius: 8,
     height: 36,
     justifyContent: "center",
@@ -194,29 +208,29 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   message: {
-    color: "#334155",
+    color: theme.text,
     flex: 1,
     fontSize: 15,
     lineHeight: 20
   },
   overlay: {
-    backgroundColor: "#00000022",
+    backgroundColor: theme.overlay,
     flex: 1
   },
   panel: {
     alignSelf: "flex-end",
-    backgroundColor: colors.card,
+    backgroundColor: theme.card,
     flex: 1,
     maxWidth: 390,
     width: "100%"
   },
   row: {
     alignItems: "center",
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: spacing.md,
@@ -224,7 +238,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 15,
     fontWeight: "900"
   },
@@ -241,8 +255,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg
   },
   viewAllText: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 14,
     fontWeight: "900"
   }
-});
+  });
+}

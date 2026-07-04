@@ -20,8 +20,9 @@ import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { EmptyState } from "../../src/components/EmptyState";
 import { OfferCard } from "../../src/components/OfferCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import { getCities } from "../../src/services/cityService";
 import {
   addFavorite,
@@ -38,6 +39,8 @@ const DEFAULT_CITY = "Resistencia, Chaco";
 export default function ClientHomeScreen() {
   const router = useRouter();
   const { logout, session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [cities, setCities] = useState<string[]>([]);
@@ -210,13 +213,13 @@ export default function ClientHomeScreen() {
       <View style={styles.filtersBlock}>
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
-            <Search color={colors.mutedText} size={20} />
+            <Search color={theme.mutedText} size={20} />
             <TextInput
               autoCapitalize="none"
               autoCorrect={false}
               onChangeText={setSearchQuery}
               placeholder="Buscar comercios..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.placeholder}
               style={styles.searchInput}
               value={searchQuery}
             />
@@ -226,7 +229,7 @@ export default function ClientHomeScreen() {
             onPress={() => setIsCityModalVisible(true)}
             style={styles.cityButton}
           >
-            <MapPin color={colors.text} size={16} />
+            <MapPin color={theme.text} size={16} />
             <Text numberOfLines={1} style={styles.cityText}>
               {selectedCity ?? "CIUDAD"}
             </Text>
@@ -272,7 +275,7 @@ export default function ClientHomeScreen() {
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando ofertas...</Text>
         </View>
       ) : error ? (
@@ -337,6 +340,9 @@ function CitySelectorModal({
   selectedCity: string | null;
   visible: boolean;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <Modal
       animationType="fade"
@@ -356,7 +362,7 @@ function CitySelectorModal({
               onPress={onClose}
               style={styles.modalCloseButton}
             >
-              <X color={colors.text} size={22} />
+              <X color={theme.text} size={22} />
             </TouchableOpacity>
           </View>
 
@@ -388,7 +394,7 @@ function CitySelectorModal({
                       {city}
                     </Text>
                     {isSelected ? (
-                      <Check color={colors.secondaryDark} size={18} />
+                      <Check color={theme.secondaryDark} size={18} />
                     ) : null}
                   </TouchableOpacity>
                 );
@@ -528,17 +534,18 @@ function matchesCategory(offer: Offer, category: string) {
   return offerCategory === normalizedCategory;
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   activeChip: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary
+    backgroundColor: theme.primary,
+    borderColor: theme.primary
   },
   activeChipText: {
     color: "#FFFFFF"
   },
   categoryChip: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
@@ -551,14 +558,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs
   },
   categoryText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "800"
   },
   cityButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -574,8 +581,8 @@ const styles = StyleSheet.create({
   },
   cityOption: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -584,20 +591,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   cityOptionActive: {
-    backgroundColor: "#14B8A61A",
-    borderColor: "#14B8A655"
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}55`
   },
   cityOptionText: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 14,
     fontWeight: "800"
   },
   cityOptionTextActive: {
-    color: colors.secondaryDark
+    color: theme.secondaryDark
   },
   cityText: {
-    color: colors.text,
+    color: theme.text,
     flexShrink: 1,
     fontSize: 12,
     fontWeight: "900"
@@ -606,7 +613,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg
   },
   favoriteError: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -622,11 +629,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   locationHint: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     fontWeight: "700"
   },
@@ -634,7 +641,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject
   },
   modalCard: {
-    backgroundColor: colors.card,
+    backgroundColor: theme.card,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     gap: spacing.md,
@@ -647,7 +654,7 @@ const styles = StyleSheet.create({
     width: 40
   },
   modalEmptyText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     fontWeight: "700",
     textAlign: "center"
@@ -658,19 +665,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   modalOverlay: {
-    backgroundColor: "#11182780",
+    backgroundColor: theme.overlay,
     flex: 1,
     justifyContent: "flex-end"
   },
   modalTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 20,
     fontWeight: "900"
   },
   searchBox: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flex: 1,
@@ -680,7 +687,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   searchInput: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 15
   },
@@ -689,8 +696,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   sectionTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 22,
     fontWeight: "900"
   }
-});
+  });
+}

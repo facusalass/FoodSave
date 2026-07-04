@@ -3,10 +3,13 @@ import { ArrowLeft, MailCheck } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
+import { useTheme } from "../../src/context/ThemeContext";
 
 export default function CheckEmailScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { email } = useLocalSearchParams<{ email?: string }>();
   const registeredEmail = Array.isArray(email) ? email[0] : email;
 
@@ -19,7 +22,7 @@ export default function CheckEmailScreen() {
           onPress={() => router.replace("/(auth)/login")}
           style={styles.backButton}
         >
-          <ArrowLeft color={colors.text} size={22} />
+          <ArrowLeft color={theme.text} size={22} />
         </Pressable>
 
         <Text style={styles.logo}>
@@ -32,7 +35,7 @@ export default function CheckEmailScreen() {
       <View style={styles.content}>
         <View style={styles.card}>
           <View style={styles.iconWrap}>
-            <MailCheck color={colors.primary} size={28} />
+            <MailCheck color={theme.primary} size={28} />
           </View>
 
           <Text style={styles.title}>Revisá tu correo</Text>
@@ -67,7 +70,8 @@ export default function CheckEmailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   backButton: {
     alignItems: "center",
     height: 44,
@@ -76,8 +80,8 @@ const styles = StyleSheet.create({
   },
   card: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.sm,
@@ -89,7 +93,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl
   },
   email: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "800",
     marginTop: spacing.xs,
@@ -100,29 +104,29 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     alignItems: "center",
-    backgroundColor: "#FF6B3514",
+    backgroundColor: `${theme.primary}14`,
     borderRadius: 26,
     height: 52,
     justifyContent: "center",
     width: 52
   },
   logo: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: 3
   },
   logoAccent: {
-    color: colors.primary
+    color: theme.primary
   },
   message: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 21,
     textAlign: "center"
   },
   registerLink: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "800",
     marginTop: spacing.md,
@@ -134,20 +138,20 @@ const styles = StyleSheet.create({
     paddingTop: 0
   },
   secondaryText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     lineHeight: 20,
     textAlign: "center"
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 22,
     fontWeight: "900",
     textAlign: "center"
   },
   topBar: {
     alignItems: "center",
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     height: 68,
@@ -155,4 +159,5 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.lg,
     paddingHorizontal: spacing.md
   }
-});
+  });
+}

@@ -19,8 +19,9 @@ import {
   View
 } from "react-native";
 import { LogoutConfirmModal } from "../LogoutConfirmModal";
-import { colors, spacing } from "../../constants/theme";
+import { type AppColors, spacing } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 
 type BusinessRoute =
   | "/(business)/dashboard"
@@ -31,7 +32,7 @@ type BusinessRoute =
   | "/(business)/store";
 
 type BusinessMenuItem = {
-  icon: ReactNode;
+  icon: (color: string) => ReactNode;
   key: string;
   label: string;
   route: BusinessRoute;
@@ -39,37 +40,37 @@ type BusinessMenuItem = {
 
 const MENU_ITEMS: BusinessMenuItem[] = [
   {
-    icon: <Home color={colors.text} size={21} />,
+    icon: (color) => <Home color={color} size={21} />,
     key: "dashboard",
     label: "Inicio",
     route: "/(business)/dashboard"
   },
   {
-    icon: <Plus color={colors.text} size={22} />,
+    icon: (color) => <Plus color={color} size={22} />,
     key: "publish",
     label: "Publicar excedente",
     route: "/(business)/publish"
   },
   {
-    icon: <ClipboardList color={colors.text} size={21} />,
+    icon: (color) => <ClipboardList color={color} size={21} />,
     key: "orders",
     label: "Pedidos",
     route: "/(business)/orders"
   },
   {
-    icon: <Clock color={colors.text} size={21} />,
+    icon: (color) => <Clock color={color} size={21} />,
     key: "history",
     label: "Historial",
     route: "/(business)/history"
   },
   {
-    icon: <BarChart3 color={colors.text} size={21} />,
+    icon: (color) => <BarChart3 color={color} size={21} />,
     key: "stats",
     label: "Estadisticas",
     route: "/(business)/stats"
   },
   {
-    icon: <Store color={colors.text} size={21} />,
+    icon: (color) => <Store color={color} size={21} />,
     key: "store",
     label: "Mi local",
     route: "/(business)/store"
@@ -78,6 +79,8 @@ const MENU_ITEMS: BusinessMenuItem[] = [
 
 export function BusinessMenuButton() {
   const [isVisible, setIsVisible] = useState(false);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <>
@@ -88,7 +91,7 @@ export function BusinessMenuButton() {
         onPress={() => setIsVisible(true)}
         style={styles.menuButton}
       >
-        <Menu color={colors.text} size={24} />
+        <Menu color={theme.text} size={24} />
       </TouchableOpacity>
       <BusinessSideMenu
         onClose={() => setIsVisible(false)}
@@ -108,6 +111,8 @@ export function BusinessSideMenu({
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   function handleNavigate(item: BusinessMenuItem) {
@@ -146,7 +151,7 @@ export function BusinessSideMenu({
                   onPress={() => handleNavigate(item)}
                   style={[styles.menuItem, isActive ? styles.menuItemActive : null]}
                 >
-                  <View style={styles.iconSlot}>{item.icon}</View>
+                  <View style={styles.iconSlot}>{item.icon(theme.text)}</View>
                   <Text style={styles.menuText}>{item.label}</Text>
                 </TouchableOpacity>
               );
@@ -158,7 +163,7 @@ export function BusinessSideMenu({
             onPress={handleLogoutPress}
             style={styles.logoutButton}
           >
-            <LogOut color={colors.danger} size={21} />
+            <LogOut color={theme.danger} size={21} />
             <Text style={styles.logoutText}>Cerrar sesión</Text>
           </TouchableOpacity>
         </View>
@@ -172,7 +177,8 @@ export function BusinessSideMenu({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   backdrop: {
     bottom: 0,
     left: 0,
@@ -186,7 +192,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     alignItems: "center",
-    borderTopColor: colors.border,
+    borderTopColor: theme.border,
     borderTopWidth: 1,
     flexDirection: "row",
     gap: spacing.md,
@@ -194,7 +200,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg
   },
   logoutText: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 15,
     fontWeight: "900"
   },
@@ -212,25 +218,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg
   },
   menuItemActive: {
-    backgroundColor: "#F8FAFC"
+    backgroundColor: theme.subtleSurface
   },
   menuList: {
     paddingTop: spacing.lg
   },
   menuText: {
-    color: "#374151",
+    color: theme.text,
     fontSize: 15,
     fontWeight: "900"
   },
   overlay: {
-    backgroundColor: "#00000026",
+    backgroundColor: theme.overlay,
     flex: 1
   },
   panel: {
-    backgroundColor: colors.card,
+    backgroundColor: theme.card,
     flex: 1,
     justifyContent: "space-between",
     maxWidth: 290,
     width: "76%"
   }
-});
+  });
+}

@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import { Bell, Menu } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, spacing } from "../constants/theme";
+import { type AppColors, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { useNotifications } from "../hooks/useNotifications";
 
 type ClientTopBarProps = {
@@ -16,6 +17,8 @@ export function ClientTopBar({
   unreadNotificationsCount
 }: ClientTopBarProps) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const shouldLoadUnreadCount = unreadNotificationsCount === undefined;
   const { unreadCount } = useNotifications({
     enabled: shouldLoadUnreadCount
@@ -40,7 +43,7 @@ export function ClientTopBar({
         onPress={onMenuPress}
         style={styles.iconButton}
       >
-        <Menu color={colors.text} size={24} />
+        <Menu color={theme.text} size={24} />
       </Pressable>
 
       <Text style={styles.logo}>
@@ -53,7 +56,7 @@ export function ClientTopBar({
         onPress={handleNotificationsPress}
         style={styles.bellWrapper}
       >
-        <Bell color={colors.text} size={22} />
+        <Bell color={theme.text} size={22} />
         {hasUnreadNotifications ? (
           <View style={styles.notificationBadge}>
             {visibleUnreadCount > 9 ? (
@@ -70,7 +73,8 @@ export function ClientTopBar({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   bellWrapper: {
     alignItems: "center",
     height: 44,
@@ -80,8 +84,8 @@ const styles = StyleSheet.create({
   },
   container: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
+    backgroundColor: theme.header,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -97,18 +101,18 @@ const styles = StyleSheet.create({
     width: 44
   },
   logo: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 17,
     fontWeight: "900",
     letterSpacing: 3
   },
   logoAccent: {
-    color: colors.primary
+    color: theme.primary
   },
   notificationBadge: {
     alignItems: "center",
-    backgroundColor: colors.secondary,
-    borderColor: colors.card,
+    backgroundColor: theme.secondary,
+    borderColor: theme.header,
     borderRadius: 8,
     borderWidth: 1,
     minHeight: 10,
@@ -125,4 +129,5 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     lineHeight: 11
   }
-});
+  });
+}

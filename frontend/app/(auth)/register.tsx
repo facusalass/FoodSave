@@ -14,8 +14,9 @@ import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { SplashLoading } from "../../src/components/SplashLoading";
 import { TextInputField } from "../../src/components/TextInputField";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 
 type FieldErrors = {
   name?: string;
@@ -28,6 +29,8 @@ type FieldErrors = {
 export default function RegisterScreen() {
   const router = useRouter();
   const { isLoading, register, session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -117,7 +120,7 @@ export default function RegisterScreen() {
             onPress={() => router.back()}
             style={styles.backButton}
           >
-            <ArrowLeft color={colors.text} size={22} />
+            <ArrowLeft color={theme.text} size={22} />
           </Pressable>
 
           <Text style={styles.logo}>
@@ -218,6 +221,9 @@ export default function RegisterScreen() {
 }
 
 function SectionTitle({ label }: { label: string }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return <Text style={styles.sectionTitle}>{label}</Text>;
 }
 
@@ -263,7 +269,8 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   backButton: {
     alignItems: "center",
     height: 44,
@@ -275,7 +282,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg
   },
   error: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "600",
     textAlign: "center"
@@ -287,7 +294,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   loginLink: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "800",
     marginTop: spacing.md,
@@ -295,41 +302,41 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline"
   },
   logo: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: 3
   },
   logoAccent: {
-    color: colors.primary
+    color: theme.primary
   },
   screen: {
     paddingHorizontal: spacing.lg,
     paddingTop: 0
   },
   sectionTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900",
     marginTop: spacing.sm,
     textAlign: "center"
   },
   subtitle: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 21,
     textAlign: "center"
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 20,
     fontWeight: "900",
     textAlign: "center"
   },
   titleCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.sm,
@@ -338,7 +345,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: "center",
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     height: 68,
@@ -346,4 +353,5 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.lg,
     paddingHorizontal: spacing.md
   }
-});
+  });
+}

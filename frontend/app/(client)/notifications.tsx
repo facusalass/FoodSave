@@ -22,8 +22,9 @@ import {
 import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { EmptyState } from "../../src/components/EmptyState";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import { useNotifications } from "../../src/hooks/useNotifications";
 import type {
   AppNotification,
@@ -33,6 +34,8 @@ import type {
 export default function ClientNotificationsScreen() {
   const router = useRouter();
   const { logout } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const {
     error,
     isLoading,
@@ -96,7 +99,7 @@ export default function ClientNotificationsScreen() {
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando notificaciones...</Text>
         </View>
       ) : error ? (
@@ -130,6 +133,9 @@ function NotificationCard({
   notification: AppNotification;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <TouchableOpacity
       activeOpacity={0.86}
@@ -140,7 +146,7 @@ function NotificationCard({
       ]}
     >
       <View style={styles.notificationIcon}>
-        {getNotificationIcon(notification.type)}
+        {getNotificationIcon(notification.type, theme)}
       </View>
 
       <View style={styles.notificationBody}>
@@ -164,24 +170,24 @@ function NotificationCard({
   );
 }
 
-function getNotificationIcon(type: NotificationType): ReactNode {
+function getNotificationIcon(type: NotificationType, theme: AppColors): ReactNode {
   if (type === "reservation_expired") {
-    return <AlertTriangle color={colors.warning} size={20} />;
+    return <AlertTriangle color={theme.warning} size={20} />;
   }
 
   if (type === "payment_confirmed") {
-    return <CheckCircle2 color={colors.success} size={20} />;
+    return <CheckCircle2 color={theme.success} size={20} />;
   }
 
   if (type === "pickup_reminder") {
-    return <Clock color={colors.info} size={20} />;
+    return <Clock color={theme.info} size={20} />;
   }
 
   if (type === "reservation_created") {
-    return <PackageCheck color={colors.primary} size={20} />;
+    return <PackageCheck color={theme.primary} size={20} />;
   }
 
-  return <Bell color={colors.secondaryDark} size={20} />;
+  return <Bell color={theme.secondaryDark} size={20} />;
 }
 
 function formatNotificationDate(value?: string) {
@@ -203,7 +209,8 @@ function formatNotificationDate(value?: string) {
   }).format(date);
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   content: {
     gap: spacing.lg
   },
@@ -221,7 +228,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   notificationBody: {
@@ -229,8 +236,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   notificationCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
@@ -238,7 +245,7 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   notificationDate: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     fontWeight: "700"
   },
@@ -250,19 +257,19 @@ const styles = StyleSheet.create({
   },
   notificationIcon: {
     alignItems: "center",
-    backgroundColor: colors.background,
+    backgroundColor: theme.subtleSurface,
     borderRadius: 20,
     height: 40,
     justifyContent: "center",
     width: 40
   },
   notificationMessage: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 20
   },
   notificationTitle: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 16,
     fontWeight: "900"
@@ -271,33 +278,34 @@ const styles = StyleSheet.create({
     opacity: 0.78
   },
   readStatus: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "900"
   },
   readStatusMuted: {
-    color: colors.mutedText
+    color: theme.mutedText
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 24,
     fontWeight: "900"
   },
   unreadCard: {
-    borderColor: "#14B8A666"
+    borderColor: `${theme.secondary}66`
   },
   markAllButton: {
-    backgroundColor: "#14B8A61A",
-    borderColor: "#14B8A64D",
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}4D`,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs
   },
   markAllText: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "900"
   }
-});
+  });
+}
 

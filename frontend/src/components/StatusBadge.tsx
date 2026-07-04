@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radii, spacing } from "../constants/theme";
+import { type AppColors, radii, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import type { ReservationStatus } from "../types/reservation";
 
 type StatusBadgeProps = {
@@ -9,43 +10,41 @@ type StatusBadgeProps = {
 
 const statusConfig: Record<
   ReservationStatus,
-  { label: string; backgroundColor: string; color: string }
+  { label: string; color: (theme: AppColors) => string }
 > = {
   pending: {
-    backgroundColor: "#F59E0B1A",
-    color: colors.warning,
+    color: (theme) => theme.warning,
     label: "Pendiente"
   },
   confirmed_paid: {
-    backgroundColor: "#14B8A61A",
-    color: colors.secondaryDark,
+    color: (theme) => theme.secondaryDark,
     label: "Confirmado/Pagado"
   },
   picked_up: {
-    backgroundColor: "#6366F11A",
-    color: colors.info,
+    color: (theme) => theme.info,
     label: "Retirado"
   },
   cancelled: {
-    backgroundColor: "#EF44441A",
-    color: colors.danger,
+    color: (theme) => theme.danger,
     label: "Cancelado"
   }
 };
 
 export function StatusBadge({ status, label }: StatusBadgeProps) {
+  const { theme } = useTheme();
   const config = statusConfig[status];
+  const color = config.color(theme);
 
   return (
     <View
       style={[
         styles.badge,
         {
-          backgroundColor: config.backgroundColor
+          backgroundColor: `${color}1A`
         }
       ]}
     >
-      <Text style={[styles.label, { color: config.color }]}>
+      <Text style={[styles.label, { color }]}>
         {label ?? config.label}
       </Text>
     </View>

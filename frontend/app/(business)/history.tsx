@@ -13,8 +13,9 @@ import {
 import { EmptyState } from "../../src/components/EmptyState";
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import { getReservationsPage } from "../../src/services/reservationService";
 import type {
   Reservation,
@@ -37,6 +38,8 @@ const PAID_STATUSES: ReservationStatus[] = ["confirmed_paid", "picked_up"];
 export default function BusinessHistoryScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [period, setPeriod] = useState<HistoryPeriod>("7");
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
   const [customDays, setCustomDays] = useState(DEFAULT_CUSTOM_DAYS);
@@ -156,17 +159,17 @@ export default function BusinessHistoryScreen() {
         onPress={() => router.push("/(business)/dashboard")}
         style={styles.backLink}
       >
-        <ChevronLeft color={colors.primary} size={18} />
+        <ChevronLeft color={theme.primary} size={18} />
         <Text style={styles.backText}>Volver al inicio</Text>
       </TouchableOpacity>
 
       <View style={styles.searchBox}>
-        <Search color="#94A3B8" size={18} />
+        <Search color={theme.placeholder} size={18} />
         <TextInput
           autoCapitalize="characters"
           onChangeText={setSearchText}
           placeholder="Buscar por codigo (ej: FS-11A)"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={theme.placeholder}
           style={styles.searchInput}
           value={searchText}
         />
@@ -179,7 +182,7 @@ export default function BusinessHistoryScreen() {
           style={styles.periodButton}
         >
           <Text style={styles.periodText}>{getPeriodLabel(period, customDays)}</Text>
-          <ChevronDown color={colors.text} size={18} />
+          <ChevronDown color={theme.text} size={18} />
         </TouchableOpacity>
 
         {isPeriodMenuOpen ? (
@@ -230,7 +233,7 @@ export default function BusinessHistoryScreen() {
               keyboardType="numeric"
               onChangeText={setCustomDays}
               placeholder="Ej: 15"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.placeholder}
               style={styles.customRangeInput}
               value={customDays}
             />
@@ -251,7 +254,7 @@ export default function BusinessHistoryScreen() {
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando historial...</Text>
         </View>
       ) : error ? (
@@ -281,7 +284,7 @@ export default function BusinessHistoryScreen() {
               style={styles.loadMoreButton}
             >
               {isLoadingMore ? (
-                <ActivityIndicator color={colors.primary} />
+                <ActivityIndicator color={theme.primary} />
               ) : (
                 <Text style={styles.loadMoreText}>Cargar mas historial</Text>
               )}
@@ -304,6 +307,9 @@ function PeriodOption({
   label: string;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <TouchableOpacity
       activeOpacity={0.86}
@@ -332,6 +338,8 @@ function PeriodOption({
 }
 
 function HistoryCard({ reservation }: { reservation: Reservation }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const isCancelled = reservation.status === "cancelled";
   const statusLabel = getStatusLabel(reservation.status);
 
@@ -502,7 +510,8 @@ function formatHistoryTime(reservation: Reservation) {
   return reservation.pickupTime || "--:-- hs";
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   backLink: {
     alignItems: "center",
     alignSelf: "flex-start",
@@ -511,22 +520,22 @@ const styles = StyleSheet.create({
     minHeight: 36
   },
   backText: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 14,
     fontWeight: "800"
   },
   cancelledBadge: {
-    backgroundColor: "#F8FAFC",
-    borderColor: "#E2E8F0"
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border
   },
   cancelledBadgeText: {
-    color: "#475569"
+    color: theme.mutedText
   },
   cancelledCard: {
     opacity: 0.82
   },
   cancelledPrice: {
-    color: "#94A3B8"
+    color: theme.placeholder
   },
   cardBodyRow: {
     alignItems: "center",
@@ -547,7 +556,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   code: {
-    color: "#475569",
+    color: theme.mutedText,
     fontSize: 14,
     fontWeight: "800"
   },
@@ -555,29 +564,30 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   dateTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   customRangeBox: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md
   },
   customRangeInput: {
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    color: colors.text,
+    color: theme.text,
     fontSize: 15,
     minHeight: 42,
     paddingHorizontal: spacing.md
   },
   customRangeLabel: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "800"
   },
@@ -591,8 +601,8 @@ const styles = StyleSheet.create({
     gap: spacing.lg
   },
   historyCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -609,41 +619,41 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   loadMoreButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.primary,
+    backgroundColor: theme.card,
+    borderColor: theme.primary,
     borderRadius: radii.md,
     borderWidth: 1,
     justifyContent: "center",
     minHeight: 46
   },
   loadMoreText: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 14,
     fontWeight: "900"
   },
   mutedText: {
-    color: "#94A3B8"
+    color: theme.placeholder
   },
   offerTitle: {
-    color: "#334155",
+    color: theme.mutedText,
     fontSize: 14
   },
   paidBadge: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#86EFAC"
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}55`
   },
   paidBadgeText: {
-    color: "#15803D"
+    color: theme.secondaryDark
   },
   periodButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     elevation: 2,
@@ -657,19 +667,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4
   },
   periodText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "800"
   },
   periodMenu: {
-    backgroundColor: colors.card,
-    borderColor: "#FED7AA",
+    backgroundColor: theme.card,
+    borderColor: `${theme.primary}55`,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 3,
     gap: spacing.xs,
     padding: spacing.sm,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 3, width: 0 },
     shadowOpacity: 0.12,
     shadowRadius: 8
@@ -685,46 +695,46 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm
   },
   periodOptionActive: {
-    backgroundColor: "#FF6B3512"
+    backgroundColor: `${theme.primary}12`
   },
   periodOptionDescription: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     lineHeight: 17
   },
   periodOptionDot: {
-    borderColor: "#CBD5E1",
+    borderColor: theme.border,
     borderRadius: 7,
     borderWidth: 2,
     height: 14,
     width: 14
   },
   periodOptionDotActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary
+    backgroundColor: theme.primary,
+    borderColor: theme.primary
   },
   periodOptionLabel: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   periodOptionLabelActive: {
-    color: colors.primary
+    color: theme.primary
   },
   periodOptionTextBlock: {
     flex: 1,
     gap: 2
   },
   price: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 24,
     fontWeight: "900",
     lineHeight: 28
   },
   searchBox: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -733,7 +743,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm
   },
   searchInput: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 14,
     minHeight: 40,
@@ -750,13 +760,13 @@ const styles = StyleSheet.create({
     fontWeight: "800"
   },
   timeText: {
-    color: "#475569",
+    color: theme.mutedText,
     fontSize: 14
   },
   topBar: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
+    backgroundColor: theme.header,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -769,7 +779,7 @@ const styles = StyleSheet.create({
     width: 44
   },
   topBarTitle: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900"
   },
@@ -782,12 +792,12 @@ const styles = StyleSheet.create({
   },
   totalCard: {
     alignItems: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: radii.lg,
     elevation: 3,
     gap: spacing.sm,
     padding: spacing.lg,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 3, width: 0 },
     shadowOpacity: 0.28,
     shadowRadius: 8
@@ -807,4 +817,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.xs
   }
-});
+  });
+}

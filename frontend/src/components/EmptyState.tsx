@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radii, spacing } from "../constants/theme";
+import { type AppColors, radii, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 type EmptyStateProps = {
   title: string;
@@ -9,6 +10,9 @@ type EmptyStateProps = {
 };
 
 export function EmptyState({ title, description, icon }: EmptyStateProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
       {icon}
@@ -18,26 +22,28 @@ export function EmptyState({ title, description, icon }: EmptyStateProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   container: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.xl
   },
   description: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center"
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 17,
     fontWeight: "900",
     textAlign: "center"
   }
-});
+  });
+}

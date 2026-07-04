@@ -2,6 +2,7 @@
   "name": "foodsave",
   "version": "0.1.0",
   "private": true,
+  "main": "App.js",
   "workspaces": [
     "frontend",
     "backend"

@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "FoodSave",
+    "slug": "foodsave",
+    "scheme": "foodsave",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "FoodSave usa tu ubicacion para mostrar ofertas disponibles en tu ciudad."
+      }
+    },
+    "android": {
+      "package": "com.anonymous.foodsave",
+      "adaptiveIcon": {
+        "backgroundColor": "#FF6B35"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-location",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

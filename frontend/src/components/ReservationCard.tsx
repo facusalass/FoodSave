@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { colors, radii, spacing } from "../constants/theme";
+import { type AppColors, radii, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import type { Reservation } from "../types/reservation";
 import {
   formatRemainingTime,
@@ -31,6 +32,8 @@ export function ReservationCard({
   onCancelPress,
   onWhatsappPress
 }: ReservationCardProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [remainingMilliseconds, setRemainingMilliseconds] = useState(() =>
     getRemainingMilliseconds(reservation.expiresAt)
   );
@@ -71,7 +74,7 @@ export function ReservationCard({
     <View style={styles.card}>
       <View style={styles.topRow}>
         <View style={styles.dateRow}>
-          <Package color={colors.secondary} size={17} />
+          <Package color={theme.secondary} size={17} />
           <Text style={styles.dateText}>{reservation.date}</Text>
         </View>
         <StatusBadge
@@ -89,7 +92,7 @@ export function ReservationCard({
         </View>
 
         <View style={styles.metaRow}>
-          <MapPin color={colors.mutedText} size={17} />
+          <MapPin color={theme.mutedText} size={17} />
           <Text numberOfLines={1} style={styles.metaText}>
             {reservation.address}
           </Text>
@@ -99,7 +102,7 @@ export function ReservationCard({
 
         <View style={styles.bottomRow}>
           <View style={styles.metaRow}>
-            <Clock color={colors.mutedText} size={17} />
+            <Clock color={theme.mutedText} size={17} />
             <Text style={styles.metaText}>Retiro: {reservation.pickupTime}</Text>
           </View>
           <Text style={styles.code}>#{reservationCode}</Text>
@@ -109,7 +112,7 @@ export function ReservationCard({
 
         {isPendingPayment && paymentAlias ? (
           <View style={styles.paymentRow}>
-            <CreditCard color={colors.secondaryDark} size={16} />
+            <CreditCard color={theme.secondaryDark} size={16} />
             <Text style={styles.paymentText}>Alias: {paymentAlias}</Text>
           </View>
         ) : null}
@@ -118,22 +121,24 @@ export function ReservationCard({
           <View style={styles.actionsRow}>
             <ActionButton
               disabled={!canOpenWhatsapp}
-              icon={<MessageCircle color={canOpenWhatsapp ? colors.secondaryDark : colors.mutedText} size={16} />}
+              icon={<MessageCircle color={canOpenWhatsapp ? theme.secondaryDark : theme.mutedText} size={16} />}
               label="Avisar pago por WhatsApp"
               onPress={() => onWhatsappPress?.(reservation)}
+              styles={styles}
               variant="whatsapp"
             />
             <ActionButton
               disabled={isCancelling || !onCancelPress}
               icon={
                 isCancelling ? (
-                  <ActivityIndicator color={colors.danger} size="small" />
+                  <ActivityIndicator color={theme.danger} size="small" />
                 ) : (
-                  <XCircle color={colors.danger} size={16} />
+                  <XCircle color={theme.danger} size={16} />
                 )
               }
               label={isCancelling ? "Cancelando..." : "Cancelar reserva"}
               onPress={() => onCancelPress?.(reservation)}
+              styles={styles}
               variant="danger"
             />
           </View>
@@ -154,12 +159,14 @@ function ActionButton({
   icon,
   label,
   onPress,
+  styles,
   variant
 }: {
   disabled: boolean;
   icon: ReactNode;
   label: string;
   onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
   variant: "danger" | "whatsapp";
 }) {
   const isDanger = variant === "danger";
@@ -216,16 +223,17 @@ function getStatusHint({
   )}`;
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   badge: {
     alignSelf: "flex-start",
-    backgroundColor: "#14B8A61A",
+    backgroundColor: `${theme.secondary}1A`,
     borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs
   },
   badgeText: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "700"
   },
@@ -265,21 +273,21 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   cancelButton: {
-    backgroundColor: "#EF44441A",
-    borderColor: "#EF444455"
+    backgroundColor: `${theme.danger}1A`,
+    borderColor: `${theme.danger}55`
   },
   cancelButtonText: {
-    color: colors.danger
+    color: theme.danger
   },
   card: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     overflow: "hidden"
   },
   code: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 18,
     fontWeight: "900"
   },
@@ -290,7 +298,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   dateText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     flexShrink: 1,
     fontSize: 15
   },
@@ -301,19 +309,19 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   metaText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     flexShrink: 1,
     fontSize: 14
   },
   helperText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     fontWeight: "700"
   },
   paymentRow: {
     alignItems: "center",
-    backgroundColor: "#14B8A60F",
-    borderColor: "#14B8A633",
+    backgroundColor: `${theme.secondary}14`,
+    borderColor: `${theme.secondary}33`,
     borderRadius: radii.sm,
     borderWidth: 1,
     flexDirection: "row",
@@ -322,31 +330,31 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm
   },
   paymentText: {
-    color: colors.text,
+    color: theme.text,
     flexShrink: 1,
     fontSize: 13,
     fontWeight: "800"
   },
   separator: {
-    backgroundColor: colors.border,
+    backgroundColor: theme.border,
     height: 1,
     marginVertical: spacing.xs
   },
   statusHint: {
-    color: colors.warning,
+    color: theme.warning,
     fontSize: 13,
     fontWeight: "700"
   },
   store: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900",
     lineHeight: 22
   },
   topRow: {
     alignItems: "center",
-    backgroundColor: colors.background,
-    borderBottomColor: colors.border,
+    backgroundColor: theme.subtleSurface,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -354,10 +362,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   whatsappButton: {
-    backgroundColor: "#14B8A61A",
-    borderColor: "#14B8A655"
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}55`
   },
   whatsappButtonText: {
-    color: colors.secondaryDark
+    color: theme.secondaryDark
   }
-});
+  });
+}

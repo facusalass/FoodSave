@@ -17,8 +17,9 @@ import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { EmptyState } from "../../src/components/EmptyState";
 import { ReservationCard } from "../../src/components/ReservationCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import {
   getReservations,
   updateReservationStatus
@@ -29,6 +30,8 @@ import { openReservationWhatsapp } from "../../src/utils/reservationWhatsapp";
 export default function ClientReservationsScreen() {
   const router = useRouter();
   const { logout, session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,13 +185,13 @@ export default function ClientReservationsScreen() {
           style={styles.monthButton}
         >
           <Text style={styles.monthText}>{visibleMonth}</Text>
-          <ChevronDown color={colors.mutedText} size={18} />
+          <ChevronDown color={theme.mutedText} size={18} />
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando reservas...</Text>
         </View>
       ) : error ? (
@@ -255,6 +258,9 @@ function MonthSelectorModal({
   selectedMonth: string | null;
   visible: boolean;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <Modal
       animationType="fade"
@@ -280,7 +286,7 @@ function MonthSelectorModal({
             >
               <Text style={styles.monthOptionText}>Todos los meses</Text>
               {selectedMonth === null ? (
-                <Check color={colors.secondaryDark} size={18} />
+                <Check color={theme.secondaryDark} size={18} />
               ) : null}
             </TouchableOpacity>
 
@@ -299,7 +305,7 @@ function MonthSelectorModal({
                 >
                   <Text style={styles.monthOptionText}>{month}</Text>
                   {isSelected ? (
-                    <Check color={colors.secondaryDark} size={18} />
+                    <Check color={theme.secondaryDark} size={18} />
                   ) : null}
                 </TouchableOpacity>
               );
@@ -330,6 +336,9 @@ function CancelReservationModal({
   onConfirm: () => void;
   reservation: Reservation | null;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <Modal
       animationType="fade"
@@ -340,7 +349,7 @@ function CancelReservationModal({
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
           <View style={styles.modalIcon}>
-            <AlertTriangle color={colors.primary} size={23} />
+            <AlertTriangle color={theme.primary} size={23} />
           </View>
 
           <Text style={styles.modalTitle}>Cancelar reserva</Text>
@@ -381,7 +390,7 @@ function CancelReservationModal({
               ]}
             >
               {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color={theme.inverseText} size="small" />
               ) : (
                 <Text style={styles.modalConfirmText}>Cancelar reserva</Text>
               )}
@@ -426,9 +435,10 @@ function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   actionError: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -449,13 +459,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   monthButton: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -464,12 +474,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   monthText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "600"
   },
   monthModalCard: {
-    backgroundColor: colors.card,
+    backgroundColor: theme.card,
     borderRadius: radii.lg,
     gap: spacing.md,
     marginHorizontal: spacing.lg,
@@ -478,7 +488,7 @@ const styles = StyleSheet.create({
   },
   monthModalCloseButton: {
     alignItems: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: radii.md,
     minHeight: 44,
     justifyContent: "center",
@@ -490,19 +500,19 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   },
   monthModalDescription: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 20
   },
   monthModalTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 22,
     fontWeight: "900"
   },
   monthOption: {
     alignItems: "center",
-    backgroundColor: colors.background,
-    borderColor: colors.border,
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -511,11 +521,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   monthOptionSelected: {
-    backgroundColor: "#14B8A61A",
-    borderColor: "#14B8A666"
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}66`
   },
   monthOptionText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "800"
   },
@@ -528,13 +538,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm
   },
   modalBackButton: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderWidth: 1,
     flex: 0.85
   },
   modalBackText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "800"
   },
@@ -549,14 +559,14 @@ const styles = StyleSheet.create({
     opacity: 0.7
   },
   modalCard: {
-    backgroundColor: colors.card,
+    backgroundColor: theme.card,
     borderRadius: radii.lg,
     gap: spacing.sm,
     marginHorizontal: spacing.lg,
     padding: spacing.lg
   },
   modalConfirmButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     flex: 1.3
   },
   modalConfirmText: {
@@ -566,50 +576,51 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   modalDescription: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 20
   },
   modalIcon: {
     alignItems: "center",
-    backgroundColor: "#FF6B351A",
+    backgroundColor: `${theme.primary}1A`,
     borderRadius: 20,
     height: 40,
     justifyContent: "center",
     width: 40
   },
   modalMeta: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "600"
   },
   modalOverlay: {
     alignItems: "center",
-    backgroundColor: "#11182799",
+    backgroundColor: theme.overlay,
     flex: 1,
     justifyContent: "center"
   },
   modalStore: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   modalSummary: {
-    backgroundColor: colors.background,
-    borderColor: colors.border,
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md
   },
   modalTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 22,
     fontWeight: "900"
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 24,
     fontWeight: "900"
   }
-});
+  });
+}

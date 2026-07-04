@@ -13,7 +13,8 @@ import {
 import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { TextInputField } from "../../src/components/TextInputField";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
+import { useTheme } from "../../src/context/ThemeContext";
 import { resetPassword } from "../../src/services/authService";
 
 const SUCCESS_MESSAGE =
@@ -21,6 +22,8 @@ const SUCCESS_MESSAGE =
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +71,7 @@ export default function ForgotPasswordScreen() {
             onPress={() => router.back()}
             style={styles.backButton}
           >
-            <ArrowLeft color={colors.text} size={22} />
+            <ArrowLeft color={theme.text} size={22} />
           </Pressable>
 
           <Text style={styles.logo}>
@@ -81,7 +84,7 @@ export default function ForgotPasswordScreen() {
         <View style={styles.content}>
           <View style={styles.titleCard}>
             <View style={styles.iconWrap}>
-              <Mail color={colors.primary} size={25} />
+              <Mail color={theme.primary} size={25} />
             </View>
             <Text style={styles.title}>RECUPERAR CONTRASEÑA</Text>
             <Text style={styles.subtitle}>
@@ -146,7 +149,8 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   backButton: {
     alignItems: "center",
     height: 44,
@@ -158,7 +162,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg
   },
   error: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "700",
     textAlign: "center"
@@ -168,7 +172,7 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     alignItems: "center",
-    backgroundColor: "#FF6B3514",
+    backgroundColor: `${theme.primary}14`,
     borderRadius: 24,
     height: 48,
     justifyContent: "center",
@@ -178,7 +182,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   loginLink: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "800",
     marginTop: spacing.md,
@@ -186,41 +190,41 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline"
   },
   logo: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: 3
   },
   logoAccent: {
-    color: colors.primary
+    color: theme.primary
   },
   screen: {
     paddingHorizontal: spacing.lg,
     paddingTop: 0
   },
   subtitle: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 21,
     textAlign: "center"
   },
   success: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 13,
     fontWeight: "800",
     lineHeight: 19,
     textAlign: "center"
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 20,
     fontWeight: "900",
     textAlign: "center"
   },
   titleCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.sm,
@@ -229,7 +233,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: "center",
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     height: 68,
@@ -237,4 +241,5 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.lg,
     paddingHorizontal: spacing.md
   }
-});
+  });
+}

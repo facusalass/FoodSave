@@ -9,14 +9,16 @@ import {
 import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 
 export default function ClientProfileScreen() {
   const router = useRouter();
   const { logout, session } = useAuth();
+  const { setThemeMode, theme, themeMode } = useTheme();
+  const styles = createStyles(theme);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
 
   function handleNavigate(route: ClientMenuRoute) {
     setIsMenuVisible(false);
@@ -51,14 +53,16 @@ export default function ClientProfileScreen() {
         <View style={styles.segmented}>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => setThemeMode("light")}
+            onPress={() => {
+              void setThemeMode("light");
+            }}
             style={[
               styles.segmentButton,
               themeMode === "light" ? styles.activeSegment : null
             ]}
           >
             <Sun
-              color={themeMode === "light" ? colors.card : colors.mutedText}
+              color={themeMode === "light" ? theme.inverseText : theme.mutedText}
               size={15}
             />
             <Text
@@ -72,14 +76,16 @@ export default function ClientProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => setThemeMode("dark")}
+            onPress={() => {
+              void setThemeMode("dark");
+            }}
             style={[
               styles.segmentButton,
               themeMode === "dark" ? styles.activeSegment : null
             ]}
           >
             <Moon
-              color={themeMode === "dark" ? colors.card : colors.mutedText}
+              color={themeMode === "dark" ? theme.inverseText : theme.mutedText}
               size={15}
             />
             <Text
@@ -95,7 +101,7 @@ export default function ClientProfileScreen() {
       </View>
 
       <View style={styles.infoBox}>
-        <Info color={colors.secondaryDark} size={20} />
+        <Info color={theme.secondaryDark} size={20} />
         <Text style={styles.infoText}>
           Para poder reservar en los locales, necesitamos tus datos de contacto
           por unica vez.
@@ -135,6 +141,9 @@ export default function ClientProfileScreen() {
 }
 
 function ProfileField({ label, value }: { label: string; value: string }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -143,17 +152,18 @@ function ProfileField({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   activeSegment: {
-    backgroundColor: colors.primary
+    backgroundColor: theme.primary
   },
   activeSegmentText: {
-    color: colors.card
+    color: theme.inverseText
   },
   card: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
@@ -162,7 +172,7 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   cardDescription: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     lineHeight: 18
   },
@@ -171,7 +181,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   cardTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
@@ -179,31 +189,31 @@ const styles = StyleSheet.create({
     gap: spacing.lg
   },
   field: {
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     gap: spacing.sm,
     padding: spacing.md
   },
   fieldLabel: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     fontWeight: "700"
   },
   fieldValue: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 16
   },
   formCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     overflow: "hidden"
   },
   infoBox: {
     alignItems: "flex-start",
-    backgroundColor: "#14B8A61A",
-    borderColor: "#14B8A666",
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}66`,
     borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
@@ -211,14 +221,14 @@ const styles = StyleSheet.create({
     padding: spacing.md
   },
   infoText: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 15,
     lineHeight: 21
   },
   segmented: {
-    backgroundColor: colors.background,
-    borderColor: colors.border,
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -233,14 +243,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm
   },
   segmentText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "800"
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 24,
     fontWeight: "900",
     textTransform: "uppercase"
   }
-});
+  });
+}

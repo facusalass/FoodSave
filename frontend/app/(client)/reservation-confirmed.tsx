@@ -16,8 +16,9 @@ import { EmptyState } from "../../src/components/EmptyState";
 import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { StatusBadge } from "../../src/components/StatusBadge";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import { getReservations } from "../../src/services/reservationService";
 import type { Reservation } from "../../src/types/reservation";
 import {
@@ -35,6 +36,8 @@ export default function ReservationConfirmedScreen() {
   const router = useRouter();
   const { reservationId } = useLocalSearchParams<{ reservationId?: string }>();
   const { logout, session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [remainingMilliseconds, setRemainingMilliseconds] = useState<
     number | null
@@ -137,7 +140,7 @@ export default function ReservationConfirmedScreen() {
     return (
       <ScreenContainer>
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.metaText}>Cargando reserva...</Text>
         </View>
       </ScreenContainer>
@@ -199,7 +202,7 @@ export default function ReservationConfirmedScreen() {
         <View style={styles.separator} />
 
         <View style={styles.row}>
-          <Clock color={colors.mutedText} size={18} />
+          <Clock color={theme.mutedText} size={18} />
           <Text style={styles.rowText}>
             Horario de retiro: {reservation.pickupTime}
           </Text>
@@ -221,7 +224,7 @@ export default function ReservationConfirmedScreen() {
 
       <View style={styles.paymentCard}>
         <View style={styles.row}>
-          <CreditCard color={colors.secondaryDark} size={18} />
+          <CreditCard color={theme.secondaryDark} size={18} />
           <Text style={styles.sectionTitle}>Datos bancarios</Text>
         </View>
         <Text style={styles.aliasText}>
@@ -253,14 +256,15 @@ export default function ReservationConfirmedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   aliasText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 16,
     fontWeight: "700"
   },
   code: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 34,
     fontWeight: "900",
     letterSpacing: 4,
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg
   },
   errorText: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -279,7 +283,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   helperText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -289,24 +293,24 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   metaText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   offerBadge: {
     alignSelf: "center",
-    backgroundColor: "#14B8A61A",
+    backgroundColor: `${theme.secondary}1A`,
     borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs
   },
   offerBadgeText: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "800"
   },
   paymentCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     gap: spacing.sm,
@@ -319,32 +323,32 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   rowText: {
-    color: colors.text,
+    color: theme.text,
     flexShrink: 1,
     fontSize: 14,
     fontWeight: "700"
   },
   sectionTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "900",
     textTransform: "uppercase"
   },
   separator: {
-    backgroundColor: colors.border,
+    backgroundColor: theme.border,
     height: 1,
     width: "100%"
   },
   store: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 16,
     fontWeight: "900",
     textAlign: "center"
   },
   summaryCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     gap: spacing.md,
@@ -352,28 +356,29 @@ const styles = StyleSheet.create({
   },
   timerCard: {
     alignItems: "center",
-    backgroundColor: "#F59E0B1A",
-    borderColor: "#F59E0B55",
+    backgroundColor: `${theme.warning}1A`,
+    borderColor: `${theme.warning}55`,
     borderRadius: radii.md,
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.md
   },
   timerText: {
-    color: colors.warning,
+    color: theme.warning,
     fontSize: 28,
     fontWeight: "900"
   },
   timerTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "800",
     textAlign: "center"
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 22,
     fontWeight: "900",
     textAlign: "center"
   }
-});
+  });
+}

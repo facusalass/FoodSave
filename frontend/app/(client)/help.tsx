@@ -18,8 +18,9 @@ import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { LANDING_URL, SUPPORT_EMAIL } from "../../src/config/links";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 
 const steps = [
   "Explora ofertas cercanas.",
@@ -55,6 +56,8 @@ const faqs = [
 export default function ClientHelpScreen() {
   const router = useRouter();
   const { logout } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
 
@@ -100,7 +103,7 @@ export default function ClientHelpScreen() {
       <Text style={styles.title}>Ayuda</Text>
 
       <HelpCard
-        icon={<Info color={colors.primary} size={20} />}
+        icon={<Info color={theme.primary} size={20} />}
         title="¿Que es FoodSave?"
       >
         <Text style={styles.bodyText}>
@@ -111,7 +114,7 @@ export default function ClientHelpScreen() {
       </HelpCard>
 
       <HelpCard
-        icon={<Utensils color={colors.secondaryDark} size={20} />}
+        icon={<Utensils color={theme.secondaryDark} size={20} />}
         title="¿Como funciona?"
       >
         <View style={styles.stepsList}>
@@ -127,7 +130,7 @@ export default function ClientHelpScreen() {
       </HelpCard>
 
       <HelpCard
-        icon={<Store color={colors.primary} size={20} />}
+        icon={<Store color={theme.primary} size={20} />}
         title="Quiero sumar mi comercio"
       >
         <Text style={styles.bodyText}>
@@ -145,7 +148,7 @@ export default function ClientHelpScreen() {
       </HelpCard>
 
       <HelpCard
-        icon={<CircleHelp color={colors.secondaryDark} size={20} />}
+        icon={<CircleHelp color={theme.secondaryDark} size={20} />}
         title="Preguntas frecuentes"
       >
         <View style={styles.faqList}>
@@ -159,11 +162,11 @@ export default function ClientHelpScreen() {
       </HelpCard>
 
       <HelpCard
-        icon={<MessageCircle color={colors.primary} size={20} />}
+        icon={<MessageCircle color={theme.primary} size={20} />}
         title="Contacto"
       >
         <View style={styles.contactRow}>
-          <Mail color={colors.mutedText} size={18} />
+          <Mail color={theme.mutedText} size={18} />
           <Text style={styles.bodyText}>{SUPPORT_EMAIL}</Text>
         </View>
         <Text style={styles.helperText}>
@@ -184,6 +187,9 @@ function HelpCard({
   icon: ReactNode;
   title: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -195,16 +201,17 @@ function HelpCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   bodyText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     flexShrink: 1,
     fontSize: 14,
     lineHeight: 20
   },
   card: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.md,
@@ -216,7 +223,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   cardTitle: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 17,
     fontWeight: "900"
@@ -230,17 +237,17 @@ const styles = StyleSheet.create({
     gap: spacing.lg
   },
   errorText: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "700"
   },
   faqAnswer: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     lineHeight: 19
   },
   faqItem: {
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     gap: spacing.xs,
     paddingBottom: spacing.sm
@@ -249,18 +256,18 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   faqQuestion: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   helperText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     lineHeight: 18
   },
   iconBox: {
     alignItems: "center",
-    backgroundColor: "#FF6B3514",
+    backgroundColor: `${theme.primary}14`,
     borderRadius: radii.md,
     height: 38,
     justifyContent: "center",
@@ -268,14 +275,14 @@ const styles = StyleSheet.create({
   },
   stepNumber: {
     alignItems: "center",
-    backgroundColor: "#14B8A61A",
+    backgroundColor: `${theme.secondary}1A`,
     borderRadius: 13,
     height: 26,
     justifyContent: "center",
     width: 26
   },
   stepNumberText: {
-    color: colors.secondaryDark,
+    color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "900"
   },
@@ -285,7 +292,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   stepText: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 14,
     fontWeight: "700",
@@ -295,8 +302,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 24,
     fontWeight: "900"
   }
-});
+  });
+}

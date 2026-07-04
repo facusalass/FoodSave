@@ -15,8 +15,9 @@ import { EmptyState } from "../../src/components/EmptyState";
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import {
   getReservations,
   updateReservationStatus
@@ -40,6 +41,8 @@ const TIMER_REFRESH_MS = 1000;
 
 export default function BusinessOrdersScreen() {
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [activeTab, setActiveTab] = useState<OrdersTab>("pending");
   const [searchText, setSearchText] = useState("");
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -181,12 +184,12 @@ export default function BusinessOrdersScreen() {
       </View>
 
       <View style={styles.searchBox}>
-        <Search color="#94A3B8" size={18} />
+        <Search color={theme.placeholder} size={18} />
         <TextInput
           autoCapitalize="characters"
           onChangeText={setSearchText}
           placeholder="Buscar por codigo (ej: FS-84A)"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={theme.placeholder}
           style={styles.searchInput}
           value={searchText}
         />
@@ -209,7 +212,7 @@ export default function BusinessOrdersScreen() {
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando pedidos...</Text>
         </View>
       ) : error ? (
@@ -261,6 +264,9 @@ function TabButton({
   label: string;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <TouchableOpacity
       activeOpacity={0.86}
@@ -287,6 +293,8 @@ function OrderCard({
   onConfirmPayment: (reservation: Reservation) => void;
   reservation: Reservation;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const remainingMilliseconds = getRemainingMillisecondsAt(
     reservation.expiresAt,
     currentTimestamp
@@ -318,7 +326,7 @@ function OrderCard({
       {isPending && remainingMilliseconds !== null ? (
         <View style={styles.expireRow}>
           <Clock
-            color={isLowTime || isExpired ? colors.danger : colors.mutedText}
+            color={isLowTime || isExpired ? theme.danger : theme.mutedText}
             size={15}
           />
           <Text
@@ -349,7 +357,7 @@ function OrderCard({
             ]}
           >
             {isCancelling ? (
-              <ActivityIndicator color="#0F172A" />
+              <ActivityIndicator color={theme.text} />
             ) : (
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             )}
@@ -404,6 +412,9 @@ function OrderDialogModal({
   onClose: () => void;
   onConfirmCancel: (reservation: Reservation) => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   if (!dialog) {
     return null;
   }
@@ -429,9 +440,9 @@ function OrderDialogModal({
             ]}
           >
             {isErrorDialog || isCancelDialog ? (
-              <XCircle color={colors.danger} size={28} />
+              <XCircle color={theme.danger} size={28} />
             ) : (
-              <CheckCircle2 color={colors.secondaryDark} size={28} />
+              <CheckCircle2 color={theme.secondaryDark} size={28} />
             )}
           </View>
           <Text style={styles.dialogTitle}>{title}</Text>
@@ -454,7 +465,7 @@ function OrderDialogModal({
                 style={[styles.dialogButton, styles.dialogDangerButton]}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={theme.inverseText} />
                 ) : (
                   <Text style={styles.dialogDangerText}>Confirmar</Text>
                 )}
@@ -475,7 +486,8 @@ function OrderDialogModal({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   actionsRow: {
     flexDirection: "row",
     gap: spacing.sm,
@@ -485,12 +497,12 @@ const styles = StyleSheet.create({
     opacity: 0.72
   },
   cancelButton: {
-    backgroundColor: colors.card,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderWidth: 1
   },
   cancelButtonText: {
-    color: "#0F172A",
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
@@ -500,12 +512,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   code: {
-    color: "#475569",
+    color: theme.mutedText,
     fontSize: 14,
     fontWeight: "800"
   },
   confirmButton: {
-    backgroundColor: colors.primary
+    backgroundColor: theme.primary
   },
   confirmButtonText: {
     color: "#FFFFFF",
@@ -516,7 +528,7 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   customerText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     fontWeight: "700",
     marginTop: spacing.sm
@@ -540,8 +552,8 @@ const styles = StyleSheet.create({
   },
   dialogCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 6,
@@ -556,7 +568,7 @@ const styles = StyleSheet.create({
     width: "88%"
   },
   dialogDangerButton: {
-    backgroundColor: colors.danger
+    backgroundColor: theme.danger
   },
   dialogDangerText: {
     color: "#FFFFFF",
@@ -571,26 +583,26 @@ const styles = StyleSheet.create({
     width: 56
   },
   dialogIconError: {
-    backgroundColor: "#FEE2E2"
+    backgroundColor: `${theme.danger}1A`
   },
   dialogIconSuccess: {
-    backgroundColor: "#DCFCE7"
+    backgroundColor: `${theme.secondary}1A`
   },
   dialogMessage: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center"
   },
   dialogOverlay: {
     alignItems: "center",
-    backgroundColor: "#0F172A66",
+    backgroundColor: theme.overlay,
     flex: 1,
     justifyContent: "center"
   },
   dialogPrimaryButton: {
     alignItems: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: radii.md,
     justifyContent: "center",
     minHeight: 48,
@@ -603,17 +615,17 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   },
   dialogSecondaryButton: {
-    backgroundColor: colors.card,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderWidth: 1
   },
   dialogSecondaryText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   dialogTitle: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 20,
     fontWeight: "900",
     textAlign: "center"
@@ -625,12 +637,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.md
   },
   expireText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 13,
     fontWeight: "800"
   },
   expireTextDanger: {
-    color: colors.danger
+    color: theme.danger
   },
   list: {
     gap: spacing.md
@@ -641,12 +653,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   notificationDot: {
-    backgroundColor: colors.primary,
-    borderColor: colors.card,
+    backgroundColor: theme.primary,
+    borderColor: theme.card,
     borderRadius: 5,
     borderWidth: 1,
     height: 9,
@@ -656,7 +668,7 @@ const styles = StyleSheet.create({
     width: 9
   },
   offerTitle: {
-    color: "#334155",
+    color: theme.mutedText,
     fontSize: 14,
     marginTop: spacing.xs
   },
@@ -674,8 +686,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3
   },
   orderCard: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -686,7 +698,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5
   },
   price: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 30,
     fontWeight: "900",
     lineHeight: 36,
@@ -694,8 +706,8 @@ const styles = StyleSheet.create({
   },
   searchBox: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -704,7 +716,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm
   },
   searchInput: {
-    color: colors.text,
+    color: theme.text,
     flex: 1,
     fontSize: 14,
     minHeight: 40,
@@ -712,22 +724,22 @@ const styles = StyleSheet.create({
   },
   segment: {
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: theme.subtleSurface,
     borderRadius: radii.md,
     flex: 1,
     justifyContent: "center",
     minHeight: 40
   },
   segmentActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     elevation: 2,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.18,
     shadowRadius: 4
   },
   segmentText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
@@ -735,15 +747,15 @@ const styles = StyleSheet.create({
     color: "#FFFFFF"
   },
   statusBadge: {
-    backgroundColor: "#FFF7ED",
-    borderColor: "#FDBA74",
+    backgroundColor: `${theme.primary}1A`,
+    borderColor: `${theme.primary}55`,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs
   },
   statusText: {
-    color: "#C2410C",
+    color: theme.primary,
     fontSize: 12,
     fontWeight: "800"
   },
@@ -753,8 +765,8 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
+    backgroundColor: theme.header,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -770,8 +782,9 @@ const styles = StyleSheet.create({
     width: 44
   },
   topBarTitle: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 17,
     fontWeight: "900"
   }
-});
+  });
+}

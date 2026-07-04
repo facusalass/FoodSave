@@ -9,8 +9,9 @@ import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { EmptyState } from "../../src/components/EmptyState";
 import { OfferCard } from "../../src/components/OfferCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, spacing } from "../../src/constants/theme";
+import { type AppColors, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import {
   getFavorites,
   removeFavorite
@@ -20,6 +21,8 @@ import type { Offer } from "../../src/types/offer";
 export default function ClientFavoritesScreen() {
   const router = useRouter();
   const { logout, session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [favorites, setFavorites] = useState<Offer[]>([]);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,7 +100,7 @@ export default function ClientFavoritesScreen() {
 
       {isLoading ? (
         <View style={styles.loadingBlock}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={theme.primary} />
           <Text style={styles.loadingText}>Cargando favoritos...</Text>
         </View>
       ) : error ? (
@@ -129,9 +132,10 @@ export default function ClientFavoritesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   actionError: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     fontWeight: "700"
   },
@@ -147,12 +151,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl
   },
   loadingText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 14
   },
   title: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 24,
     fontWeight: "900"
   }
-});
+  });
+}

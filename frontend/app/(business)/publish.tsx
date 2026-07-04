@@ -21,8 +21,9 @@ import {
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
-import { colors, radii, spacing } from "../../src/constants/theme";
+import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import {
   createBusinessOffer,
   getBusinessProfile,
@@ -38,6 +39,8 @@ const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
 export default function BusinessPublishScreen() {
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [type, setType] = useState<OfferType>("mystery_box");
   const [title, setTitle] = useState("");
   const [oldPrice, setOldPrice] = useState("");
@@ -304,10 +307,10 @@ export default function BusinessPublishScreen() {
             ]}
           >
             {isUploadingImage ? (
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={theme.primary} />
             ) : (
               <ImagePlus
-                color={imagePreviewUri ? "#FFFFFF" : "#94A3B8"}
+                color={imagePreviewUri ? theme.inverseText : theme.placeholder}
                 size={42}
               />
             )}
@@ -383,7 +386,7 @@ export default function BusinessPublishScreen() {
             }}
             style={styles.stockButton}
           >
-            <Minus color={colors.text} size={20} />
+            <Minus color={theme.text} size={20} />
           </TouchableOpacity>
           <Text style={styles.stockValue}>{stock}</Text>
           <TouchableOpacity
@@ -396,7 +399,7 @@ export default function BusinessPublishScreen() {
             }}
             style={styles.stockButton}
           >
-            <Plus color={colors.text} size={20} />
+            <Plus color={theme.text} size={20} />
           </TouchableOpacity>
         </View>
       </View>
@@ -423,11 +426,11 @@ export default function BusinessPublishScreen() {
 
       <View style={styles.limitCard}>
         <View style={styles.limitTitleRow}>
-          <Info color={colors.secondary} size={15} />
+          <Info color={theme.secondary} size={15} />
           <Text style={styles.limitTitle}>Limite de retiro automatico</Text>
         </View>
         <View style={styles.limitTimeRow}>
-          <Clock color={colors.primary} size={24} />
+          <Clock color={theme.primary} size={24} />
           <Text style={styles.limitTime}>
             {formatClosingTimeDisplay(businessClosingTime)}
           </Text>
@@ -441,7 +444,7 @@ export default function BusinessPublishScreen() {
         <View style={styles.formErrorBox}>
           <View style={styles.formErrorAccent} />
           <View style={styles.formErrorIcon}>
-            <Info color={colors.primary} size={16} />
+            <Info color={theme.primary} size={16} />
           </View>
           <View style={styles.formErrorContent}>
             <Text style={styles.formErrorTitle}>Revisemos esta publicacion</Text>
@@ -480,6 +483,9 @@ function TypeTab({
   label: string;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <TouchableOpacity
       activeOpacity={0.86}
@@ -508,6 +514,9 @@ function InputField({
   placeholder: string;
   value: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={[styles.fieldGroup, containerStyle]}>
       <Text style={styles.label}>{label}</Text>
@@ -515,7 +524,7 @@ function InputField({
         keyboardType={keyboardType}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={theme.placeholder}
         style={styles.input}
         value={value}
       />
@@ -563,7 +572,8 @@ function isAllowedImageType(mimeType: string) {
   return mimeType === "image/jpeg" || mimeType === "image/png";
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: AppColors) {
+  return StyleSheet.create({
   content: {
     gap: spacing.md
   },
@@ -572,8 +582,8 @@ const styles = StyleSheet.create({
   },
   formErrorBox: {
     alignItems: "flex-start",
-    backgroundColor: colors.card,
-    borderColor: "#FED7AA",
+    backgroundColor: theme.card,
+    borderColor: `${theme.primary}55`,
     borderRadius: radii.lg,
     borderWidth: 1,
     elevation: 2,
@@ -581,13 +591,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     overflow: "hidden",
     padding: spacing.md,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 5
   },
   formErrorAccent: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     bottom: 0,
     left: 0,
     position: "absolute",
@@ -601,7 +611,7 @@ const styles = StyleSheet.create({
   },
   formErrorIcon: {
     alignItems: "center",
-    backgroundColor: "#FF6B3514",
+    backgroundColor: `${theme.primary}14`,
     borderRadius: 16,
     height: 32,
     justifyContent: "center",
@@ -609,19 +619,19 @@ const styles = StyleSheet.create({
     width: 32
   },
   formErrorText: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 13,
     lineHeight: 19
   },
   formErrorTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   imageBox: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#CBD5E1",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderStyle: "dashed",
     borderWidth: 1.5,
@@ -635,12 +645,12 @@ const styles = StyleSheet.create({
     opacity: 0.72
   },
   imageBoxWithPreview: {
-    borderColor: colors.primary,
+    borderColor: theme.primary,
     borderStyle: "solid",
     padding: 0
   },
   imageHint: {
-    color: "#94A3B8",
+    color: theme.placeholder,
     fontSize: 12,
     fontWeight: "900"
   },
@@ -653,7 +663,7 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   imageOverlayWithPreview: {
-    backgroundColor: "#0F172A66",
+    backgroundColor: theme.overlay,
     bottom: 0,
     left: 0,
     position: "absolute",
@@ -665,7 +675,7 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   imageText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "800"
   },
@@ -673,36 +683,36 @@ const styles = StyleSheet.create({
     color: "#FFFFFF"
   },
   input: {
-    backgroundColor: colors.card,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.input,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    color: colors.text,
+    color: theme.text,
     fontSize: 15,
     minHeight: 46,
     paddingHorizontal: spacing.md
   },
   label: {
-    color: "#0F172A",
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   limitCard: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: colors.border,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.lg
   },
   limitHint: {
-    color: colors.mutedText,
+    color: theme.mutedText,
     fontSize: 12,
     textAlign: "center"
   },
   limitTime: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 28,
     fontWeight: "900"
   },
@@ -712,7 +722,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   limitTitle: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
@@ -722,8 +732,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   notificationDot: {
-    backgroundColor: colors.primary,
-    borderColor: colors.card,
+    backgroundColor: theme.primary,
+    borderColor: theme.card,
     borderRadius: 5,
     borderWidth: 1,
     height: 9,
@@ -741,12 +751,12 @@ const styles = StyleSheet.create({
   },
   publishButton: {
     alignItems: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     borderRadius: radii.md,
     elevation: 2,
     justifyContent: "center",
     minHeight: 56,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.24,
     shadowRadius: 5
@@ -767,8 +777,8 @@ const styles = StyleSheet.create({
   },
   stockControl: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderColor: "#D1D5DB",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
     elevation: 2,
@@ -781,7 +791,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3
   },
   stockValue: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 24,
     fontWeight: "900"
   },
@@ -790,15 +800,15 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   title: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 20,
     fontWeight: "900",
     textAlign: "center"
   },
   topBar: {
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderBottomColor: colors.border,
+    backgroundColor: theme.header,
+    borderBottomColor: theme.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -814,32 +824,33 @@ const styles = StyleSheet.create({
     width: 44
   },
   topBarTitle: {
-    color: "#020617",
+    color: theme.text,
     fontSize: 17,
     fontWeight: "900"
   },
   typeTab: {
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: theme.subtleSurface,
     borderRadius: radii.md,
     flex: 1,
     justifyContent: "center",
     minHeight: 40
   },
   typeTabActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     elevation: 2,
-    shadowColor: colors.primary,
+    shadowColor: theme.primary,
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.18,
     shadowRadius: 4
   },
   typeTabText: {
-    color: colors.text,
+    color: theme.text,
     fontSize: 14,
     fontWeight: "900"
   },
   typeTabTextActive: {
     color: "#FFFFFF"
   }
-});
+  });
+}
