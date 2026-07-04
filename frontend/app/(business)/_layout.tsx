@@ -1,15 +1,20 @@
 import { Redirect, Tabs } from "expo-router";
 import { ClipboardList, LayoutDashboard, Plus } from "lucide-react-native";
 import { StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SplashLoading } from "../../src/components/SplashLoading";
 import { type AppColors } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 
+const TAB_BAR_BASE_HEIGHT = 60;
+const TAB_BAR_BOTTOM_FALLBACK = 18;
+
 export default function BusinessLayout() {
   const { session, isLoading } = useAuth();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(theme, insets.bottom);
 
   if (isLoading) {
     return <SplashLoading />;
@@ -90,7 +95,9 @@ export default function BusinessLayout() {
   );
 }
 
-function createStyles(theme: AppColors) {
+function createStyles(theme: AppColors, bottomInset: number) {
+  const bottomPadding = Math.max(bottomInset, TAB_BAR_BOTTOM_FALLBACK);
+
   return StyleSheet.create({
   tabBar: {
     backgroundColor: theme.header,
@@ -98,10 +105,10 @@ function createStyles(theme: AppColors) {
     borderTopWidth: 1,
     bottom: 0,
     elevation: 0,
-    height: 64,
+    height: TAB_BAR_BASE_HEIGHT + bottomPadding,
     left: 0,
-    paddingBottom: 4,
-    paddingTop: 4,
+    paddingBottom: bottomPadding,
+    paddingTop: 6,
     position: "absolute",
     right: 0
   },

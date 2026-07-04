@@ -1,15 +1,20 @@
 import { Redirect, Tabs } from "expo-router";
 import { PackageCheck, Search, User } from "lucide-react-native";
 import { StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SplashLoading } from "../../src/components/SplashLoading";
 import { type AppColors } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 
+const TAB_BAR_BASE_HEIGHT = 60;
+const TAB_BAR_BOTTOM_FALLBACK = 18;
+
 export default function ClientLayout() {
   const { session, isLoading } = useAuth();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(theme, insets.bottom);
 
   if (isLoading) {
     return <SplashLoading />;
@@ -94,14 +99,17 @@ export default function ClientLayout() {
   );
 }
 
-function createStyles(theme: AppColors) {
+function createStyles(theme: AppColors, bottomInset: number) {
+  const bottomPadding = Math.max(bottomInset, TAB_BAR_BOTTOM_FALLBACK);
+
   return StyleSheet.create({
   tabBar: {
     backgroundColor: theme.header,
     borderTopColor: theme.border,
-    minHeight: 72,
-    paddingBottom: 12,
-    paddingTop: 8
+    borderTopWidth: 1,
+    height: TAB_BAR_BASE_HEIGHT + bottomPadding,
+    paddingBottom: bottomPadding,
+    paddingTop: 6
   },
   tabLabel: {
     fontSize: 12,
