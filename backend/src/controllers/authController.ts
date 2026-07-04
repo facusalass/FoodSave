@@ -58,9 +58,9 @@ export function meController(request: Request, response: Response) {
 }
 
 export async function registerBusinessController(request: Request, response: Response) {
-  const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName } = request.body as {
+  const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName, ownerPhone } = request.body as {
     email?: string; password?: string; businessName?: string; businessAddress?: string;
-    businessCategory?: string; businessCity?: string; ownerName?: string;
+    businessCategory?: string; businessCity?: string; ownerName?: string; ownerPhone?: string;
   };
 
   if (!email || !password || !businessName || !businessAddress || !businessCategory || !ownerName) {
@@ -71,7 +71,7 @@ export async function registerBusinessController(request: Request, response: Res
 
   try {
     handleRegisterResult(await registerBusiness({
-      email, password, businessName, businessAddress, businessCategory, businessCity, ownerName
+      email, password, businessName, businessAddress, businessCategory, businessCity, ownerName, ownerPhone
     }), response, 201);
   } catch (err) {
     fail(response, 500, "Error interno al crear el comercio. Revisá los logs del servidor.");

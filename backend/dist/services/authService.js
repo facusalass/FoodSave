@@ -140,7 +140,7 @@ async function verifyGoogleIdToken(idToken) {
     }
 }
 export async function registerBusiness(params) {
-    const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName } = params;
+    const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName, ownerPhone } = params;
     const normalizedEmail = email.toLowerCase();
     const existing = await findUserByEmail(normalizedEmail);
     if (existing)
@@ -150,7 +150,7 @@ export async function registerBusiness(params) {
         email: normalizedEmail,
         password,
         email_confirm: true,
-        user_metadata: { name: ownerName, role: "business", phone: "+54 9 000 0000000" }
+        user_metadata: { name: ownerName, role: "business", phone: ownerPhone ?? "" }
     });
     if (error)
         return { error: normalizeSignUpError(error.message) };
