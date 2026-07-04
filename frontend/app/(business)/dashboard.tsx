@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
+import { BusinessSuspendedBanner } from "../../src/components/business/BusinessSuspendedBanner";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -113,6 +114,7 @@ export default function BusinessDashboardScreen() {
         <Text style={styles.topBarTitle}>Panel Local</Text>
         <BusinessNotificationsButton />
       </View>
+      <BusinessSuspendedBanner />
 
       <View style={styles.hero}>
         <View style={styles.heroTop}>

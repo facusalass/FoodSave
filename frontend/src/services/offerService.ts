@@ -45,6 +45,7 @@ export type BusinessProfile = {
   id: string;
   name: string;
   ownerId: string;
+  isActive?: boolean;
   category: string;
   description: string;
   city: string;

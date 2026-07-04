@@ -18,6 +18,7 @@ import {
   View
 } from "react-native";
 import { EmptyState } from "../../src/components/EmptyState";
+import { BusinessSuspendedBanner } from "../../src/components/business/BusinessSuspendedBanner";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -112,6 +113,7 @@ export default function BusinessStatsScreen() {
       <View style={styles.topBar}>
         <Text style={styles.topBarTitle}>Estadisticas</Text>
       </View>
+      <BusinessSuspendedBanner />
 
       <TouchableOpacity
         activeOpacity={0.85}

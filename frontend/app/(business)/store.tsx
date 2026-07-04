@@ -25,6 +25,7 @@ import {
 } from "react-native";
 import { EmptyState } from "../../src/components/EmptyState";
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
+import { BusinessSuspendedBanner } from "../../src/components/business/BusinessSuspendedBanner";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -306,6 +307,7 @@ export default function BusinessStoreScreen() {
         <Text style={styles.topBarTitle}>Mi Local</Text>
         <View style={styles.topBarSpacer} />
       </View>
+      <BusinessSuspendedBanner />
 
       <View style={styles.tabsRow}>
         <StoreTabButton

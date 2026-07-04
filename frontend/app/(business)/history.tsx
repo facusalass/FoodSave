@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { EmptyState } from "../../src/components/EmptyState";
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
+import { BusinessSuspendedBanner } from "../../src/components/business/BusinessSuspendedBanner";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -153,6 +154,7 @@ export default function BusinessHistoryScreen() {
         <Text style={styles.topBarTitle}>Historial</Text>
         <View style={styles.topBarSpacer} />
       </View>
+      <BusinessSuspendedBanner />
 
       <TouchableOpacity
         activeOpacity={0.85}
