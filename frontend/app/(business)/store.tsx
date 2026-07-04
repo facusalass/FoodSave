@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import {
   ChevronDown,
@@ -54,6 +54,7 @@ const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
 
 export default function BusinessStoreScreen() {
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const { session } = useAuth();
   const { setThemeMode, theme, themeMode } = useTheme();
   const styles = createStyles(theme);
@@ -131,9 +132,13 @@ export default function BusinessStoreScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (tab === "publications") {
+        setActiveTab("publications");
+      }
+
       void loadProfile();
       void loadOffers();
-    }, [loadOffers, loadProfile])
+    }, [loadOffers, loadProfile, tab])
   );
 
   async function handleSave() {
@@ -540,6 +545,12 @@ export default function BusinessStoreScreen() {
                   key={offer.id}
                   isUpdatingVisibility={visibilityLoadingId === offer.id}
                   offer={offer}
+                  onEditPress={(selectedOffer) =>
+                    router.push({
+                      pathname: "/(business)/edit-offer/[id]",
+                      params: { id: selectedOffer.id }
+                    })
+                  }
                   onToggleVisibility={handleToggleVisibility}
                 />
               ))}
@@ -626,10 +637,12 @@ function Chip({ accent, label }: { accent?: "primary"; label: string }) {
 function PublicationCard({
   isUpdatingVisibility,
   offer,
+  onEditPress,
   onToggleVisibility
 }: {
   isUpdatingVisibility: boolean;
   offer: Offer;
+  onEditPress: (offer: Offer) => void;
   onToggleVisibility: (offer: Offer) => void;
 }) {
   const { theme } = useTheme();
@@ -653,9 +666,7 @@ function PublicationCard({
       <View style={styles.publicationActions}>
         <IconButton
           icon={<Pencil color={theme.text} size={20} />}
-          onPress={() =>
-            Alert.alert("Proximamente", "La edicion de publicaciones se conectara mas adelante.")
-          }
+          onPress={() => onEditPress(offer)}
         />
         <IconButton
           disabled={isUpdatingVisibility}

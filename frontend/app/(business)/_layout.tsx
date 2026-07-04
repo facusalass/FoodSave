@@ -80,6 +80,12 @@ export default function BusinessLayout() {
           href: null
         }}
       />
+      <Tabs.Screen
+        name="edit-offer/[id]"
+        options={{
+          href: null
+        }}
+      />
     </Tabs>
   );
 }

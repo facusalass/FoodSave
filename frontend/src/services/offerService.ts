@@ -26,6 +26,8 @@ export type CreateBusinessOfferPayload = {
   estimatedWeightInKg?: number;
 };
 
+export type UpdateBusinessOfferPayload = Partial<CreateBusinessOfferPayload>;
+
 export type BusinessProfilePayload = {
   name?: string;
   category?: string;
@@ -93,6 +95,23 @@ export async function createBusinessOffer(
     method: "POST",
     token
   });
+
+  return response.offer;
+}
+
+export async function updateBusinessOffer(
+  token: string,
+  offerId: string,
+  payload: UpdateBusinessOfferPayload
+) {
+  const response = await apiRequest<{ offer: Offer }>(
+    `/business/offers/${offerId}`,
+    {
+      body: JSON.stringify(payload),
+      method: "PUT",
+      token
+    }
+  );
 
   return response.offer;
 }
