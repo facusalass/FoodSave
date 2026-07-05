@@ -21,9 +21,12 @@ import { EmptyState } from "../../src/components/EmptyState";
 import { OfferCard } from "../../src/components/OfferCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import {
+  ALL_OFFERS_FILTER_LABEL,
   getCanonicalOfferCategory,
   MYSTERY_BOX_FILTER_LABEL,
-  OFFER_CATEGORY_FILTERS
+  OFFER_CATEGORIES,
+  type OfferCategory,
+  type OfferCategoryFilter
 } from "../../src/constants/offerCategories";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -37,6 +40,7 @@ import {
 import { getOffers } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
 import { getFavoriteIds, toggleFavoriteId } from "../../src/utils/favorites";
+import { sortOffersByStock } from "../../src/utils/offerStock";
 
 const DEFAULT_CITY = "Resistencia, Chaco";
 
@@ -62,7 +66,7 @@ export default function ClientHomeScreen() {
 
   const loadOffersForCity = useCallback(async (city: string | null) => {
     const nextOffers = await getOffers({ city });
-    setOffers(nextOffers);
+    setOffers(sortOffersByStock(nextOffers));
   }, []);
 
   useEffect(() => {
@@ -93,7 +97,7 @@ export default function ClientHomeScreen() {
           return;
         }
 
-        setOffers(nextOffers);
+        setOffers(sortOffersByStock(nextOffers));
 
         if (favorites) {
           setFavoriteIds(getFavoriteIds(favorites));
@@ -128,7 +132,7 @@ export default function ClientHomeScreen() {
   const filteredOffers = useMemo(() => {
     const normalizedSearch = normalize(searchQuery);
 
-    return offers.filter((offer) => {
+    return sortOffersByStock(offers.filter((offer) => {
       const matchesSearch =
         !normalizedSearch ||
         normalize(offer.storeName).includes(normalizedSearch) ||
@@ -138,8 +142,63 @@ export default function ClientHomeScreen() {
         !activeCategory || matchesCategory(offer, activeCategory);
 
       return matchesSearch && matchesActiveCategory;
-    });
+    }));
   }, [activeCategory, offers, searchQuery]);
+
+  const availableCategoryFilters = useMemo<OfferCategoryFilter[]>(() => {
+    const inStockOffers = offers.filter((offer) => offer.stock > 0);
+    const availableCategories = new Set<OfferCategory>();
+
+    inStockOffers.forEach((offer) => {
+      const category = getCanonicalOfferCategory(offer.category);
+
+      if (category) {
+        availableCategories.add(category);
+      }
+    });
+
+    const filters: OfferCategoryFilter[] = [
+      {
+        label: ALL_OFFERS_FILTER_LABEL,
+        type: "all",
+        value: ALL_OFFERS_FILTER_LABEL
+      }
+    ];
+
+    OFFER_CATEGORIES.forEach((category) => {
+      if (availableCategories.has(category)) {
+        filters.push({
+          label: category,
+          type: "category",
+          value: category
+        });
+      }
+    });
+
+    if (inStockOffers.some((offer) => offer.type === "mystery_box")) {
+      filters.push({
+        label: MYSTERY_BOX_FILTER_LABEL,
+        type: "type",
+        value: "mystery_box"
+      });
+    }
+
+    return filters;
+  }, [offers]);
+
+  useEffect(() => {
+    if (!activeCategory) {
+      return;
+    }
+
+    const isActiveCategoryAvailable = availableCategoryFilters.some(
+      (filter) => filter.type !== "all" && filter.label === activeCategory
+    );
+
+    if (!isActiveCategoryAvailable) {
+      setActiveCategory(null);
+    }
+  }, [activeCategory, availableCategoryFilters]);
 
   function handleNavigate(route: ClientMenuRoute) {
     setIsMenuVisible(false);
@@ -301,14 +360,21 @@ export default function ClientHomeScreen() {
         ) : null}
 
         <View style={styles.categoryRow}>
-          {OFFER_CATEGORY_FILTERS.map((filter) => {
-            const isActive = activeCategory === filter.label;
+          {availableCategoryFilters.map((filter) => {
+            const isActive =
+              filter.type === "all"
+                ? activeCategory === null
+                : activeCategory === filter.label;
 
             return (
               <TouchableOpacity
                 activeOpacity={0.85}
                 key={filter.label}
-                onPress={() => setActiveCategory(isActive ? null : filter.label)}
+                onPress={() =>
+                  setActiveCategory(
+                    filter.type === "all" || isActive ? null : filter.label
+                  )
+                }
                 style={[
                   styles.categoryChip,
                   isActive ? styles.activeChip : null

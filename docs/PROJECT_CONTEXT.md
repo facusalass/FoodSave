@@ -221,9 +221,14 @@ npx expo start -c
 - Las categorias controladas de ofertas son: `Panaderia`, `Rotiseria`, `Supermercado`, `Cafeteria`, `Verduleria`, `Restaurante`, `Heladeria` y `Varios`.
 - `Pizzeria` ya no es una categoria elegible en el panel comercio; las ofertas de pizza deben entrar en `Rotiseria` o `Restaurante` segun el caso.
 - El Home cliente muestra el chip `Todos` como primera opcion y estado inicial. Ese filtro no aplica categoria y permite ver todas las ofertas disponibles de la ciudad seleccionada.
+- Los chips de categorias del Home cliente se calculan dinamicamente segun la ciudad seleccionada y las ofertas disponibles con `stock > 0`; `Todos` siempre aparece.
 - El chip `Mystery Box` sigue filtrando por `type = mystery_box`, independiente de la categoria gastronómica.
+- El chip `Mystery Box` solo aparece si en la ciudad actual existe al menos una oferta con `type = mystery_box` y stock disponible.
 - Las ofertas Mystery Box deben tener textos concretos y atractivos, por ejemplo `Caja sorpresa de facturas` o `Mystery Box de panaderia con productos seleccionados del dia`.
 - Visualmente, las cards Mystery Box tienen tratamiento destacado con borde/acento FoodSave, badge propio y llamada a la accion reforzada, compatible con light/dark mode.
+
+- Los datos demo del seed cubren al menos una publicacion por categoria controlada; `Todos` es solo filtro y no se guarda como categoria.
+- Las ofertas sin stock no se ocultan: se ordenan al final, muestran badge `Sin stock`, reducen la opacidad de la card/publicacion y no parecen reservables.
 
 ## Panel comercio/admin mobile
 
