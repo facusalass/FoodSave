@@ -1,4 +1,4 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 import { buildPaginatedResult, type PaginatedResult } from "../utils/pagination.js";
 import type { Business, User } from "../types/auth.js";
 import type { Offer } from "../types/offer.js";
@@ -6,6 +6,7 @@ import type { Reservation, ReservationStatus } from "../types/reservation.js";
 
 export type BusinessUpdate = Partial<Pick<Business, "name" | "category" | "description" | "city" | "address" | "closingTime" | "logoUrl" | "paymentInfo">>;
 export type OfferUpdate = Partial<Pick<Offer, "title" | "description" | "category" | "type" | "oldPrice" | "newPrice" | "stock" | "pickupWindow" | "pickupLimit" | "allergens" | "imageUrl" | "isVisible" | "estimatedWeightInKg">>;
+export type ClientProfileUpdate = Pick<User, "name"> & Partial<Pick<User, "phone" | "city" | "address">>;
 
 // ── Helpers ────────────────────────────────────────
 
@@ -21,6 +22,19 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(id: string) {
   const { data } = await supabase.from("users").select("*").eq("id", id).single();
+  return single<User>(data);
+}
+
+export async function updateClientProfileById(id: string, dataUpdate: ClientProfileUpdate) {
+  const { data, error } = await supabaseAdmin
+    .from("users")
+    .update(dataUpdate as Record<string, unknown>)
+    .eq("id", id)
+    .eq("role", "client")
+    .select("*")
+    .single();
+
+  if (error) return null;
   return single<User>(data);
 }
 

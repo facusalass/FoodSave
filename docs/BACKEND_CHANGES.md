@@ -81,7 +81,7 @@ Todos los endpoints siguen devolviendo:
 
 ---
 
-## Endpoints completos (22)
+## Endpoints completos (24)
 
 ### Auth
 | Método | Ruta | Auth | Body |
@@ -98,6 +98,12 @@ Todos los endpoints siguen devolviendo:
 |---|---|---|---|
 | GET | `/offers` | ❌ | `?category=`, `?type=`, `?city=`, `?page=&limit=`. Paginado (`items[]` + `total/page/limit/totalPages`) |
 | GET | `/offers/:id` | ❌ | — |
+
+### Perfil cliente
+| Método | Ruta | Auth | Body |
+|---|---|---|---|
+| GET | `/client/profile` | ✅ (client) | — |
+| PUT | `/client/profile` | ✅ (client) | `{ name, phone?, city?, address? }`. No acepta editar `email`, `role`, `id` ni `password`. |
 
 ### Ofertas del comercio (admin)
 | Método | Ruta | Auth | Body |

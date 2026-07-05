@@ -15,7 +15,8 @@ import {
 import type {
   AuthSession,
   RegisterCredentials,
-  RegisterResult
+  RegisterResult,
+  User
 } from "../types/auth";
 import {
   clearStoredSession,
@@ -30,6 +31,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<AuthSession>;
   loginWithGoogle: (idToken: string) => Promise<AuthSession>;
   register: (credentials: RegisterCredentials) => Promise<RegisterResult>;
+  updateSessionUser: (user: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -123,6 +125,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
         await saveStoredSession(result);
         setSession(result);
         return result;
+      },
+      async updateSessionUser(user) {
+        if (!session) {
+          return;
+        }
+
+        const nextSession = {
+          ...session,
+          user: {
+            ...session.user,
+            ...user
+          }
+        };
+
+        await saveStoredSession(nextSession);
+        setSession(nextSession);
       },
       async logout() {
         setSession(null);

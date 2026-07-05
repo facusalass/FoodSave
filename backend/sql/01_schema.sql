@@ -15,6 +15,8 @@ CREATE TABLE users (
   role user_role NOT NULL DEFAULT 'client',
   "businessId" TEXT,
   phone TEXT,
+  city TEXT,
+  address TEXT,
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

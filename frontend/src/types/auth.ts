@@ -7,6 +7,8 @@ export type User = {
   role: UserRole;
   businessId?: string;
   phone?: string;
+  city?: string;
+  address?: string;
 };
 
 export type AuthSession = {

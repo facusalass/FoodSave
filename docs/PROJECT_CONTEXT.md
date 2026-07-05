@@ -162,7 +162,7 @@ npx expo start -c
 - `Mis reservas` consume `GET /reservations` mediante `frontend/src/services/reservationService.ts` usando el token de sesion.
 - El detalle de oferta permite crear una reserva real con `POST /reservations`; la reserva queda en estado `pending`, descuenta un cupo de la oferta y luego aparece en `Mis reservas`.
 - El menu lateral cliente esta en `ClientSideMenu` y deja disponible `Cerrar sesion`, `Favoritos` y `Ayuda`.
-- `Perfil` es MVP visual/local: muestra datos de sesion y campos de contacto, sin persistencia real ni endpoint de perfil todavia.
+- `Perfil` consume `GET /client/profile` y guarda cambios con `PUT /client/profile`. El cliente puede editar `name`, `phone`, `city` y `address`; el email queda solo lectura y no se permite editar role, password ni datos sensibles desde la app.
 
 ## Flujo de reserva y confirmacion de pago
 
