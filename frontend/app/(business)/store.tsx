@@ -840,7 +840,7 @@ function createStyles(theme: AppColors) {
   },
   content: {
     gap: spacing.md,
-    paddingBottom: 96
+    paddingBottom: spacing.xl
   },
   disabledButton: {
     opacity: 0.72

@@ -793,7 +793,7 @@ function createStyles(theme: AppColors) {
   },
   content: {
     gap: spacing.md,
-    paddingBottom: 96
+    paddingBottom: spacing.xl
   },
   customDateField: {
     flex: 1,

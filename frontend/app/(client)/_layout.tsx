@@ -8,8 +8,8 @@ import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 
 const TAB_BAR_BASE_HEIGHT = 58;
-const TAB_BAR_BOTTOM_EXTRA = 12;
-const TAB_BAR_BOTTOM_FALLBACK = 16;
+const TAB_BAR_BOTTOM_EXTRA = 4;
+const TAB_BAR_BOTTOM_FALLBACK = 10;
 
 export default function ClientLayout() {
   const { session, isLoading } = useAuth();

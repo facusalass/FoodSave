@@ -627,7 +627,7 @@ function createStyles(theme: AppColors) {
   return StyleSheet.create({
     content: {
       gap: spacing.md,
-      paddingBottom: 96
+      paddingBottom: spacing.xl
     },
     fieldGroup: {
       gap: spacing.sm

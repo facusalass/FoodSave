@@ -150,7 +150,11 @@ export default function LoginScreen() {
   }
 
   return (
-    <ScreenContainer contentStyle={styles.screen} scroll={false}>
+    <ScreenContainer
+      contentStyle={styles.screen}
+      includeBottomSafeArea
+      scroll={false}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboard}
