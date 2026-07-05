@@ -133,6 +133,11 @@ export default function BusinessPublishScreen() {
       return;
     }
 
+    if (!imageUrl) {
+      showFormError("Subí una imagen del producto antes de publicar.");
+      return;
+    }
+
     if (weightWasCompleted && parsedWeight === undefined) {
       showFormError(
         "Si cargas el peso aproximado, usa un numero valido. Ejemplo: 1 kg o 500 g."
@@ -148,7 +153,7 @@ export default function BusinessPublishScreen() {
         category: cleanTitle,
         description: cleanTitle,
         estimatedWeightInKg: parsedWeight,
-        ...(imageUrl ? { imageUrl } : {}),
+        imageUrl,
         newPrice: parsedNewPrice,
         oldPrice: parsedOldPrice,
         ...(pickupLimit
