@@ -7,8 +7,9 @@ import { type AppColors } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 
-const TAB_BAR_BASE_HEIGHT = 60;
-const TAB_BAR_BOTTOM_FALLBACK = 18;
+const TAB_BAR_BASE_HEIGHT = 58;
+const TAB_BAR_BOTTOM_EXTRA = 12;
+const TAB_BAR_BOTTOM_FALLBACK = 16;
 
 export default function ClientLayout() {
   const { session, isLoading } = useAuth();
@@ -100,20 +101,23 @@ export default function ClientLayout() {
 }
 
 function createStyles(theme: AppColors, bottomInset: number) {
-  const bottomPadding = Math.max(bottomInset, TAB_BAR_BOTTOM_FALLBACK);
+  const bottomPadding =
+    bottomInset > 0
+      ? bottomInset + TAB_BAR_BOTTOM_EXTRA
+      : TAB_BAR_BOTTOM_FALLBACK;
 
   return StyleSheet.create({
-  tabBar: {
-    backgroundColor: theme.header,
-    borderTopColor: theme.border,
-    borderTopWidth: 1,
-    height: TAB_BAR_BASE_HEIGHT + bottomPadding,
-    paddingBottom: bottomPadding,
-    paddingTop: 6
-  },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: "600"
-  }
+    tabBar: {
+      backgroundColor: theme.header,
+      borderTopColor: theme.border,
+      borderTopWidth: 1,
+      height: TAB_BAR_BASE_HEIGHT + bottomPadding,
+      paddingBottom: bottomPadding,
+      paddingTop: 6
+    },
+    tabLabel: {
+      fontSize: 12,
+      fontWeight: "600"
+    }
   });
 }
