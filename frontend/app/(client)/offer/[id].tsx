@@ -206,7 +206,13 @@ export default function OfferDetailScreen() {
       <View style={styles.storeRow}>
         {offer.logoUrl ? (
           <Image source={{ uri: offer.logoUrl }} style={styles.storeLogo} />
-        ) : null}
+        ) : (
+          <View style={styles.storeLogoPlaceholder}>
+            <Text style={styles.storeLogoInitial}>
+              {getStoreInitial(offer.storeName)}
+            </Text>
+          </View>
+        )}
         <Text style={styles.store}>{offer.storeName}</Text>
       </View>
       <Text style={styles.title}>{offer.title}</Text>
@@ -265,6 +271,10 @@ function getOfferAddress(offer: Offer) {
   }
 
   return [offer.address, offer.city].filter(Boolean).join(", ");
+}
+
+function getStoreInitial(value: string) {
+  return value.trim().charAt(0).toUpperCase() || "F";
 }
 
 function InfoItem({
@@ -428,6 +438,21 @@ function createStyles(theme: AppColors) {
     borderRadius: 16,
     borderWidth: 1,
     height: 32,
+    width: 32
+  },
+  storeLogoInitial: {
+    color: theme.primary,
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  storeLogoPlaceholder: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    borderColor: `${theme.primary}55`,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: "center",
     width: 32
   },
   storeRow: {

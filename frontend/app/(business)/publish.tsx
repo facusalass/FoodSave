@@ -54,6 +54,7 @@ export default function BusinessPublishScreen() {
   const [businessClosingTime, setBusinessClosingTime] = useState<string | null>(
     null
   );
+  const [businessLogoUrl, setBusinessLogoUrl] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -61,7 +62,7 @@ export default function BusinessPublishScreen() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadBusinessClosingTime() {
+    async function loadBusinessProfile() {
       if (!session) {
         return;
       }
@@ -71,15 +72,17 @@ export default function BusinessPublishScreen() {
 
         if (isMounted) {
           setBusinessClosingTime(normalizeClosingTime(business.closingTime));
+          setBusinessLogoUrl(business.logoUrl ?? "");
         }
       } catch {
         if (isMounted) {
           setBusinessClosingTime(null);
+          setBusinessLogoUrl("");
         }
       }
     }
 
-    void loadBusinessClosingTime();
+    void loadBusinessProfile();
 
     return () => {
       isMounted = false;
@@ -278,6 +281,16 @@ export default function BusinessPublishScreen() {
       <BusinessSuspendedBanner />
 
       <Text style={styles.title}>Publicar Excedente</Text>
+
+      {businessLogoUrl === "" ? (
+        <View style={styles.logoInfoCard}>
+          <Info color={theme.secondary} size={17} />
+          <Text style={styles.logoInfoText}>
+            Agregá el logo de tu comercio desde Mi Local para que tus
+            publicaciones se vean más profesionales.
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.tabsRow}>
         <TypeTab
@@ -699,6 +712,23 @@ function createStyles(theme: AppColors) {
     fontSize: 15,
     minHeight: 46,
     paddingHorizontal: spacing.md
+  },
+  logoInfoCard: {
+    alignItems: "flex-start",
+    backgroundColor: `${theme.secondary}12`,
+    borderColor: `${theme.secondary}45`,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.md
+  },
+  logoInfoText: {
+    color: theme.mutedText,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 19
   },
   label: {
     color: theme.text,

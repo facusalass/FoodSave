@@ -148,7 +148,13 @@ export default function BusinessDashboardScreen() {
         <View style={styles.heroTop}>
           {businessLogoUrl ? (
             <Image source={{ uri: businessLogoUrl }} style={styles.businessLogo} />
-          ) : null}
+          ) : (
+            <View style={styles.businessLogoPlaceholder}>
+              <Text style={styles.businessLogoInitial}>
+                {getBusinessInitial(businessName)}
+              </Text>
+            </View>
+          )}
           <View style={styles.greetingBlock}>
             <Text numberOfLines={2} style={styles.businessName}>
               Hola, {toTitleCase(businessName)}
@@ -323,6 +329,10 @@ function toTitleCase(value: string) {
     .join(" ");
 }
 
+function getBusinessInitial(value: string) {
+  return value.trim().charAt(0).toUpperCase() || "F";
+}
+
 function createStyles(theme: AppColors) {
   return StyleSheet.create({
   businessName: {
@@ -338,6 +348,21 @@ function createStyles(theme: AppColors) {
     borderRadius: 24,
     borderWidth: 1,
     height: 48,
+    width: 48
+  },
+  businessLogoInitial: {
+    color: theme.primary,
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  businessLogoPlaceholder: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    borderColor: `${theme.primary}55`,
+    borderRadius: 24,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: "center",
     width: 48
   },
   closingBadge: {

@@ -36,7 +36,13 @@ export function OfferCard({
           <View style={styles.storeBlock}>
             {offer.logoUrl ? (
               <Image source={{ uri: offer.logoUrl }} style={styles.logo} />
-            ) : null}
+            ) : (
+              <View style={styles.logoPlaceholder}>
+                <Text style={styles.logoInitial}>
+                  {getStoreInitial(offer.storeName)}
+                </Text>
+              </View>
+            )}
             <Text numberOfLines={2} style={styles.store}>
               {offer.storeName.toUpperCase()}
             </Text>
@@ -87,6 +93,10 @@ export function OfferCard({
       </View>
     </View>
   );
+}
+
+function getStoreInitial(value: string) {
+  return value.trim().charAt(0).toUpperCase() || "F";
 }
 
 function createStyles(theme: AppColors) {
@@ -156,6 +166,21 @@ function createStyles(theme: AppColors) {
     borderRadius: 14,
     borderWidth: 1,
     height: 28,
+    width: 28
+  },
+  logoInitial: {
+    color: theme.primary,
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  logoPlaceholder: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    borderColor: `${theme.primary}55`,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 28,
+    justifyContent: "center",
     width: 28
   },
   metaItem: {
