@@ -21,7 +21,9 @@ import {
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { BusinessSuspendedBanner } from "../../src/components/business/BusinessSuspendedBanner";
+import { OfferCategorySelector } from "../../src/components/OfferCategorySelector";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
+import type { OfferCategory } from "../../src/constants/offerCategories";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -44,6 +46,8 @@ export default function BusinessPublishScreen() {
   const styles = createStyles(theme);
   const [type, setType] = useState<OfferType>("mystery_box");
   const [title, setTitle] = useState("");
+  const [selectedCategory, setSelectedCategory] =
+    useState<OfferCategory>("Varios");
   const [oldPrice, setOldPrice] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [stock, setStock] = useState(5);
@@ -116,6 +120,11 @@ export default function BusinessPublishScreen() {
       return;
     }
 
+    if (!selectedCategory) {
+      showFormError("Elegí una categoría para la publicación.");
+      return;
+    }
+
     if (!parsedOldPrice || parsedOldPrice <= 0) {
       showFormError("Ingresa el precio original. Tiene que ser mayor a $0.");
       return;
@@ -153,7 +162,7 @@ export default function BusinessPublishScreen() {
       setIsPublishing(true);
       await createBusinessOffer(session.token, {
         allergens: parseAllergens(allergens),
-        category: cleanTitle,
+        category: selectedCategory,
         description: cleanTitle,
         estimatedWeightInKg: parsedWeight,
         imageUrl,
@@ -187,6 +196,7 @@ export default function BusinessPublishScreen() {
   function resetForm() {
     setType("mystery_box");
     setTitle("");
+    setSelectedCategory("Varios");
     setOldPrice("");
     setNewPrice("");
     setStock(5);
@@ -359,7 +369,7 @@ export default function BusinessPublishScreen() {
       </View>
 
       <InputField
-        label="Categoria / Titulo"
+        label="Título de la publicación"
         onChangeText={(value) => {
           setTitle(value);
           clearFormError();
@@ -367,6 +377,17 @@ export default function BusinessPublishScreen() {
         placeholder="Ej: Caja Panaderia"
         value={title}
       />
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Categoría</Text>
+        <OfferCategorySelector
+          selectedCategory={selectedCategory}
+          onSelect={(category) => {
+            setSelectedCategory(category);
+            clearFormError();
+          }}
+        />
+      </View>
 
       <View style={styles.priceRow}>
         <InputField

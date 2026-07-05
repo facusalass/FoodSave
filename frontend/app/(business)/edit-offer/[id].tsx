@@ -20,7 +20,12 @@ import {
   type ViewStyle
 } from "react-native";
 import { EmptyState } from "../../../src/components/EmptyState";
+import { OfferCategorySelector } from "../../../src/components/OfferCategorySelector";
 import { ScreenContainer } from "../../../src/components/ScreenContainer";
+import {
+  getCanonicalOfferCategory,
+  type OfferCategory
+} from "../../../src/constants/offerCategories";
 import { type AppColors, radii, spacing } from "../../../src/constants/theme";
 import { useAuth } from "../../../src/context/AuthContext";
 import { useTheme } from "../../../src/context/ThemeContext";
@@ -48,7 +53,7 @@ export default function BusinessEditOfferScreen() {
   const [type, setType] = useState<OfferType>("mystery_box");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState<OfferCategory | null>(null);
   const [oldPrice, setOldPrice] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [stock, setStock] = useState(0);
@@ -102,7 +107,7 @@ export default function BusinessEditOfferScreen() {
   function fillForm(offer: Offer) {
     setTitle(offer.title ?? "");
     setDescription(offer.description ?? "");
-    setCategory(offer.category ?? "");
+    setCategory(getCanonicalOfferCategory(offer.category));
     setType(offer.type);
     setOldPrice(String(offer.oldPrice ?? ""));
     setNewPrice(String(offer.newPrice ?? ""));
@@ -126,7 +131,6 @@ export default function BusinessEditOfferScreen() {
 
     const cleanTitle = title.trim();
     const cleanDescription = description.trim() || cleanTitle;
-    const cleanCategory = category.trim() || cleanTitle;
     const parsedOldPrice = parsePrice(oldPrice);
     const parsedNewPrice = parsePrice(newPrice);
     const parsedWeight = parseOptionalNumber(weight);
@@ -134,6 +138,11 @@ export default function BusinessEditOfferScreen() {
 
     if (!cleanTitle) {
       setFormError("Agrega un titulo para la publicacion.");
+      return;
+    }
+
+    if (!category) {
+      setFormError("Elegí una categoría para la publicación.");
       return;
     }
 
@@ -164,7 +173,7 @@ export default function BusinessEditOfferScreen() {
 
     const payload: UpdateBusinessOfferPayload = {
       allergens: parseAllergens(allergens),
-      category: cleanCategory,
+      category,
       description: cleanDescription,
       newPrice: parsedNewPrice,
       oldPrice: parsedOldPrice,
@@ -374,15 +383,16 @@ export default function BusinessEditOfferScreen() {
         placeholder="Descripcion breve"
         value={description}
       />
-      <InputField
-        label="Categoria"
-        onChangeText={(value) => {
-          setCategory(value);
-          clearFormError(formError, setFormError);
-        }}
-        placeholder="Ej: Panaderia"
-        value={category}
-      />
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Categoría</Text>
+        <OfferCategorySelector
+          selectedCategory={category}
+          onSelect={(selectedCategory) => {
+            setCategory(selectedCategory);
+            clearFormError(formError, setFormError);
+          }}
+        />
+      </View>
 
       <View style={styles.priceRow}>
         <InputField

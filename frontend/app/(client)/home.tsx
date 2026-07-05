@@ -20,6 +20,11 @@ import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { EmptyState } from "../../src/components/EmptyState";
 import { OfferCard } from "../../src/components/OfferCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
+import {
+  getCanonicalOfferCategory,
+  MYSTERY_BOX_FILTER_LABEL,
+  OFFER_CATEGORY_FILTERS
+} from "../../src/constants/offerCategories";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -33,7 +38,6 @@ import { getOffers } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
 import { getFavoriteIds, toggleFavoriteId } from "../../src/utils/favorites";
 
-const categories = ["Panaderia", "Rotiseria", "SuperMercado", "Mystery Box"];
 const DEFAULT_CITY = "Resistencia, Chaco";
 
 export default function ClientHomeScreen() {
@@ -51,6 +55,8 @@ export default function ClientHomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [locationHint, setLocationHint] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
 
@@ -74,15 +80,9 @@ export default function ClientHomeScreen() {
 
         setCities(nextCities);
 
-        const detectedCity = await detectCurrentCity(nextCities);
-
-        if (!isMounted) {
-          return;
-        }
-
-        const initialCity = detectedCity.city ?? getFallbackCity(nextCities);
+        const initialCity = getFallbackCity(nextCities);
         setSelectedCity(initialCity);
-        setLocationHint(detectedCity.hint);
+        setLocationHint(null);
 
         const [nextOffers, favorites] = await Promise.all([
           getOffers({ city: initialCity }),
@@ -156,6 +156,7 @@ export default function ClientHomeScreen() {
     setIsCityModalVisible(false);
     setSelectedCity(city);
     setLocationHint(null);
+    setShowLocationPrompt(false);
 
     try {
       setError(null);
@@ -168,6 +169,34 @@ export default function ClientHomeScreen() {
           : "No pudimos cargar las ofertas de esa ciudad.";
       setError(message);
     } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleUseLocationPress() {
+    try {
+      setError(null);
+      setShowLocationPrompt(false);
+      setIsDetectingLocation(true);
+      const detectedCity = await detectCurrentCity(cities);
+
+      if (!detectedCity.city) {
+        setLocationHint(detectedCity.hint);
+        return;
+      }
+
+      setSelectedCity(detectedCity.city);
+      setLocationHint(null);
+      setIsLoading(true);
+      await loadOffersForCity(detectedCity.city);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "No pudimos cargar las ofertas para tu ubicacion.";
+      setError(message);
+    } finally {
+      setIsDetectingLocation(false);
       setIsLoading(false);
     }
   }
@@ -240,15 +269,46 @@ export default function ClientHomeScreen() {
           <Text style={styles.locationHint}>{locationHint}</Text>
         ) : null}
 
+        {showLocationPrompt && cities.length > 0 ? (
+          <View style={styles.locationCard}>
+            <View style={styles.locationIconBox}>
+              <MapPin color={theme.secondaryDark} size={18} />
+            </View>
+            <View style={styles.locationCopy}>
+              <Text style={styles.locationTitle}>Encontrar ofertas cerca</Text>
+              <Text style={styles.locationText}>
+                Podemos usar tu ubicacion para elegir la ciudad disponible mas cercana.
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              disabled={isDetectingLocation}
+              onPress={() => {
+                void handleUseLocationPress();
+              }}
+              style={[
+                styles.locationAction,
+                isDetectingLocation ? styles.locationActionDisabled : null
+              ]}
+            >
+              {isDetectingLocation ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.locationActionText}>Usar</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         <View style={styles.categoryRow}>
-          {categories.map((category) => {
-            const isActive = activeCategory === category;
+          {OFFER_CATEGORY_FILTERS.map((filter) => {
+            const isActive = activeCategory === filter.label;
 
             return (
               <TouchableOpacity
                 activeOpacity={0.85}
-                key={category}
-                onPress={() => setActiveCategory(isActive ? null : category)}
+                key={filter.label}
+                onPress={() => setActiveCategory(isActive ? null : filter.label)}
                 style={[
                   styles.categoryChip,
                   isActive ? styles.activeChip : null
@@ -260,7 +320,7 @@ export default function ClientHomeScreen() {
                     isActive ? styles.activeChipText : null
                   ]}
                 >
-                  {category}
+                  {filter.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -296,7 +356,11 @@ export default function ClientHomeScreen() {
       ) : filteredOffers.length === 0 ? (
         <EmptyState
           description="Proba cambiar la busqueda, categoria o ciudad."
-          title="No se encontraron ofertas"
+          title={
+            activeCategory
+              ? `No hay ofertas de ${activeCategory} por ahora.`
+              : "No se encontraron ofertas"
+          }
         />
       ) : (
         <View style={styles.list}>
@@ -512,26 +576,11 @@ function normalize(value: string) {
 }
 
 function matchesCategory(offer: Offer, category: string) {
-  const normalizedCategory = normalize(category);
-  const offerCategory = normalize(offer.category);
-
-  if (normalizedCategory === "mystery box") {
-    return offer.type === "mystery_box" || offerCategory.includes("mystery");
+  if (category === MYSTERY_BOX_FILTER_LABEL) {
+    return offer.type === "mystery_box";
   }
 
-  if (normalizedCategory === "supermercado") {
-    return offerCategory.includes("super");
-  }
-
-  if (normalizedCategory === "panaderia") {
-    return offerCategory.includes("panader");
-  }
-
-  if (normalizedCategory === "rotiseria") {
-    return offerCategory.includes("rotiser");
-  }
-
-  return offerCategory === normalizedCategory;
+  return getCanonicalOfferCategory(offer.category) === category;
 }
 
 function createStyles(theme: AppColors) {
@@ -632,10 +681,59 @@ function createStyles(theme: AppColors) {
     color: theme.mutedText,
     fontSize: 14
   },
+  locationAction: {
+    alignItems: "center",
+    backgroundColor: theme.primary,
+    borderRadius: radii.md,
+    justifyContent: "center",
+    minHeight: 36,
+    minWidth: 58,
+    paddingHorizontal: spacing.sm
+  },
+  locationActionDisabled: {
+    opacity: 0.72
+  },
+  locationActionText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  locationCard: {
+    alignItems: "center",
+    backgroundColor: `${theme.secondary}12`,
+    borderColor: `${theme.secondary}45`,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.md
+  },
+  locationCopy: {
+    flex: 1,
+    gap: 2
+  },
   locationHint: {
     color: theme.mutedText,
     fontSize: 12,
     fontWeight: "700"
+  },
+  locationIconBox: {
+    alignItems: "center",
+    backgroundColor: `${theme.secondary}1A`,
+    borderRadius: 18,
+    height: 36,
+    justifyContent: "center",
+    width: 36
+  },
+  locationText: {
+    color: theme.mutedText,
+    fontSize: 12,
+    lineHeight: 17
+  },
+  locationTitle: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: "900"
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject
