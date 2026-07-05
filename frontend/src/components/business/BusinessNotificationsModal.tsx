@@ -8,7 +8,6 @@ import {
 import { useEffect, type ReactNode } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   StyleSheet,
   Text,
@@ -92,20 +91,6 @@ export function BusinessNotificationsModal({
             )}
           </View>
 
-          <View style={styles.footer}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() =>
-                Alert.alert(
-                  "Proximamente",
-                  "La pantalla completa de notificaciones del comercio se va a habilitar mas adelante."
-                )
-              }
-              style={styles.viewAllButton}
-            >
-              <Text style={styles.viewAllText}>VER TODO</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </Modal>
@@ -174,13 +159,6 @@ function createStyles(theme: AppColors) {
     fontSize: 14,
     fontWeight: "900"
   },
-  footer: {
-    alignItems: "center",
-    borderTopColor: theme.border,
-    borderTopWidth: 1,
-    minHeight: 64,
-    justifyContent: "center"
-  },
   header: {
     alignItems: "center",
     borderBottomColor: theme.border,
@@ -248,16 +226,5 @@ function createStyles(theme: AppColors) {
     height: 8,
     width: 8
   },
-  viewAllButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-    paddingHorizontal: spacing.lg
-  },
-  viewAllText: {
-    color: theme.primary,
-    fontSize: 14,
-    fontWeight: "900"
-  }
   });
 }
