@@ -3,6 +3,7 @@ import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
 import { authRoutes } from "./routes/authRoutes.js";
 import { offerRoutes } from "./routes/offerRoutes.js";
 import { citiesRoutes } from "./routes/citiesRoutes.js";
+import { clientProfileRoutes } from "./routes/clientProfileRoutes.js";
 import { reservationRoutes } from "./routes/reservationRoutes.js";
 import { offerBusinessRoutes } from "./routes/offerBusinessRoutes.js";
 import { favoriteRoutes } from "./routes/favoriteRoutes.js";
@@ -28,6 +29,7 @@ app.get("/", (_request, response) => {
     response.json({ success: true, data: { message: "FoodSave API corriendo", docs: "/health", version: "1.0.0" } });
 });
 app.use("/auth", authRoutes);
+app.use("/client/profile", clientProfileRoutes);
 app.use("/offers", offerRoutes);
 app.use("/cities", citiesRoutes);
 app.use("/reservations", reservationRoutes);
