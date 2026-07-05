@@ -43,6 +43,7 @@ import { getFavoriteIds, toggleFavoriteId } from "../../src/utils/favorites";
 import { sortOffersByStock } from "../../src/utils/offerStock";
 
 const DEFAULT_CITY = "Resistencia, Chaco";
+const COLLAPSED_CATEGORY_CHIP_COUNT = 6;
 
 export default function ClientHomeScreen() {
   const router = useRouter();
@@ -55,6 +56,7 @@ export default function ClientHomeScreen() {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
+  const [areCategoriesExpanded, setAreCategoriesExpanded] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [locationHint, setLocationHint] = useState<string | null>(null);
@@ -186,6 +188,35 @@ export default function ClientHomeScreen() {
     return filters;
   }, [offers]);
 
+  const visibleCategoryFilters = useMemo(() => {
+    if (
+      areCategoriesExpanded ||
+      availableCategoryFilters.length <= COLLAPSED_CATEGORY_CHIP_COUNT
+    ) {
+      return availableCategoryFilters;
+    }
+
+    const visibleLimit = COLLAPSED_CATEGORY_CHIP_COUNT - 1;
+    const firstFilters = availableCategoryFilters.slice(0, visibleLimit);
+    const activeFilter = availableCategoryFilters.find((filter) =>
+      filter.type === "all"
+        ? activeCategory === null
+        : activeCategory === filter.label
+    );
+
+    if (
+      activeFilter &&
+      !firstFilters.some((filter) => filter.label === activeFilter.label)
+    ) {
+      return [...firstFilters.slice(0, visibleLimit - 1), activeFilter];
+    }
+
+    return firstFilters;
+  }, [activeCategory, areCategoriesExpanded, availableCategoryFilters]);
+
+  const hiddenCategoryCount =
+    availableCategoryFilters.length - visibleCategoryFilters.length;
+
   useEffect(() => {
     if (!activeCategory) {
       return;
@@ -288,6 +319,10 @@ export default function ClientHomeScreen() {
     }
   }
 
+  function handleCategorySelect(filter: OfferCategoryFilter) {
+    setActiveCategory(filter.type === "all" ? null : filter.label);
+  }
+
   return (
     <ScreenContainer contentStyle={styles.content}>
       <ClientTopBar onMenuPress={() => setIsMenuVisible(true)} />
@@ -360,7 +395,7 @@ export default function ClientHomeScreen() {
         ) : null}
 
         <View style={styles.categoryRow}>
-          {availableCategoryFilters.map((filter) => {
+          {visibleCategoryFilters.map((filter) => {
             const isActive =
               filter.type === "all"
                 ? activeCategory === null
@@ -370,11 +405,7 @@ export default function ClientHomeScreen() {
               <TouchableOpacity
                 activeOpacity={0.85}
                 key={filter.label}
-                onPress={() =>
-                  setActiveCategory(
-                    filter.type === "all" || isActive ? null : filter.label
-                  )
-                }
+                onPress={() => handleCategorySelect(filter)}
                 style={[
                   styles.categoryChip,
                   isActive ? styles.activeChip : null
@@ -391,6 +422,20 @@ export default function ClientHomeScreen() {
               </TouchableOpacity>
             );
           })}
+
+          {availableCategoryFilters.length > COLLAPSED_CATEGORY_CHIP_COUNT ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() =>
+                setAreCategoriesExpanded((currentValue) => !currentValue)
+              }
+              style={styles.moreCategoryChip}
+            >
+              <Text style={styles.moreCategoryText}>
+                {areCategoriesExpanded ? "Ver menos" : `Ver mas (${hiddenCategoryCount})`}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
@@ -659,12 +704,15 @@ function createStyles(theme: AppColors) {
     color: "#FFFFFF"
   },
   categoryChip: {
+    alignItems: "center",
     backgroundColor: theme.card,
     borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 34,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.xs
   },
   categoryRow: {
     flexDirection: "row",
@@ -674,8 +722,8 @@ function createStyles(theme: AppColors) {
   },
   categoryText: {
     color: theme.text,
-    fontSize: 13,
-    fontWeight: "800"
+    fontSize: 12,
+    fontWeight: "900"
   },
   cityButton: {
     alignItems: "center",
@@ -836,6 +884,22 @@ function createStyles(theme: AppColors) {
   modalTitle: {
     color: theme.text,
     fontSize: 20,
+    fontWeight: "900"
+  },
+  moreCategoryChip: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    borderColor: `${theme.primary}55`,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 34,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs
+  },
+  moreCategoryText: {
+    color: theme.primary,
+    fontSize: 12,
     fontWeight: "900"
   },
   searchBox: {

@@ -45,6 +45,7 @@ import {
   normalizeClosingTime
 } from "../../src/utils/closingTime";
 import { formatCurrency } from "../../src/utils/formatCurrency";
+import { isOfferOutOfStock, sortOffersByStock } from "../../src/utils/offerStock";
 
 type StoreTab = "settings" | "publications";
 
@@ -74,10 +75,12 @@ export default function BusinessStoreScreen() {
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [description, setDescription] = useState("");
   const [closingTime, setClosingTime] = useState(DEFAULT_CLOSING_TIME);
+  const [closingTimeError, setClosingTimeError] = useState<string | null>(null);
   const [holderName, setHolderName] = useState("");
   const [cvu, setCvu] = useState("");
   const [bankAlias, setBankAlias] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [logoPreviewUri, setLogoPreviewUri] = useState("");
 
   const loadProfile = useCallback(async () => {
     if (!session) {
@@ -93,7 +96,9 @@ export default function BusinessStoreScreen() {
       setCategory(business.category ?? DEFAULT_CATEGORY);
       setDescription(business.description ?? "");
       setClosingTime(normalizeClosingTime(business.closingTime) ?? DEFAULT_CLOSING_TIME);
+      setClosingTimeError(null);
       setLogoUrl(business.logoUrl ?? "");
+      setLogoPreviewUri(business.logoUrl ?? "");
       setHolderName(business.paymentInfo?.ownerName ?? "");
       setCvu(business.paymentInfo?.cvu ?? "");
       setBankAlias(business.paymentInfo?.alias ?? "");
@@ -118,7 +123,7 @@ export default function BusinessStoreScreen() {
       setOffersError(null);
       setIsLoadingOffers(true);
       const nextOffers = await getBusinessOffers(session.token);
-      setOffers(nextOffers);
+      setOffers(sortOffersByStock(nextOffers));
     } catch (loadError) {
       const message =
         loadError instanceof Error
@@ -164,10 +169,10 @@ export default function BusinessStoreScreen() {
     }
 
     if (!cleanClosingTime || !isValidClosingTime(cleanClosingTime)) {
-      Alert.alert(
-        "Revisemos el horario",
-        "Carga un horario de cierre valido en formato HH:mm. Ejemplo: 22:00."
+      setClosingTimeError(
+        "Carga un horario valido en formato HH:mm. Ejemplo: 22:00."
       );
+      Alert.alert("Revisemos el horario", "Carga un horario de cierre valido.");
       return;
     }
 
@@ -185,6 +190,8 @@ export default function BusinessStoreScreen() {
           ownerName: cleanHolderName
         }
       });
+      setClosingTime(cleanClosingTime);
+      setClosingTimeError(null);
 
       Alert.alert(
         "Cambios guardados",
@@ -205,6 +212,8 @@ export default function BusinessStoreScreen() {
     if (!session || isUploadingLogo) {
       return;
     }
+
+    const previousPreviewUri = logoPreviewUri;
 
     try {
       const permission =
@@ -248,12 +257,14 @@ export default function BusinessStoreScreen() {
       }
 
       setIsUploadingLogo(true);
+      setLogoPreviewUri(image.uri);
       const uploadedUrl = await uploadImage(session.token, {
         name: fileName,
         type: mimeType,
         uri: image.uri
       });
       setLogoUrl(uploadedUrl);
+      setLogoPreviewUri(image.uri);
       Alert.alert(
         "Logo cargado",
         "Ya lo subimos. Toca Guardar Cambios para dejarlo fijo en tu local."
@@ -263,10 +274,33 @@ export default function BusinessStoreScreen() {
         logoError instanceof Error
           ? logoError.message
           : "No pudimos subir el logo.";
+      setLogoPreviewUri(previousPreviewUri);
       Alert.alert("No pudimos cargar el logo", message);
     } finally {
       setIsUploadingLogo(false);
     }
+  }
+
+  function handleClosingTimeChange(value: string) {
+    const nextValue = maskClosingTimeInput(value, closingTime);
+
+    setClosingTime(nextValue);
+
+    if (closingTimeError) {
+      setClosingTimeError(validateClosingTimeValue(nextValue));
+    }
+  }
+
+  function handleClosingTimeBlur() {
+    const normalizedTime = normalizeClosingTime(closingTime);
+
+    if (normalizedTime) {
+      setClosingTime(normalizedTime);
+      setClosingTimeError(null);
+      return;
+    }
+
+    setClosingTimeError(validateClosingTimeValue(closingTime));
   }
 
   async function handleToggleVisibility(offer: Offer) {
@@ -285,10 +319,12 @@ export default function BusinessStoreScreen() {
       );
 
       setOffers((currentOffers) =>
-        currentOffers.map((currentOffer) =>
-          currentOffer.id === offer.id
-            ? { ...currentOffer, ...updatedOffer }
-            : currentOffer
+        sortOffersByStock(
+          currentOffers.map((currentOffer) =>
+            currentOffer.id === offer.id
+              ? { ...currentOffer, ...updatedOffer }
+              : currentOffer
+          )
         )
       );
     } catch (visibilityError) {
@@ -341,19 +377,61 @@ export default function BusinessStoreScreen() {
             activeOpacity={0.85}
             disabled={isUploadingLogo}
             onPress={handleLogoPress}
-            style={[styles.logoBox, isUploadingLogo ? styles.disabledButton : null]}
+            style={[
+              styles.logoBox,
+              logoPreviewUri ? styles.logoBoxWithPreview : null,
+              isUploadingLogo ? styles.disabledButton : null
+            ]}
           >
             {isUploadingLogo ? (
-              <ActivityIndicator color={theme.primary} />
-            ) : logoUrl ? (
-              <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
-            ) : (
-              <Upload color={theme.placeholder} size={34} />
-            )}
-            <Text style={styles.logoText}>
-              {isUploadingLogo ? "Subiendo logo..." : "Cargar Logo"}
-            </Text>
-            <Text style={styles.logoHint}>JPG, PNG - MAX 2MB</Text>
+              logoPreviewUri ? (
+                <Image
+                  resizeMode="cover"
+                  source={{ uri: logoPreviewUri }}
+                  style={styles.logoPreview}
+                />
+              ) : (
+                <ActivityIndicator color={theme.primary} />
+              )
+            ) : logoPreviewUri ? (
+              <Image
+                resizeMode="cover"
+                source={{ uri: logoPreviewUri }}
+                style={styles.logoPreview}
+              />
+            ) : null}
+            <View
+              style={[
+                styles.logoOverlay,
+                logoPreviewUri ? styles.logoOverlayWithPreview : null
+              ]}
+            >
+              {isUploadingLogo && logoPreviewUri ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : logoPreviewUri ? null : (
+                <Upload color={theme.placeholder} size={34} />
+              )}
+              <Text
+                style={[
+                  styles.logoText,
+                  logoPreviewUri ? styles.logoTextWithPreview : null
+                ]}
+              >
+                {isUploadingLogo
+                  ? "Subiendo logo..."
+                  : logoPreviewUri
+                    ? "Logo listo"
+                    : "Cargar Logo"}
+              </Text>
+              <Text
+                style={[
+                  styles.logoHint,
+                  logoPreviewUri ? styles.logoHintWithPreview : null
+                ]}
+              >
+                JPG, PNG - MAX 2MB
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <InputField
@@ -390,27 +468,37 @@ export default function BusinessStoreScreen() {
           />
 
           <View style={styles.closingCard}>
-            <View>
-              <Text style={styles.closingLabel}>Horario de Cierre</Text>
+            <View style={styles.closingCopy}>
+              <View style={styles.closingHeaderRow}>
+                <Text style={styles.closingLabel}>Horario de Cierre</Text>
+                <View style={styles.editableBadge}>
+                  <Pencil color={theme.primary} size={12} />
+                  <Text style={styles.editableBadgeText}>Editable</Text>
+                </View>
+              </View>
               <View style={styles.closingInputRow}>
                 <TextInput
                   keyboardType="number-pad"
                   maxLength={5}
-                  onChangeText={(value) =>
-                    setClosingTime((current) =>
-                      maskClosingTimeInput(value, current)
-                    )
-                  }
+                  onBlur={handleClosingTimeBlur}
+                  onChangeText={handleClosingTimeChange}
                   placeholder="22:00"
                   placeholderTextColor={theme.placeholder}
-                  style={styles.closingTimeInput}
+                  style={[
+                    styles.closingTimeInput,
+                    closingTimeError ? styles.closingTimeInputError : null
+                  ]}
                   value={closingTime}
                 />
                 <Text style={styles.closingSuffix}>hs</Text>
               </View>
-              <Text style={styles.closingHint}>
-                Se guarda como {formatClosingTimeDisplay(closingTime)}
-              </Text>
+              {closingTimeError ? (
+                <Text style={styles.closingError}>{closingTimeError}</Text>
+              ) : (
+                <Text style={styles.closingHint}>
+                  Se guarda como {formatClosingTimeDisplay(closingTime)}
+                </Text>
+              )}
             </View>
             <View style={styles.clockBox}>
               <Clock color={theme.primary} size={30} />
@@ -540,7 +628,7 @@ export default function BusinessStoreScreen() {
             <EmptyState title="Todavia no hay publicaciones para este local." />
           ) : (
             <View style={styles.offerList}>
-              {offers.map((offer) => (
+              {sortOffersByStock(offers).map((offer) => (
                 <PublicationCard
                   key={offer.id}
                   isUpdatingVisibility={visibilityLoadingId === offer.id}
@@ -560,6 +648,20 @@ export default function BusinessStoreScreen() {
       )}
     </ScreenContainer>
   );
+}
+
+function validateClosingTimeValue(value: string) {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return "El horario de cierre es requerido.";
+  }
+
+  if (!isValidClosingTime(trimmedValue)) {
+    return "Usa formato HH:mm, entre 00:00 y 23:59.";
+  }
+
+  return null;
 }
 
 function StoreTabButton({
@@ -648,13 +750,20 @@ function PublicationCard({
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const isHidden = offer.isVisible === false;
-  const isMuted = isHidden || offer.stock <= 0;
+  const isOutOfStock = isOfferOutOfStock(offer);
+  const isMuted = isHidden || isOutOfStock;
   const [imageFailed, setImageFailed] = useState(false);
   const imageUri = getRemoteImageUri(offer.imageUrl);
   const showImage = Boolean(imageUri && !imageFailed);
 
   return (
-    <View style={[styles.publicationCard, isHidden ? styles.publicationCardHidden : null]}>
+    <View
+      style={[
+        styles.publicationCard,
+        isHidden ? styles.publicationCardHidden : null,
+        isOutOfStock ? styles.publicationCardOutOfStock : null
+      ]}
+    >
       <View style={styles.publicationImageFrame}>
         {showImage ? (
           <Image
@@ -671,6 +780,14 @@ function PublicationCard({
         )}
       </View>
       <View style={styles.publicationInfo}>
+        <View style={styles.publicationBadgeRow}>
+          {offer.type === "mystery_box" ? (
+            <Text style={styles.publicationMysteryBadge}>Mystery Box</Text>
+          ) : null}
+          {isOutOfStock ? (
+            <Text style={styles.publicationOutOfStockBadge}>Sin stock</Text>
+          ) : null}
+        </View>
         <Text style={[styles.offerTitle, isMuted ? styles.hiddenText : null]}>
           {offer.title}
         </Text>
@@ -820,10 +937,26 @@ function createStyles(theme: AppColors) {
     fontSize: 12,
     fontWeight: "700"
   },
-  closingInputRow: {
-    alignItems: "baseline",
+  closingCopy: {
+    flex: 1,
+    paddingRight: spacing.md
+  },
+  closingError: {
+    color: theme.danger,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  closingHeaderRow: {
+    alignItems: "center",
     flexDirection: "row",
-    gap: spacing.xs
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  closingInputRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
+    marginTop: spacing.xs
   },
   closingSuffix: {
     color: theme.text,
@@ -831,12 +964,20 @@ function createStyles(theme: AppColors) {
     fontWeight: "900"
   },
   closingTimeInput: {
+    backgroundColor: theme.input,
+    borderColor: theme.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
     color: theme.text,
-    fontSize: 30,
+    fontSize: 26,
     fontWeight: "900",
-    minHeight: 42,
-    padding: 0,
-    width: 78
+    minHeight: 48,
+    paddingHorizontal: spacing.sm,
+    textAlign: "center",
+    width: 96
+  },
+  closingTimeInputError: {
+    borderColor: theme.danger
   },
   content: {
     gap: spacing.md,
@@ -849,6 +990,20 @@ function createStyles(theme: AppColors) {
     color: theme.danger,
     fontSize: 13,
     fontWeight: "800"
+  },
+  editableBadge: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    borderRadius: radii.sm,
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4
+  },
+  editableBadgeText: {
+    color: theme.primary,
+    fontSize: 11,
+    fontWeight: "900"
   },
   fieldGroup: {
     gap: spacing.sm
@@ -906,26 +1061,50 @@ function createStyles(theme: AppColors) {
     gap: spacing.sm,
     justifyContent: "center",
     minHeight: 160,
+    overflow: "hidden",
     padding: spacing.lg,
     shadowColor: "#000000",
     shadowOffset: { height: 2, width: 0 },
     shadowOpacity: 0.06,
     shadowRadius: 5
   },
-  logoPreview: {
-    borderRadius: radii.md,
-    height: 72,
-    width: 72
+  logoBoxWithPreview: {
+    borderColor: theme.primary,
+    borderStyle: "solid",
+    padding: 0
   },
   logoHint: {
     color: theme.placeholder,
     fontSize: 12,
     fontWeight: "900"
   },
+  logoHintWithPreview: {
+    color: "#FFFFFFCC"
+  },
+  logoOverlay: {
+    alignItems: "center",
+    gap: spacing.sm,
+    justifyContent: "center"
+  },
+  logoOverlayWithPreview: {
+    backgroundColor: theme.overlay,
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0
+  },
+  logoPreview: {
+    height: 160,
+    width: "100%"
+  },
   logoText: {
     color: theme.text,
     fontSize: 14,
     fontWeight: "900"
+  },
+  logoTextWithPreview: {
+    color: "#FFFFFF"
   },
   newButton: {
     alignItems: "center",
@@ -997,6 +1176,14 @@ function createStyles(theme: AppColors) {
   publicationCardHidden: {
     opacity: 0.82
   },
+  publicationCardOutOfStock: {
+    opacity: 0.58
+  },
+  publicationBadgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs
+  },
   publicationImage: {
     height: "100%",
     width: "100%"
@@ -1024,6 +1211,32 @@ function createStyles(theme: AppColors) {
   publicationInfo: {
     flex: 1,
     gap: spacing.xs
+  },
+  publicationMysteryBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: `${theme.primary}18`,
+    borderColor: `${theme.primary}66`,
+    borderRadius: 999,
+    borderWidth: 1,
+    color: theme.primary,
+    fontSize: 10,
+    fontWeight: "900",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    textTransform: "uppercase"
+  },
+  publicationOutOfStockBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: `${theme.danger}18`,
+    borderColor: `${theme.danger}66`,
+    borderRadius: 999,
+    borderWidth: 1,
+    color: theme.danger,
+    fontSize: 10,
+    fontWeight: "900",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    textTransform: "uppercase"
   },
   publicationsBlock: {
     gap: spacing.md

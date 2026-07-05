@@ -222,6 +222,8 @@ export default function BusinessPublishScreen() {
       return;
     }
 
+    const previousImageUrl = imageUrl;
+
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -262,6 +264,8 @@ export default function BusinessPublishScreen() {
       }
 
       setFormError(null);
+      setImageUrl("");
+      setImagePreviewUri(image.uri);
       setIsUploadingImage(true);
       const uploadedUrl = await uploadImage(session.token, {
         name: fileName,
@@ -269,12 +273,12 @@ export default function BusinessPublishScreen() {
         uri: image.uri
       });
       setImageUrl(uploadedUrl);
-      setImagePreviewUri(image.uri);
     } catch (imageError) {
       const message =
         imageError instanceof Error
           ? imageError.message
           : "No pudimos subir la imagen.";
+      setImageUrl(previousImageUrl);
       showFormError(message);
     } finally {
       setIsUploadingImage(false);
@@ -328,7 +332,11 @@ export default function BusinessPublishScreen() {
           ]}
         >
           {imagePreviewUri ? (
-            <Image source={{ uri: imagePreviewUri }} style={styles.imagePreview} />
+            <Image
+              resizeMode="cover"
+              source={{ uri: imagePreviewUri }}
+              style={styles.imagePreview}
+            />
           ) : null}
           <View
             style={[
@@ -353,7 +361,7 @@ export default function BusinessPublishScreen() {
               {isUploadingImage
                 ? "Subiendo imagen..."
                 : imagePreviewUri
-                  ? "Cambiar Imagen"
+                  ? "Imagen lista"
                   : "Subir Imagen"}
             </Text>
             <Text
@@ -672,6 +680,7 @@ function createStyles(theme: AppColors) {
   },
   imageBox: {
     alignItems: "center",
+    aspectRatio: 4 / 3,
     backgroundColor: theme.card,
     borderColor: theme.border,
     borderRadius: radii.md,
@@ -679,7 +688,8 @@ function createStyles(theme: AppColors) {
     borderWidth: 1.5,
     gap: spacing.sm,
     justifyContent: "center",
-    minHeight: 182,
+    maxHeight: 220,
+    minHeight: 170,
     overflow: "hidden",
     padding: spacing.lg
   },
@@ -713,7 +723,7 @@ function createStyles(theme: AppColors) {
     top: 0
   },
   imagePreview: {
-    height: "100%",
+    ...StyleSheet.absoluteFillObject,
     width: "100%"
   },
   imageText: {

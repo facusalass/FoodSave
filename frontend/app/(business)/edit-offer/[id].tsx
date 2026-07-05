@@ -221,6 +221,8 @@ export default function BusinessEditOfferScreen() {
       return;
     }
 
+    const previousImageUrl = imageUrl;
+
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -261,6 +263,8 @@ export default function BusinessEditOfferScreen() {
       }
 
       setFormError(null);
+      setImageUrl("");
+      setImagePreviewUri(image.uri);
       setIsUploadingImage(true);
       const uploadedUrl = await uploadImage(session.token, {
         name: fileName,
@@ -268,10 +272,10 @@ export default function BusinessEditOfferScreen() {
         uri: image.uri
       });
       setImageUrl(uploadedUrl);
-      setImagePreviewUri(image.uri);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "No pudimos subir la imagen.";
+      setImageUrl(previousImageUrl);
       setFormError(message);
     } finally {
       setIsUploadingImage(false);
@@ -329,7 +333,11 @@ export default function BusinessEditOfferScreen() {
           ]}
         >
           {imagePreviewUri ? (
-            <Image source={{ uri: imagePreviewUri }} style={styles.imagePreview} />
+            <Image
+              resizeMode="cover"
+              source={{ uri: imagePreviewUri }}
+              style={styles.imagePreview}
+            />
           ) : null}
           <View
             style={[
@@ -351,7 +359,7 @@ export default function BusinessEditOfferScreen() {
                 imagePreviewUri ? styles.imageTextWithPreview : null
               ]}
             >
-              {isUploadingImage ? "Subiendo imagen..." : "Cambiar Imagen"}
+              {isUploadingImage ? "Subiendo imagen..." : "Imagen lista"}
             </Text>
             <Text
               style={[
