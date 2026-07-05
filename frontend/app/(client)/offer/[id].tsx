@@ -18,9 +18,15 @@ import {
 import { EmptyState } from "../../../src/components/EmptyState";
 import { PrimaryButton } from "../../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../../src/components/ScreenContainer";
+import { TextInputField } from "../../../src/components/TextInputField";
 import { type AppColors, radii, spacing } from "../../../src/constants/theme";
 import { useAuth } from "../../../src/context/AuthContext";
 import { useTheme } from "../../../src/context/ThemeContext";
+import {
+  getClientProfile,
+  updateClientProfile,
+  type ClientProfile
+} from "../../../src/services/clientProfileService";
 import {
   addFavorite,
   getFavorites,
@@ -31,20 +37,33 @@ import { createReservation } from "../../../src/services/reservationService";
 import type { Offer } from "../../../src/types/offer";
 import { formatCurrency } from "../../../src/utils/formatCurrency";
 import { getOfferPickupText } from "../../../src/utils/offerPickup";
+import {
+  hasValidReservationProfile,
+  validateClientProfile,
+  type ClientProfileValidationErrors
+} from "../../../src/utils/profileValidation";
 
 export default function OfferDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { session } = useAuth();
+  const { session, updateSessionUser } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
   const [reserveError, setReserveError] = useState<string | null>(null);
+  const [profilePromptVisible, setProfilePromptVisible] = useState(false);
+  const [profileForReservation, setProfileForReservation] =
+    useState<ClientProfile | null>(null);
+  const [profileCity, setProfileCity] = useState("");
+  const [profileAddress, setProfileAddress] = useState("");
+  const [profileFieldErrors, setProfileFieldErrors] =
+    useState<ClientProfileValidationErrors>({});
   const [imageFailed, setImageFailed] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
 
@@ -106,18 +125,90 @@ export default function OfferDetailScreen() {
     try {
       setReserveError(null);
       setIsReserving(true);
-      const nextReservation = await createReservation(session.token, offer.id);
-      router.replace({
-        pathname: "/(client)/reservation-confirmed",
-        params: { reservationId: nextReservation.id }
-      });
+      const profile = await getClientProfile(session.token);
+
+      if (!hasValidReservationProfile(profile)) {
+        setProfileForReservation(profile);
+        setProfileCity(profile.city ?? "");
+        setProfileAddress(profile.address ?? "");
+        setProfilePromptVisible(true);
+        setIsReserving(false);
+        return;
+      }
+
+      await reserveOffer();
     } catch (reserveErrorValue) {
       const message =
         reserveErrorValue instanceof Error
           ? reserveErrorValue.message
           : "No pudimos crear la reserva.";
       setReserveError(message);
+      setIsReserving(false);
+    }
+  }
+
+  async function reserveOffer() {
+    if (!session || !offer) {
+      return;
+    }
+
+    const nextReservation = await createReservation(session.token, offer.id);
+    router.replace({
+      pathname: "/(client)/reservation-confirmed",
+      params: { reservationId: nextReservation.id }
+    });
+  }
+
+  async function handleSaveProfileAndContinue() {
+    if (!session || !offer || isSavingProfile || isReserving) {
+      return;
+    }
+
+    const nextErrors = validateClientProfile(
+      {
+        address: profileAddress,
+        city: profileCity,
+        name: profileForReservation?.name ?? session.user.name,
+        phone: profileForReservation?.phone ?? session.user.phone
+      },
+      { requireAddress: true, requireCity: true }
+    );
+    setProfileFieldErrors(nextErrors);
+    setReserveError(null);
+
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
+
+    const name = (profileForReservation?.name ?? session.user.name).trim();
+
+    if (!name) {
+      setReserveError("No pudimos guardar tu perfil porque falta tu nombre.");
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      const user = await updateClientProfile(session.token, {
+        address: profileAddress.trim(),
+        city: profileCity.trim(),
+        name,
+        phone: profileForReservation?.phone ?? session.user.phone ?? ""
+      });
+
+      await updateSessionUser(user);
+      setProfilePromptVisible(false);
+      setProfileForReservation(user);
+      setIsReserving(true);
+      await reserveOffer();
+    } catch (errorValue) {
+      const message =
+        errorValue instanceof Error
+          ? errorValue.message
+          : "No pudimos guardar tus datos.";
+      setReserveError(message);
     } finally {
+      setIsSavingProfile(false);
       setIsReserving(false);
     }
   }
@@ -289,8 +380,52 @@ export default function OfferDetailScreen() {
       ) : null}
       {reserveError ? <Text style={styles.errorText}>{reserveError}</Text> : null}
 
+      {profilePromptVisible ? (
+        <View style={styles.profilePrompt}>
+          <Text style={styles.profilePromptTitle}>Completa tus datos</Text>
+          <Text style={styles.profilePromptText}>
+            Para reservar necesitamos que completes tu ciudad y direccion.
+          </Text>
+          <TextInputField
+            autoCapitalize="words"
+            editable={!isSavingProfile && !isReserving}
+            error={profileFieldErrors.city}
+            label="Ciudad"
+            onChangeText={(value) => {
+              setProfileCity(value);
+              setProfileFieldErrors((current) => ({
+                ...current,
+                city: undefined
+              }));
+            }}
+            placeholder="Ej: Resistencia, Chaco"
+            value={profileCity}
+          />
+          <TextInputField
+            autoCapitalize="words"
+            editable={!isSavingProfile && !isReserving}
+            error={profileFieldErrors.address}
+            label="Direccion"
+            onChangeText={(value) => {
+              setProfileAddress(value);
+              setProfileFieldErrors((current) => ({
+                ...current,
+                address: undefined
+              }));
+            }}
+            placeholder="Ej: Av. San Martin 123"
+            value={profileAddress}
+          />
+          <PrimaryButton
+            isLoading={isSavingProfile || isReserving}
+            label="GUARDAR Y CONTINUAR"
+            onPress={handleSaveProfileAndContinue}
+          />
+        </View>
+      ) : null}
+
       <PrimaryButton
-        disabled={offer.stock < 1}
+        disabled={offer.stock < 1 || profilePromptVisible}
         isLoading={isReserving}
         label={offer.stock < 1 ? "SIN CUPOS" : "RESERVAR"}
         onPress={handleReserve}
@@ -513,6 +648,25 @@ function createStyles(theme: AppColors) {
     flexDirection: "row",
     gap: spacing.md,
     marginBottom: spacing.md
+  },
+  profilePrompt: {
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md
+  },
+  profilePromptText: {
+    color: theme.mutedText,
+    fontSize: 14,
+    lineHeight: 20
+  },
+  profilePromptTitle: {
+    color: theme.text,
+    fontSize: 17,
+    fontWeight: "900"
   },
   store: {
     color: theme.text,

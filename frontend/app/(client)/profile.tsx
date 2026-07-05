@@ -17,8 +17,12 @@ import {
   getClientProfile,
   updateClientProfile
 } from "../../src/services/clientProfileService";
+import {
+  validateClientProfile,
+  type ClientProfileValidationErrors
+} from "../../src/utils/profileValidation";
 
-type FieldErrors = Partial<Record<"name" | "phone", string>>;
+type FieldErrors = ClientProfileValidationErrors;
 
 export default function ClientProfileScreen() {
   const router = useRouter();
@@ -105,7 +109,7 @@ export default function ClientProfileScreen() {
       return;
     }
 
-    const nextErrors = validateProfile({ name, phone });
+    const nextErrors = validateClientProfile({ address, city, name, phone });
     setFieldErrors(nextErrors);
     setSaveMessage(null);
 
@@ -263,9 +267,11 @@ export default function ClientProfileScreen() {
         <TextInputField
           autoCapitalize="words"
           editable={!isSaving && !isLoadingProfile}
+          error={fieldErrors.city}
           label="Ciudad"
           onChangeText={(value) => {
             setCity(value);
+            setFieldErrors((current) => ({ ...current, city: undefined }));
             setSaveMessage(null);
           }}
           placeholder="Ej: Resistencia, Chaco"
@@ -274,9 +280,11 @@ export default function ClientProfileScreen() {
         <TextInputField
           autoCapitalize="words"
           editable={!isSaving && !isLoadingProfile}
+          error={fieldErrors.address}
           label="Direccion (Calle y Altura)"
           onChangeText={(value) => {
             setAddress(value);
+            setFieldErrors((current) => ({ ...current, address: undefined }));
             setSaveMessage(null);
           }}
           placeholder="Ej: Av. San Martin 123"
@@ -301,20 +309,6 @@ export default function ClientProfileScreen() {
       />
     </ScreenContainer>
   );
-}
-
-function validateProfile(values: { name: string; phone: string }) {
-  const errors: FieldErrors = {};
-
-  if (!values.name.trim()) {
-    errors.name = "Ingresa tu nombre y apellido.";
-  }
-
-  if (values.phone.trim() && !/^[+()\d\s-]{6,30}$/.test(values.phone.trim())) {
-    errors.phone = "Ingresa un telefono valido.";
-  }
-
-  return errors;
 }
 
 function createStyles(theme: AppColors) {

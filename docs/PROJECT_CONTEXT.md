@@ -167,6 +167,7 @@ npx expo start -c
 ## Flujo de reserva y confirmacion de pago
 
 - El cliente crea reservas desde el detalle de oferta usando `POST /reservations`.
+- Antes de crear la reserva, el detalle de oferta valida `GET /client/profile`; si faltan `city` o `address`, muestra un bloque para completarlos, guarda con `PUT /client/profile` y luego continua con la reserva.
 - La reserva se crea con estado inicial `pending`; en la UI cliente se muestra como `Pendiente de pago`.
 - El backend devuelve la reserva completa con `code`, `confirmationCode`, `expiresAt`, `paymentAlias`/`bankAlias` y `whatsappPhone` si existe.
 - Despues de reservar, el frontend navega a `frontend/app/(client)/reservation-confirmed.tsx`, una pantalla oculta en tabs.
@@ -214,6 +215,15 @@ npx expo start -c
 - El usuario puede cambiar la ciudad manualmente desde el boton de ciudad junto al buscador.
 - Si una ciudad no tiene ofertas, el Home muestra un estado vacio especifico.
 - No se usa Mapbox ni se muestra mapa en esta fase.
+
+## Categorias de ofertas y Mystery Box
+
+- Las categorias controladas de ofertas son: `Panaderia`, `Rotiseria`, `Supermercado`, `Cafeteria`, `Verduleria`, `Restaurante`, `Heladeria` y `Varios`.
+- `Pizzeria` ya no es una categoria elegible en el panel comercio; las ofertas de pizza deben entrar en `Rotiseria` o `Restaurante` segun el caso.
+- El Home cliente muestra el chip `Todos` como primera opcion y estado inicial. Ese filtro no aplica categoria y permite ver todas las ofertas disponibles de la ciudad seleccionada.
+- El chip `Mystery Box` sigue filtrando por `type = mystery_box`, independiente de la categoria gastronómica.
+- Las ofertas Mystery Box deben tener textos concretos y atractivos, por ejemplo `Caja sorpresa de facturas` o `Mystery Box de panaderia con productos seleccionados del dia`.
+- Visualmente, las cards Mystery Box tienen tratamiento destacado con borde/acento FoodSave, badge propio y llamada a la accion reforzada, compatible con light/dark mode.
 
 ## Panel comercio/admin mobile
 
