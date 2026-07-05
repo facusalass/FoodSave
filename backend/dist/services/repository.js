@@ -47,7 +47,7 @@ export async function listOffersRepo(filters) {
         const { data: cityBusinesses } = await supabase.from("businesses").select("id").eq("city", filters.city);
         businessIds = (cityBusinesses ?? []).map((b) => b.id);
     }
-    let query = supabase.from("offers").select("*", { count: "exact" }).eq("isVisible", true);
+    let query = supabase.from("offers").select("*", { count: "exact" }).eq("isVisible", true).gt("stock", 0);
     // Solo ofertas de negocios activos
     const { data: activeBusinesses } = await supabase.from("businesses").select("id").eq("isActive", true);
     const activeIds = (activeBusinesses ?? []).map((b) => b.id);

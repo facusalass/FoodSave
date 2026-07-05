@@ -36,7 +36,7 @@ async function enrichReservation(reservation) {
         paymentAlias: alias,
         bankAlias: alias,
         whatsappPhone: businessOwner?.phone ?? "",
-        paymentInfo: business?.paymentInfo ? { cvu: business.paymentInfo.cvu, alias: business.paymentInfo.alias } : { cvu: "", alias: "" },
+        paymentInfo: business?.paymentInfo ? { ownerName: business.paymentInfo.ownerName, cvu: business.paymentInfo.cvu, alias: business.paymentInfo.alias } : { ownerName: "", cvu: "", alias: "" },
         date: formatDate(reservation.createdAt),
         month: new Date(reservation.createdAt).toLocaleDateString("es-AR", { month: "long", year: "numeric" })
     };

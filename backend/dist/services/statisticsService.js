@@ -1,7 +1,7 @@
-import { listOffersRepo, listReservationsByBusiness } from "./repository.js";
+import { listOffersByBusinessId, listReservationsByBusiness } from "./repository.js";
 export async function getBusinessDashboardStats(businessId) {
     const { items: reservations } = await listReservationsByBusiness(businessId, 1, 10000);
-    const { items: offers } = await listOffersRepo({ limit: 10000 });
+    const offers = await listOffersByBusinessId(businessId);
     let totalRevenue = 0;
     let totalBoxesSold = 0;
     let totalSavedKg = 0;

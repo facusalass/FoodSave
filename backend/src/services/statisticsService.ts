@@ -1,9 +1,9 @@
-import { listOffersRepo, listReservationsByBusiness } from "./repository.js";
+import { listOffersByBusinessId, listReservationsByBusiness } from "./repository.js";
 import type { BusinessDashboardStats, TopPublication } from "../types/statistics.js";
 
 export async function getBusinessDashboardStats(businessId: string): Promise<BusinessDashboardStats> {
   const { items: reservations } = await listReservationsByBusiness(businessId, 1, 10000);
-  const { items: offers } = await listOffersRepo({ limit: 10000 });
+  const offers = await listOffersByBusinessId(businessId);
 
   let totalRevenue = 0;
   let totalBoxesSold = 0;
