@@ -45,6 +45,8 @@ export default function OfferDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
   const [reserveError, setReserveError] = useState<string | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   useEffect(() => {
     async function loadOffer() {
@@ -56,6 +58,8 @@ export default function OfferDetailScreen() {
       try {
         const nextOffer = await getOfferById(id);
         setOffer(nextOffer);
+        setImageFailed(false);
+        setLogoFailed(false);
 
         if (session) {
           try {
@@ -168,6 +172,12 @@ export default function OfferDetailScreen() {
     );
   }
 
+  const imageUri = getRemoteImageUri(offer.imageUrl);
+  const logoUri = getRemoteImageUri(offer.logoUrl);
+  const showImage = Boolean(imageUri && !imageFailed);
+  const showLogo = Boolean(logoUri && !logoFailed);
+  const discountPercentage = getDiscountPercentage(offer.oldPrice, offer.newPrice);
+
   return (
     <ScreenContainer>
       <View style={styles.topActions}>
@@ -196,7 +206,27 @@ export default function OfferDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      <Image source={{ uri: offer.imageUrl }} style={styles.image} />
+      <View style={styles.imageFrame}>
+        {showImage ? (
+          <Image
+            onError={() => setImageFailed(true)}
+            source={{ uri: imageUri }}
+            style={styles.image}
+          />
+        ) : (
+          <View style={styles.imageFallback}>
+            <Text style={styles.imageFallbackBrand}>FoodSave</Text>
+            <Text numberOfLines={2} style={styles.imageFallbackText}>
+              {offer.title}
+            </Text>
+          </View>
+        )}
+        {discountPercentage ? (
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>{discountPercentage}% OFF</Text>
+          </View>
+        ) : null}
+      </View>
       <View style={styles.badge}>
         <Text style={styles.badgeText}>
           {offer.type === "mystery_box" ? "MYSTERY BOX" : offer.category}
@@ -204,8 +234,12 @@ export default function OfferDetailScreen() {
       </View>
 
       <View style={styles.storeRow}>
-        {offer.logoUrl ? (
-          <Image source={{ uri: offer.logoUrl }} style={styles.storeLogo} />
+        {showLogo ? (
+          <Image
+            onError={() => setLogoFailed(true)}
+            source={{ uri: logoUri }}
+            style={styles.storeLogo}
+          />
         ) : (
           <View style={styles.storeLogoPlaceholder}>
             <Text style={styles.storeLogoInitial}>
@@ -275,6 +309,19 @@ function getOfferAddress(offer: Offer) {
 
 function getStoreInitial(value: string) {
   return value.trim().charAt(0).toUpperCase() || "F";
+}
+
+function getRemoteImageUri(value: string | undefined) {
+  const cleanValue = value?.trim();
+  return cleanValue?.startsWith("http") ? cleanValue : undefined;
+}
+
+function getDiscountPercentage(oldPrice: number, newPrice: number) {
+  if (oldPrice <= 0 || newPrice <= 0 || newPrice >= oldPrice) {
+    return null;
+  }
+
+  return Math.round(((oldPrice - newPrice) / oldPrice) * 100);
 }
 
 function InfoItem({
@@ -366,11 +413,52 @@ function createStyles(theme: AppColors) {
     fontWeight: "700",
     marginBottom: spacing.md
   },
+  discountBadge: {
+    backgroundColor: theme.primary,
+    borderRadius: radii.sm,
+    left: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    position: "absolute",
+    top: spacing.md
+  },
+  discountText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900"
+  },
   image: {
+    height: "100%",
+    width: "100%"
+  },
+  imageFallback: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    gap: spacing.sm,
+    height: "100%",
+    justifyContent: "center",
+    padding: spacing.lg,
+    width: "100%"
+  },
+  imageFallbackBrand: {
+    color: theme.primary,
+    fontSize: 13,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  imageFallbackText: {
+    color: theme.text,
+    fontSize: 22,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  imageFrame: {
     backgroundColor: theme.border,
     borderRadius: radii.lg,
     height: 220,
     marginBottom: spacing.md,
+    overflow: "hidden",
+    position: "relative",
     width: "100%"
   },
   infoGrid: {

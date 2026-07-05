@@ -649,9 +649,27 @@ function PublicationCard({
   const styles = createStyles(theme);
   const isHidden = offer.isVisible === false;
   const isMuted = isHidden || offer.stock <= 0;
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUri = getRemoteImageUri(offer.imageUrl);
+  const showImage = Boolean(imageUri && !imageFailed);
 
   return (
     <View style={[styles.publicationCard, isHidden ? styles.publicationCardHidden : null]}>
+      <View style={styles.publicationImageFrame}>
+        {showImage ? (
+          <Image
+            onError={() => setImageFailed(true)}
+            source={{ uri: imageUri }}
+            style={styles.publicationImage}
+          />
+        ) : (
+          <View style={styles.publicationImageFallback}>
+            <Text style={styles.publicationImageInitial}>
+              {getOfferInitial(offer.title)}
+            </Text>
+          </View>
+        )}
+      </View>
       <View style={styles.publicationInfo}>
         <Text style={[styles.offerTitle, isMuted ? styles.hiddenText : null]}>
           {offer.title}
@@ -726,6 +744,15 @@ function getExtension(mimeType: string) {
 
 function isAllowedImageType(mimeType: string) {
   return mimeType === "image/jpeg" || mimeType === "image/png";
+}
+
+function getRemoteImageUri(value: string | undefined) {
+  const cleanValue = value?.trim();
+  return cleanValue?.startsWith("http") ? cleanValue : undefined;
+}
+
+function getOfferInitial(value: string) {
+  return value.trim().charAt(0).toUpperCase() || "F";
 }
 
 function createStyles(theme: AppColors) {
@@ -953,6 +980,7 @@ function createStyles(theme: AppColors) {
     gap: spacing.sm
   },
   publicationCard: {
+    alignItems: "center",
     backgroundColor: theme.card,
     borderColor: theme.border,
     borderRadius: radii.lg,
@@ -968,6 +996,30 @@ function createStyles(theme: AppColors) {
   },
   publicationCardHidden: {
     opacity: 0.82
+  },
+  publicationImage: {
+    height: "100%",
+    width: "100%"
+  },
+  publicationImageFallback: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    height: "100%",
+    justifyContent: "center",
+    width: "100%"
+  },
+  publicationImageFrame: {
+    backgroundColor: theme.border,
+    borderRadius: radii.md,
+    height: 64,
+    marginRight: spacing.md,
+    overflow: "hidden",
+    width: 64
+  },
+  publicationImageInitial: {
+    color: theme.primary,
+    fontSize: 22,
+    fontWeight: "900"
   },
   publicationInfo: {
     flex: 1,

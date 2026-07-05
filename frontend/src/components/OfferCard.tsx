@@ -1,4 +1,5 @@
 import { Clock, Heart } from "lucide-react-native";
+import { useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -27,15 +28,46 @@ export function OfferCard({
 }: OfferCardProps) {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const imageUri = getRemoteImageUri(offer.imageUrl);
+  const logoUri = getRemoteImageUri(offer.logoUrl);
+  const showImage = Boolean(imageUri && !imageFailed);
+  const showLogo = Boolean(logoUri && !logoFailed);
+  const discountPercentage = getDiscountPercentage(offer.oldPrice, offer.newPrice);
 
   return (
     <View style={styles.card}>
-      <Image source={{ uri: offer.imageUrl }} style={styles.image} />
+      <View style={styles.imageFrame}>
+        {showImage ? (
+          <Image
+            onError={() => setImageFailed(true)}
+            source={{ uri: imageUri }}
+            style={styles.image}
+          />
+        ) : (
+          <View style={styles.imageFallback}>
+            <Text style={styles.imageFallbackBrand}>FoodSave</Text>
+            <Text numberOfLines={2} style={styles.imageFallbackText}>
+              {offer.title}
+            </Text>
+          </View>
+        )}
+        {discountPercentage ? (
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>{discountPercentage}% OFF</Text>
+          </View>
+        ) : null}
+      </View>
       <View style={styles.content}>
         <View style={styles.titleRow}>
           <View style={styles.storeBlock}>
-            {offer.logoUrl ? (
-              <Image source={{ uri: offer.logoUrl }} style={styles.logo} />
+            {showLogo ? (
+              <Image
+                onError={() => setLogoFailed(true)}
+                source={{ uri: logoUri }}
+                style={styles.logo}
+              />
             ) : (
               <View style={styles.logoPlaceholder}>
                 <Text style={styles.logoInitial}>
@@ -68,13 +100,20 @@ export function OfferCard({
             </TouchableOpacity>
           ) : null}
         </View>
-        <Text numberOfLines={1} style={styles.description}>
+        <Text numberOfLines={2} style={styles.description}>
           {offer.description}
         </Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.oldPrice}>{formatCurrency(offer.oldPrice)}</Text>
-          <Text style={styles.newPrice}>{formatCurrency(offer.newPrice)}</Text>
+          <View>
+            <Text style={styles.oldPrice}>{formatCurrency(offer.oldPrice)}</Text>
+            <Text style={styles.newPrice}>{formatCurrency(offer.newPrice)}</Text>
+          </View>
+          {offer.stock <= 3 ? (
+            <View style={styles.stockPill}>
+              <Text style={styles.stockPillText}>Quedan {offer.stock}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.footer}>
@@ -99,22 +138,36 @@ function getStoreInitial(value: string) {
   return value.trim().charAt(0).toUpperCase() || "F";
 }
 
+function getRemoteImageUri(value: string | undefined) {
+  const cleanValue = value?.trim();
+  return cleanValue?.startsWith("http") ? cleanValue : undefined;
+}
+
+function getDiscountPercentage(oldPrice: number, newPrice: number) {
+  if (oldPrice <= 0 || newPrice <= 0 || newPrice >= oldPrice) {
+    return null;
+  }
+
+  return Math.round(((oldPrice - newPrice) / oldPrice) * 100);
+}
+
 function createStyles(theme: AppColors) {
   return StyleSheet.create({
   card: {
-    alignItems: "center",
     backgroundColor: theme.elevatedCard,
     borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    minHeight: 132,
-    padding: spacing.sm
+    elevation: 2,
+    overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5
   },
   content: {
-    flex: 1,
-    gap: spacing.xs
+    gap: spacing.sm,
+    padding: spacing.md
   },
   ctaButton: {
     alignItems: "center",
@@ -138,6 +191,7 @@ function createStyles(theme: AppColors) {
   footer: {
     alignItems: "center",
     flexDirection: "row",
+    gap: spacing.sm,
     justifyContent: "space-between"
   },
   favoriteButton: {
@@ -155,10 +209,49 @@ function createStyles(theme: AppColors) {
     borderColor: `${theme.primary}55`
   },
   image: {
+    height: "100%",
+    width: "100%"
+  },
+  imageFallback: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    gap: spacing.xs,
+    height: "100%",
+    justifyContent: "center",
+    padding: spacing.lg,
+    width: "100%"
+  },
+  imageFallbackBrand: {
+    color: theme.primary,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  imageFallbackText: {
+    color: theme.text,
+    fontSize: 17,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  imageFrame: {
     backgroundColor: theme.border,
-    borderRadius: radii.md,
-    height: 94,
-    width: 94
+    height: 152,
+    position: "relative",
+    width: "100%"
+  },
+  discountBadge: {
+    backgroundColor: theme.primary,
+    borderRadius: radii.sm,
+    left: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    position: "absolute",
+    top: spacing.md
+  },
+  discountText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900"
   },
   logo: {
     backgroundColor: theme.border,
@@ -196,20 +289,18 @@ function createStyles(theme: AppColors) {
   },
   newPrice: {
     color: theme.primary,
-    fontSize: 20,
-    fontWeight: "900",
-    textAlign: "right"
+    fontSize: 23,
+    fontWeight: "900"
   },
   oldPrice: {
     color: theme.mutedText,
     fontSize: 13,
-    textAlign: "right",
     textDecorationLine: "line-through"
   },
   priceRow: {
-    alignItems: "baseline",
+    alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm
+    justifyContent: "space-between"
   },
   store: {
     color: theme.text,
@@ -228,6 +319,19 @@ function createStyles(theme: AppColors) {
     alignItems: "flex-start",
     flexDirection: "row",
     gap: spacing.sm
+  },
+  stockPill: {
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}55`,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  stockPillText: {
+    color: theme.secondaryDark,
+    fontSize: 12,
+    fontWeight: "900"
   }
   });
 }

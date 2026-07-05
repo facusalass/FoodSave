@@ -22,6 +22,7 @@ Tablas creadas: `users`, `businesses`, `offers`, `reservations`, `favorites`.
 | 4 | `04_auth_trigger.sql` | Sincroniza `auth.users` → `public.users` |
 | 5 | `05_storage.sql` | Bucket de imágenes `offers` en Storage |
 | 6 | `06_city_column.sql` | Agrega columna `city` a la tabla `businesses` |
+| 8 | `08_demo_media_fallbacks.sql` | Opcional demo/dev: completa imagenes/logos faltantes en registros seed conocidos |
 
 ---
 
@@ -176,7 +177,8 @@ services/   → repository.ts, authService, authStrategy, offerService,
                 reservationService, statisticsService, favoriteService,
                 notificationService
 sql/        → 01_schema.sql, 02_seed.sql, 03_rls.sql,
-               04_auth_trigger.sql, 05_storage.sql, 06_city_column.sql
+               04_auth_trigger.sql, 05_storage.sql, 06_city_column.sql,
+               08_demo_media_fallbacks.sql
 types/      → auth.ts, offer.ts, reservation.ts, statistics.ts, express.ts
 utils/      → publicUser.ts
 ```
