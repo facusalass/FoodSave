@@ -21,7 +21,9 @@ import {
 import { BusinessMenuButton } from "../../src/components/business/BusinessSideMenu";
 import { BusinessNotificationsButton } from "../../src/components/business/BusinessNotificationsButton";
 import { BusinessSuspendedBanner } from "../../src/components/business/BusinessSuspendedBanner";
+import { OfferCategorySelector } from "../../src/components/OfferCategorySelector";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
+import type { OfferCategory } from "../../src/constants/offerCategories";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -44,6 +46,8 @@ export default function BusinessPublishScreen() {
   const styles = createStyles(theme);
   const [type, setType] = useState<OfferType>("mystery_box");
   const [title, setTitle] = useState("");
+  const [selectedCategory, setSelectedCategory] =
+    useState<OfferCategory>("Varios");
   const [oldPrice, setOldPrice] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [stock, setStock] = useState(5);
@@ -116,6 +120,11 @@ export default function BusinessPublishScreen() {
       return;
     }
 
+    if (!selectedCategory) {
+      showFormError("Elegí una categoría para la publicación.");
+      return;
+    }
+
     if (!parsedOldPrice || parsedOldPrice <= 0) {
       showFormError("Ingresa el precio original. Tiene que ser mayor a $0.");
       return;
@@ -153,7 +162,7 @@ export default function BusinessPublishScreen() {
       setIsPublishing(true);
       await createBusinessOffer(session.token, {
         allergens: parseAllergens(allergens),
-        category: cleanTitle,
+        category: selectedCategory,
         description: cleanTitle,
         estimatedWeightInKg: parsedWeight,
         imageUrl,
@@ -187,6 +196,7 @@ export default function BusinessPublishScreen() {
   function resetForm() {
     setType("mystery_box");
     setTitle("");
+    setSelectedCategory("Varios");
     setOldPrice("");
     setNewPrice("");
     setStock(5);
@@ -211,6 +221,8 @@ export default function BusinessPublishScreen() {
     if (!session || isUploadingImage) {
       return;
     }
+
+    const previousImageUrl = imageUrl;
 
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -252,6 +264,8 @@ export default function BusinessPublishScreen() {
       }
 
       setFormError(null);
+      setImageUrl("");
+      setImagePreviewUri(image.uri);
       setIsUploadingImage(true);
       const uploadedUrl = await uploadImage(session.token, {
         name: fileName,
@@ -259,12 +273,12 @@ export default function BusinessPublishScreen() {
         uri: image.uri
       });
       setImageUrl(uploadedUrl);
-      setImagePreviewUri(image.uri);
     } catch (imageError) {
       const message =
         imageError instanceof Error
           ? imageError.message
           : "No pudimos subir la imagen.";
+      setImageUrl(previousImageUrl);
       showFormError(message);
     } finally {
       setIsUploadingImage(false);
@@ -318,7 +332,11 @@ export default function BusinessPublishScreen() {
           ]}
         >
           {imagePreviewUri ? (
-            <Image source={{ uri: imagePreviewUri }} style={styles.imagePreview} />
+            <Image
+              resizeMode="cover"
+              source={{ uri: imagePreviewUri }}
+              style={styles.imagePreview}
+            />
           ) : null}
           <View
             style={[
@@ -343,7 +361,7 @@ export default function BusinessPublishScreen() {
               {isUploadingImage
                 ? "Subiendo imagen..."
                 : imagePreviewUri
-                  ? "Cambiar Imagen"
+                  ? "Imagen lista"
                   : "Subir Imagen"}
             </Text>
             <Text
@@ -359,7 +377,7 @@ export default function BusinessPublishScreen() {
       </View>
 
       <InputField
-        label="Categoria / Titulo"
+        label="Título de la publicación"
         onChangeText={(value) => {
           setTitle(value);
           clearFormError();
@@ -367,6 +385,17 @@ export default function BusinessPublishScreen() {
         placeholder="Ej: Caja Panaderia"
         value={title}
       />
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Categoría</Text>
+        <OfferCategorySelector
+          selectedCategory={selectedCategory}
+          onSelect={(category) => {
+            setSelectedCategory(category);
+            clearFormError();
+          }}
+        />
+      </View>
 
       <View style={styles.priceRow}>
         <InputField
@@ -596,7 +625,7 @@ function createStyles(theme: AppColors) {
   return StyleSheet.create({
   content: {
     gap: spacing.md,
-    paddingBottom: 96
+    paddingBottom: spacing.xl
   },
   fieldGroup: {
     gap: spacing.sm
@@ -651,6 +680,7 @@ function createStyles(theme: AppColors) {
   },
   imageBox: {
     alignItems: "center",
+    aspectRatio: 4 / 3,
     backgroundColor: theme.card,
     borderColor: theme.border,
     borderRadius: radii.md,
@@ -658,7 +688,8 @@ function createStyles(theme: AppColors) {
     borderWidth: 1.5,
     gap: spacing.sm,
     justifyContent: "center",
-    minHeight: 182,
+    maxHeight: 220,
+    minHeight: 170,
     overflow: "hidden",
     padding: spacing.lg
   },
@@ -692,7 +723,7 @@ function createStyles(theme: AppColors) {
     top: 0
   },
   imagePreview: {
-    height: "100%",
+    ...StyleSheet.absoluteFillObject,
     width: "100%"
   },
   imageText: {

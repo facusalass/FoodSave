@@ -1,4 +1,4 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 import { buildPaginatedResult } from "../utils/pagination.js";
 // ── Helpers ────────────────────────────────────────
 function asArray(data) { return (data ?? []); }
@@ -10,6 +10,18 @@ export async function findUserByEmail(email) {
 }
 export async function findUserById(id) {
     const { data } = await supabase.from("users").select("*").eq("id", id).single();
+    return single(data);
+}
+export async function updateClientProfileById(id, dataUpdate) {
+    const { data, error } = await supabaseAdmin
+        .from("users")
+        .update(dataUpdate)
+        .eq("id", id)
+        .eq("role", "client")
+        .select("*")
+        .single();
+    if (error)
+        return null;
     return single(data);
 }
 // ── Businesses ────────────────────────────────────

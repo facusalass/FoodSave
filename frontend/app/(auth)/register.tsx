@@ -108,7 +108,7 @@ export default function RegisterScreen() {
   }
 
   return (
-    <ScreenContainer contentStyle={styles.screen}>
+    <ScreenContainer contentStyle={styles.screen} includeBottomSafeArea>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboard}

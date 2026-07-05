@@ -384,7 +384,7 @@ function createStyles(theme: AppColors) {
   },
   content: {
     gap: spacing.lg,
-    paddingBottom: 96
+    paddingBottom: spacing.xl
   },
   errorText: {
     color: theme.danger,

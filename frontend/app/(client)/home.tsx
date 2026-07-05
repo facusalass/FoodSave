@@ -20,6 +20,14 @@ import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { EmptyState } from "../../src/components/EmptyState";
 import { OfferCard } from "../../src/components/OfferCard";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
+import {
+  ALL_OFFERS_FILTER_LABEL,
+  getCanonicalOfferCategory,
+  MYSTERY_BOX_FILTER_LABEL,
+  OFFER_CATEGORIES,
+  type OfferCategory,
+  type OfferCategoryFilter
+} from "../../src/constants/offerCategories";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -32,9 +40,10 @@ import {
 import { getOffers } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
 import { getFavoriteIds, toggleFavoriteId } from "../../src/utils/favorites";
+import { sortOffersByStock } from "../../src/utils/offerStock";
 
-const categories = ["Panaderia", "Rotiseria", "SuperMercado", "Mystery Box"];
 const DEFAULT_CITY = "Resistencia, Chaco";
+const COLLAPSED_CATEGORY_CHIP_COUNT = 6;
 
 export default function ClientHomeScreen() {
   const router = useRouter();
@@ -47,16 +56,19 @@ export default function ClientHomeScreen() {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
+  const [areCategoriesExpanded, setAreCategoriesExpanded] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [locationHint, setLocationHint] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
 
   const loadOffersForCity = useCallback(async (city: string | null) => {
     const nextOffers = await getOffers({ city });
-    setOffers(nextOffers);
+    setOffers(sortOffersByStock(nextOffers));
   }, []);
 
   useEffect(() => {
@@ -74,15 +86,9 @@ export default function ClientHomeScreen() {
 
         setCities(nextCities);
 
-        const detectedCity = await detectCurrentCity(nextCities);
-
-        if (!isMounted) {
-          return;
-        }
-
-        const initialCity = detectedCity.city ?? getFallbackCity(nextCities);
+        const initialCity = getFallbackCity(nextCities);
         setSelectedCity(initialCity);
-        setLocationHint(detectedCity.hint);
+        setLocationHint(null);
 
         const [nextOffers, favorites] = await Promise.all([
           getOffers({ city: initialCity }),
@@ -93,7 +99,7 @@ export default function ClientHomeScreen() {
           return;
         }
 
-        setOffers(nextOffers);
+        setOffers(sortOffersByStock(nextOffers));
 
         if (favorites) {
           setFavoriteIds(getFavoriteIds(favorites));
@@ -128,7 +134,7 @@ export default function ClientHomeScreen() {
   const filteredOffers = useMemo(() => {
     const normalizedSearch = normalize(searchQuery);
 
-    return offers.filter((offer) => {
+    return sortOffersByStock(offers.filter((offer) => {
       const matchesSearch =
         !normalizedSearch ||
         normalize(offer.storeName).includes(normalizedSearch) ||
@@ -138,8 +144,92 @@ export default function ClientHomeScreen() {
         !activeCategory || matchesCategory(offer, activeCategory);
 
       return matchesSearch && matchesActiveCategory;
-    });
+    }));
   }, [activeCategory, offers, searchQuery]);
+
+  const availableCategoryFilters = useMemo<OfferCategoryFilter[]>(() => {
+    const inStockOffers = offers.filter((offer) => offer.stock > 0);
+    const availableCategories = new Set<OfferCategory>();
+
+    inStockOffers.forEach((offer) => {
+      const category = getCanonicalOfferCategory(offer.category);
+
+      if (category) {
+        availableCategories.add(category);
+      }
+    });
+
+    const filters: OfferCategoryFilter[] = [
+      {
+        label: ALL_OFFERS_FILTER_LABEL,
+        type: "all",
+        value: ALL_OFFERS_FILTER_LABEL
+      }
+    ];
+
+    OFFER_CATEGORIES.forEach((category) => {
+      if (availableCategories.has(category)) {
+        filters.push({
+          label: category,
+          type: "category",
+          value: category
+        });
+      }
+    });
+
+    if (inStockOffers.some((offer) => offer.type === "mystery_box")) {
+      filters.push({
+        label: MYSTERY_BOX_FILTER_LABEL,
+        type: "type",
+        value: "mystery_box"
+      });
+    }
+
+    return filters;
+  }, [offers]);
+
+  const visibleCategoryFilters = useMemo(() => {
+    if (
+      areCategoriesExpanded ||
+      availableCategoryFilters.length <= COLLAPSED_CATEGORY_CHIP_COUNT
+    ) {
+      return availableCategoryFilters;
+    }
+
+    const visibleLimit = COLLAPSED_CATEGORY_CHIP_COUNT - 1;
+    const firstFilters = availableCategoryFilters.slice(0, visibleLimit);
+    const activeFilter = availableCategoryFilters.find((filter) =>
+      filter.type === "all"
+        ? activeCategory === null
+        : activeCategory === filter.label
+    );
+
+    if (
+      activeFilter &&
+      !firstFilters.some((filter) => filter.label === activeFilter.label)
+    ) {
+      return [...firstFilters.slice(0, visibleLimit - 1), activeFilter];
+    }
+
+    return firstFilters;
+  }, [activeCategory, areCategoriesExpanded, availableCategoryFilters]);
+
+  const hiddenCategoryCount =
+    availableCategoryFilters.length - visibleCategoryFilters.length;
+
+  useEffect(() => {
+    if (!activeCategory) {
+      return;
+    }
+
+    const isActiveCategoryAvailable = availableCategoryFilters.some(
+      (filter) => filter.type !== "all" && filter.label === activeCategory
+    );
+
+    if (!isActiveCategoryAvailable) {
+      setActiveCategory(null);
+    }
+  }, [activeCategory, availableCategoryFilters]);
 
   function handleNavigate(route: ClientMenuRoute) {
     setIsMenuVisible(false);
@@ -156,6 +246,7 @@ export default function ClientHomeScreen() {
     setIsCityModalVisible(false);
     setSelectedCity(city);
     setLocationHint(null);
+    setShowLocationPrompt(false);
 
     try {
       setError(null);
@@ -168,6 +259,34 @@ export default function ClientHomeScreen() {
           : "No pudimos cargar las ofertas de esa ciudad.";
       setError(message);
     } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleUseLocationPress() {
+    try {
+      setError(null);
+      setShowLocationPrompt(false);
+      setIsDetectingLocation(true);
+      const detectedCity = await detectCurrentCity(cities);
+
+      if (!detectedCity.city) {
+        setLocationHint(detectedCity.hint);
+        return;
+      }
+
+      setSelectedCity(detectedCity.city);
+      setLocationHint(null);
+      setIsLoading(true);
+      await loadOffersForCity(detectedCity.city);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "No pudimos cargar las ofertas para tu ubicacion.";
+      setError(message);
+    } finally {
+      setIsDetectingLocation(false);
       setIsLoading(false);
     }
   }
@@ -198,6 +317,10 @@ export default function ClientHomeScreen() {
         "No pudimos actualizar tus favoritos. Intenta de nuevo en unos segundos."
       );
     }
+  }
+
+  function handleCategorySelect(filter: OfferCategoryFilter) {
+    setActiveCategory(filter.type === "all" ? null : filter.label);
   }
 
   return (
@@ -240,15 +363,49 @@ export default function ClientHomeScreen() {
           <Text style={styles.locationHint}>{locationHint}</Text>
         ) : null}
 
+        {showLocationPrompt && cities.length > 0 ? (
+          <View style={styles.locationCard}>
+            <View style={styles.locationIconBox}>
+              <MapPin color={theme.secondaryDark} size={18} />
+            </View>
+            <View style={styles.locationCopy}>
+              <Text style={styles.locationTitle}>Encontrar ofertas cerca</Text>
+              <Text style={styles.locationText}>
+                Podemos usar tu ubicacion para elegir la ciudad disponible mas cercana.
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              disabled={isDetectingLocation}
+              onPress={() => {
+                void handleUseLocationPress();
+              }}
+              style={[
+                styles.locationAction,
+                isDetectingLocation ? styles.locationActionDisabled : null
+              ]}
+            >
+              {isDetectingLocation ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.locationActionText}>Usar</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         <View style={styles.categoryRow}>
-          {categories.map((category) => {
-            const isActive = activeCategory === category;
+          {visibleCategoryFilters.map((filter) => {
+            const isActive =
+              filter.type === "all"
+                ? activeCategory === null
+                : activeCategory === filter.label;
 
             return (
               <TouchableOpacity
                 activeOpacity={0.85}
-                key={category}
-                onPress={() => setActiveCategory(isActive ? null : category)}
+                key={filter.label}
+                onPress={() => handleCategorySelect(filter)}
                 style={[
                   styles.categoryChip,
                   isActive ? styles.activeChip : null
@@ -260,11 +417,25 @@ export default function ClientHomeScreen() {
                     isActive ? styles.activeChipText : null
                   ]}
                 >
-                  {category}
+                  {filter.label}
                 </Text>
               </TouchableOpacity>
             );
           })}
+
+          {availableCategoryFilters.length > COLLAPSED_CATEGORY_CHIP_COUNT ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() =>
+                setAreCategoriesExpanded((currentValue) => !currentValue)
+              }
+              style={styles.moreCategoryChip}
+            >
+              <Text style={styles.moreCategoryText}>
+                {areCategoriesExpanded ? "Ver menos" : `Ver mas (${hiddenCategoryCount})`}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
@@ -296,7 +467,11 @@ export default function ClientHomeScreen() {
       ) : filteredOffers.length === 0 ? (
         <EmptyState
           description="Proba cambiar la busqueda, categoria o ciudad."
-          title="No se encontraron ofertas"
+          title={
+            activeCategory
+              ? `No hay ofertas de ${activeCategory} por ahora.`
+              : "No se encontraron ofertas"
+          }
         />
       ) : (
         <View style={styles.list}>
@@ -512,26 +687,11 @@ function normalize(value: string) {
 }
 
 function matchesCategory(offer: Offer, category: string) {
-  const normalizedCategory = normalize(category);
-  const offerCategory = normalize(offer.category);
-
-  if (normalizedCategory === "mystery box") {
-    return offer.type === "mystery_box" || offerCategory.includes("mystery");
+  if (category === MYSTERY_BOX_FILTER_LABEL) {
+    return offer.type === "mystery_box";
   }
 
-  if (normalizedCategory === "supermercado") {
-    return offerCategory.includes("super");
-  }
-
-  if (normalizedCategory === "panaderia") {
-    return offerCategory.includes("panader");
-  }
-
-  if (normalizedCategory === "rotiseria") {
-    return offerCategory.includes("rotiser");
-  }
-
-  return offerCategory === normalizedCategory;
+  return getCanonicalOfferCategory(offer.category) === category;
 }
 
 function createStyles(theme: AppColors) {
@@ -544,12 +704,15 @@ function createStyles(theme: AppColors) {
     color: "#FFFFFF"
   },
   categoryChip: {
+    alignItems: "center",
     backgroundColor: theme.card,
     borderColor: theme.border,
     borderRadius: radii.md,
     borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 34,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.xs
   },
   categoryRow: {
     flexDirection: "row",
@@ -559,8 +722,8 @@ function createStyles(theme: AppColors) {
   },
   categoryText: {
     color: theme.text,
-    fontSize: 13,
-    fontWeight: "800"
+    fontSize: 12,
+    fontWeight: "900"
   },
   cityButton: {
     alignItems: "center",
@@ -632,10 +795,59 @@ function createStyles(theme: AppColors) {
     color: theme.mutedText,
     fontSize: 14
   },
+  locationAction: {
+    alignItems: "center",
+    backgroundColor: theme.primary,
+    borderRadius: radii.md,
+    justifyContent: "center",
+    minHeight: 36,
+    minWidth: 58,
+    paddingHorizontal: spacing.sm
+  },
+  locationActionDisabled: {
+    opacity: 0.72
+  },
+  locationActionText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  locationCard: {
+    alignItems: "center",
+    backgroundColor: `${theme.secondary}12`,
+    borderColor: `${theme.secondary}45`,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.md
+  },
+  locationCopy: {
+    flex: 1,
+    gap: 2
+  },
   locationHint: {
     color: theme.mutedText,
     fontSize: 12,
     fontWeight: "700"
+  },
+  locationIconBox: {
+    alignItems: "center",
+    backgroundColor: `${theme.secondary}1A`,
+    borderRadius: 18,
+    height: 36,
+    justifyContent: "center",
+    width: 36
+  },
+  locationText: {
+    color: theme.mutedText,
+    fontSize: 12,
+    lineHeight: 17
+  },
+  locationTitle: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: "900"
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject
@@ -672,6 +884,22 @@ function createStyles(theme: AppColors) {
   modalTitle: {
     color: theme.text,
     fontSize: 20,
+    fontWeight: "900"
+  },
+  moreCategoryChip: {
+    alignItems: "center",
+    backgroundColor: `${theme.primary}14`,
+    borderColor: `${theme.primary}55`,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 34,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs
+  },
+  moreCategoryText: {
+    color: theme.primary,
+    fontSize: 12,
     fontWeight: "900"
   },
   searchBox: {

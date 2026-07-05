@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { Info, Moon, Sun } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   ClientSideMenu,
@@ -9,16 +9,89 @@ import {
 import { ClientTopBar } from "../../src/components/ClientTopBar";
 import { PrimaryButton } from "../../src/components/PrimaryButton";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
+import { TextInputField } from "../../src/components/TextInputField";
 import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
+import {
+  getClientProfile,
+  updateClientProfile
+} from "../../src/services/clientProfileService";
+import {
+  validateClientProfile,
+  type ClientProfileValidationErrors
+} from "../../src/utils/profileValidation";
+
+type FieldErrors = ClientProfileValidationErrors;
 
 export default function ClientProfileScreen() {
   const router = useRouter();
-  const { logout, session } = useAuth();
+  const { logout, session, updateSessionUser } = useAuth();
   const { setThemeMode, theme, themeMode } = useTheme();
   const styles = createStyles(theme);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfile() {
+      if (!session) {
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      try {
+        setProfileError(null);
+        setIsLoadingProfile(true);
+        const user = await getClientProfile(session.token);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setName(user.name ?? "");
+        setPhone(user.phone ?? "");
+        setEmail(user.email ?? "");
+        setCity(user.city ?? "");
+        setAddress(user.address ?? "");
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setName(session.user.name ?? "");
+        setPhone(session.user.phone ?? "");
+        setEmail(session.user.email ?? "");
+        setCity(session.user.city ?? "");
+        setAddress(session.user.address ?? "");
+        setProfileError(
+          loadError instanceof Error
+            ? loadError.message
+            : "No pudimos cargar tu perfil."
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoadingProfile(false);
+        }
+      }
+    }
+
+    void loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session]);
 
   function handleNavigate(route: ClientMenuRoute) {
     setIsMenuVisible(false);
@@ -29,6 +102,47 @@ export default function ClientProfileScreen() {
     await logout();
     setIsMenuVisible(false);
     router.replace("/(auth)/login");
+  }
+
+  async function handleSave() {
+    if (!session || isSaving) {
+      return;
+    }
+
+    const nextErrors = validateClientProfile({ address, city, name, phone });
+    setFieldErrors(nextErrors);
+    setSaveMessage(null);
+
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
+
+    try {
+      setProfileError(null);
+      setIsSaving(true);
+      const user = await updateClientProfile(session.token, {
+        address: address.trim(),
+        city: city.trim(),
+        name: name.trim(),
+        phone: phone.trim()
+      });
+
+      setName(user.name ?? "");
+      setPhone(user.phone ?? "");
+      setEmail(user.email ?? "");
+      setCity(user.city ?? "");
+      setAddress(user.address ?? "");
+      await updateSessionUser(user);
+      setSaveMessage("Datos guardados correctamente.");
+    } catch (saveError) {
+      setProfileError(
+        saveError instanceof Error
+          ? saveError.message
+          : "No pudimos guardar los cambios."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -109,27 +223,84 @@ export default function ClientProfileScreen() {
       </View>
 
       <View style={styles.formCard}>
-        <ProfileField
+        {isLoadingProfile ? (
+          <Text style={styles.statusText}>Cargando datos...</Text>
+        ) : null}
+        <TextInputField
+          autoCapitalize="words"
+          editable={!isSaving && !isLoadingProfile}
+          error={fieldErrors.name}
           label="Nombre y Apellido"
-          value={session?.user.name ?? "Ej: Juan Perez"}
+          onChangeText={(value) => {
+            setName(value);
+            setFieldErrors((current) => ({ ...current, name: undefined }));
+            setSaveMessage(null);
+          }}
+          placeholder="Ej: Juan Perez"
+          value={name}
         />
-        <ProfileField
+        <TextInputField
+          editable={!isSaving && !isLoadingProfile}
+          error={fieldErrors.phone}
+          keyboardType="phone-pad"
           label="Telefono (WhatsApp)"
-          value={session?.user.phone ?? "Ej: +54 9 362 1234567"}
+          onChangeText={(value) => {
+            setPhone(value);
+            setFieldErrors((current) => ({ ...current, phone: undefined }));
+            setSaveMessage(null);
+          }}
+          placeholder="Ej: +54 9 362 1234567"
+          textContentType="telephoneNumber"
+          value={phone}
         />
-        <ProfileField
+        <TextInputField
+          editable={false}
+          keyboardType="email-address"
           label="Correo electronico"
-          value={session?.user.email ?? "Ej: juan@email.com"}
+          placeholder="tu@email.com"
+          style={styles.readOnlyInput}
+          value={email}
         />
       </View>
 
       <View style={styles.formCard}>
-        <ProfileField label="Ciudad" value="Resistencia, Chaco" />
-        <ProfileField
+        <TextInputField
+          autoCapitalize="words"
+          editable={!isSaving && !isLoadingProfile}
+          error={fieldErrors.city}
+          label="Ciudad"
+          onChangeText={(value) => {
+            setCity(value);
+            setFieldErrors((current) => ({ ...current, city: undefined }));
+            setSaveMessage(null);
+          }}
+          placeholder="Ej: Resistencia, Chaco"
+          value={city}
+        />
+        <TextInputField
+          autoCapitalize="words"
+          editable={!isSaving && !isLoadingProfile}
+          error={fieldErrors.address}
           label="Direccion (Calle y Altura)"
-          value="Ej: Av. San Martin 123"
+          onChangeText={(value) => {
+            setAddress(value);
+            setFieldErrors((current) => ({ ...current, address: undefined }));
+            setSaveMessage(null);
+          }}
+          placeholder="Ej: Av. San Martin 123"
+          value={address}
         />
       </View>
+
+      {profileError ? <Text style={styles.errorText}>{profileError}</Text> : null}
+      {saveMessage ? <Text style={styles.successText}>{saveMessage}</Text> : null}
+
+      <PrimaryButton
+        disabled={isLoadingProfile}
+        isLoading={isSaving}
+        label="GUARDAR CAMBIOS"
+        onPress={handleSave}
+      />
 
       <PrimaryButton
         label="CERRAR SESION"
@@ -137,18 +308,6 @@ export default function ClientProfileScreen() {
         variant="outline"
       />
     </ScreenContainer>
-  );
-}
-
-function ProfileField({ label, value }: { label: string; value: string }) {
-  const { theme } = useTheme();
-  const styles = createStyles(theme);
-
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <Text style={styles.fieldValue}>{value}</Text>
-    </View>
   );
 }
 
@@ -188,27 +347,18 @@ function createStyles(theme: AppColors) {
   content: {
     gap: spacing.lg
   },
-  field: {
-    borderBottomColor: theme.border,
-    borderBottomWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md
-  },
-  fieldLabel: {
-    color: theme.mutedText,
-    fontSize: 14,
+  errorText: {
+    color: theme.danger,
+    fontSize: 13,
     fontWeight: "700"
-  },
-  fieldValue: {
-    color: theme.mutedText,
-    fontSize: 16
   },
   formCard: {
     backgroundColor: theme.card,
     borderColor: theme.border,
     borderRadius: radii.lg,
     borderWidth: 1,
-    overflow: "hidden"
+    gap: spacing.md,
+    padding: spacing.md
   },
   infoBox: {
     alignItems: "flex-start",
@@ -225,6 +375,9 @@ function createStyles(theme: AppColors) {
     flex: 1,
     fontSize: 15,
     lineHeight: 21
+  },
+  readOnlyInput: {
+    color: theme.mutedText
   },
   segmented: {
     backgroundColor: theme.subtleSurface,
@@ -244,6 +397,16 @@ function createStyles(theme: AppColors) {
   },
   segmentText: {
     color: theme.mutedText,
+    fontSize: 13,
+    fontWeight: "800"
+  },
+  statusText: {
+    color: theme.mutedText,
+    fontSize: 13,
+    fontWeight: "700"
+  },
+  successText: {
+    color: theme.secondaryDark,
     fontSize: 13,
     fontWeight: "800"
   },

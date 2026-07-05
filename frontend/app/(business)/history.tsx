@@ -564,7 +564,7 @@ function createStyles(theme: AppColors) {
   },
   content: {
     gap: spacing.md,
-    paddingBottom: 96
+    paddingBottom: spacing.xl
   },
   dateTitle: {
     color: theme.text,

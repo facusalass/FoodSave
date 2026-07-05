@@ -14,7 +14,7 @@ export default function CheckEmailScreen() {
   const registeredEmail = Array.isArray(email) ? email[0] : email;
 
   return (
-    <ScreenContainer contentStyle={styles.screen}>
+    <ScreenContainer contentStyle={styles.screen} includeBottomSafeArea>
       <View style={styles.topBar}>
         <Pressable
           accessibilityLabel="Volver"

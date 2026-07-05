@@ -162,11 +162,12 @@ npx expo start -c
 - `Mis reservas` consume `GET /reservations` mediante `frontend/src/services/reservationService.ts` usando el token de sesion.
 - El detalle de oferta permite crear una reserva real con `POST /reservations`; la reserva queda en estado `pending`, descuenta un cupo de la oferta y luego aparece en `Mis reservas`.
 - El menu lateral cliente esta en `ClientSideMenu` y deja disponible `Cerrar sesion`, `Favoritos` y `Ayuda`.
-- `Perfil` es MVP visual/local: muestra datos de sesion y campos de contacto, sin persistencia real ni endpoint de perfil todavia.
+- `Perfil` consume `GET /client/profile` y guarda cambios con `PUT /client/profile`. El cliente puede editar `name`, `phone`, `city` y `address`; el email queda solo lectura y no se permite editar role, password ni datos sensibles desde la app.
 
 ## Flujo de reserva y confirmacion de pago
 
 - El cliente crea reservas desde el detalle de oferta usando `POST /reservations`.
+- Antes de crear la reserva, el detalle de oferta valida `GET /client/profile`; si faltan `city` o `address`, muestra un bloque para completarlos, guarda con `PUT /client/profile` y luego continua con la reserva.
 - La reserva se crea con estado inicial `pending`; en la UI cliente se muestra como `Pendiente de pago`.
 - El backend devuelve la reserva completa con `code`, `confirmationCode`, `expiresAt`, `paymentAlias`/`bankAlias` y `whatsappPhone` si existe.
 - Despues de reservar, el frontend navega a `frontend/app/(client)/reservation-confirmed.tsx`, una pantalla oculta en tabs.
@@ -214,6 +215,20 @@ npx expo start -c
 - El usuario puede cambiar la ciudad manualmente desde el boton de ciudad junto al buscador.
 - Si una ciudad no tiene ofertas, el Home muestra un estado vacio especifico.
 - No se usa Mapbox ni se muestra mapa en esta fase.
+
+## Categorias de ofertas y Mystery Box
+
+- Las categorias controladas de ofertas son: `Panaderia`, `Rotiseria`, `Supermercado`, `Cafeteria`, `Verduleria`, `Restaurante`, `Heladeria` y `Varios`.
+- `Pizzeria` ya no es una categoria elegible en el panel comercio; las ofertas de pizza deben entrar en `Rotiseria` o `Restaurante` segun el caso.
+- El Home cliente muestra el chip `Todos` como primera opcion y estado inicial. Ese filtro no aplica categoria y permite ver todas las ofertas disponibles de la ciudad seleccionada.
+- Los chips de categorias del Home cliente se calculan dinamicamente segun la ciudad seleccionada y las ofertas disponibles con `stock > 0`; `Todos` siempre aparece.
+- El chip `Mystery Box` sigue filtrando por `type = mystery_box`, independiente de la categoria gastronómica.
+- El chip `Mystery Box` solo aparece si en la ciudad actual existe al menos una oferta con `type = mystery_box` y stock disponible.
+- Las ofertas Mystery Box deben tener textos concretos y atractivos, por ejemplo `Caja sorpresa de facturas` o `Mystery Box de panaderia con productos seleccionados del dia`.
+- Visualmente, las cards Mystery Box tienen tratamiento destacado con borde/acento FoodSave, badge propio y llamada a la accion reforzada, compatible con light/dark mode.
+
+- Los datos demo del seed cubren al menos una publicacion por categoria controlada; `Todos` es solo filtro y no se guarda como categoria.
+- Las ofertas sin stock no se ocultan: se ordenan al final, muestran badge `Sin stock`, reducen la opacidad de la card/publicacion y no parecen reservables.
 
 ## Panel comercio/admin mobile
 
