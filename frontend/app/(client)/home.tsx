@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Location from "expo-location";
-import { Check, MapPin, Search, X } from "lucide-react-native";
+import { Check, ChevronDown, MapPin, Search, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -43,7 +43,7 @@ import { getFavoriteIds, toggleFavoriteId } from "../../src/utils/favorites";
 import { sortOffersByStock } from "../../src/utils/offerStock";
 
 const DEFAULT_CITY = "Resistencia, Chaco";
-const COLLAPSED_CATEGORY_CHIP_COUNT = 6;
+const COLLAPSED_CATEGORY_CHIP_COUNT = 5;
 
 export default function ClientHomeScreen() {
   const router = useRouter();
@@ -252,16 +252,15 @@ export default function ClientHomeScreen() {
     return filters;
   }, [offers]);
 
-  const visibleCategoryFilters = useMemo(() => {
-    if (
-      areCategoriesExpanded ||
-      availableCategoryFilters.length <= COLLAPSED_CATEGORY_CHIP_COUNT
-    ) {
+  const primaryCategoryFilters = useMemo(() => {
+    if (availableCategoryFilters.length <= COLLAPSED_CATEGORY_CHIP_COUNT) {
       return availableCategoryFilters;
     }
 
-    const visibleLimit = COLLAPSED_CATEGORY_CHIP_COUNT - 1;
-    const firstFilters = availableCategoryFilters.slice(0, visibleLimit);
+    const firstFilters = availableCategoryFilters.slice(
+      0,
+      COLLAPSED_CATEGORY_CHIP_COUNT
+    );
     const activeFilter = availableCategoryFilters.find((filter) =>
       filter.type === "all"
         ? activeCategory === null
@@ -272,14 +271,27 @@ export default function ClientHomeScreen() {
       activeFilter &&
       !firstFilters.some((filter) => filter.label === activeFilter.label)
     ) {
-      return [...firstFilters.slice(0, visibleLimit - 1), activeFilter];
+      return [...firstFilters.slice(0, COLLAPSED_CATEGORY_CHIP_COUNT - 1), activeFilter];
     }
 
     return firstFilters;
-  }, [activeCategory, areCategoriesExpanded, availableCategoryFilters]);
+  }, [activeCategory, availableCategoryFilters]);
+
+  const extraCategoryFilters = useMemo(
+    () =>
+      availableCategoryFilters.filter(
+        (filter) =>
+          !primaryCategoryFilters.some(
+            (primaryFilter) =>
+              primaryFilter.type === filter.type &&
+              primaryFilter.value === filter.value
+          )
+      ),
+    [availableCategoryFilters, primaryCategoryFilters]
+  );
 
   const hiddenCategoryCount =
-    availableCategoryFilters.length - visibleCategoryFilters.length;
+    availableCategoryFilters.length - primaryCategoryFilters.length;
 
   useEffect(() => {
     if (!activeCategory) {
@@ -385,6 +397,7 @@ export default function ClientHomeScreen() {
 
   function handleCategorySelect(filter: OfferCategoryFilter) {
     setActiveCategory(filter.type === "all" ? null : filter.label);
+    setAreCategoriesExpanded(false);
   }
 
   return (
@@ -464,8 +477,9 @@ export default function ClientHomeScreen() {
           </View>
         ) : null}
 
-        <View style={styles.categoryRow}>
-          {visibleCategoryFilters.map((filter, index) => {
+        <View style={styles.categoryBlock}>
+          <View style={styles.categoryRow}>
+          {primaryCategoryFilters.map((filter, index) => {
             const isActive =
               filter.type === "all"
                 ? activeCategory === null
@@ -493,18 +507,66 @@ export default function ClientHomeScreen() {
             );
           })}
 
-          {availableCategoryFilters.length > COLLAPSED_CATEGORY_CHIP_COUNT ? (
+          {hiddenCategoryCount > 0 ? (
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() =>
                 setAreCategoriesExpanded((currentValue) => !currentValue)
               }
-              style={styles.moreCategoryChip}
+              style={[
+                styles.moreCategoryChip,
+                areCategoriesExpanded ? styles.moreCategoryChipActive : null
+              ]}
             >
+              <ChevronDown
+                color={theme.primary}
+                size={15}
+                style={
+                  areCategoriesExpanded
+                    ? styles.moreCategoryIconExpanded
+                    : null
+                }
+              />
               <Text style={styles.moreCategoryText}>
                 {areCategoriesExpanded ? "Ver menos" : `Ver mas (${hiddenCategoryCount})`}
               </Text>
             </TouchableOpacity>
+          ) : null}
+          </View>
+
+          {areCategoriesExpanded && extraCategoryFilters.length > 0 ? (
+            <View style={styles.categoryDropdown}>
+              {extraCategoryFilters.map((filter, index) => {
+                const isActive =
+                  filter.type === "all"
+                    ? activeCategory === null
+                    : activeCategory === filter.label;
+
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    key={`${filter.type}-${filter.value}-${index}`}
+                    onPress={() => handleCategorySelect(filter)}
+                    style={[
+                      styles.categoryDropdownItem,
+                      isActive ? styles.categoryDropdownItemActive : null
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryDropdownText,
+                        isActive ? styles.categoryDropdownTextActive : null
+                      ]}
+                    >
+                      {filter.label}
+                    </Text>
+                    {isActive ? (
+                      <Check color={theme.primary} size={18} />
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           ) : null}
         </View>
       </View>
@@ -773,16 +835,49 @@ function createStyles(theme: AppColors) {
   activeChipText: {
     color: "#FFFFFF"
   },
+  categoryBlock: {
+    gap: spacing.sm
+  },
   categoryChip: {
     alignItems: "center",
     backgroundColor: theme.card,
     borderColor: theme.border,
-    borderRadius: radii.md,
+    borderRadius: radii.sm,
     borderWidth: 1,
     justifyContent: "center",
-    minHeight: 34,
+    minHeight: 40,
+    minWidth: 84,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs
+    paddingVertical: spacing.sm
+  },
+  categoryDropdown: {
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.sm
+  },
+  categoryDropdownItem: {
+    alignItems: "center",
+    backgroundColor: theme.subtleSurface,
+    borderRadius: radii.sm,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 44,
+    paddingHorizontal: spacing.md
+  },
+  categoryDropdownItemActive: {
+    backgroundColor: `${theme.primary}14`
+  },
+  categoryDropdownText: {
+    color: theme.text,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  categoryDropdownTextActive: {
+    color: theme.primary
   },
   categoryRow: {
     flexDirection: "row",
@@ -960,12 +1055,20 @@ function createStyles(theme: AppColors) {
     alignItems: "center",
     backgroundColor: `${theme.primary}14`,
     borderColor: `${theme.primary}55`,
-    borderRadius: radii.md,
+    borderRadius: radii.sm,
     borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
     justifyContent: "center",
-    minHeight: 34,
+    minHeight: 40,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs
+    paddingVertical: spacing.sm
+  },
+  moreCategoryChipActive: {
+    backgroundColor: `${theme.primary}22`
+  },
+  moreCategoryIconExpanded: {
+    transform: [{ rotate: "180deg" }]
   },
   moreCategoryText: {
     color: theme.primary,

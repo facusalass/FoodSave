@@ -49,6 +49,7 @@ export default function OfferDetailScreen() {
   const { session, updateSessionUser } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const sessionToken = session?.token;
   const [offer, setOffer] = useState<Offer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -89,10 +90,10 @@ export default function OfferDetailScreen() {
       setImageFailed(false);
       setLogoFailed(false);
 
-      if (session) {
+      if (sessionToken) {
         try {
           setFavoriteError(null);
-          const favorites = await getFavorites(session.token);
+          const favorites = await getFavorites(sessionToken);
           setIsFavorite(
             favorites.some((favorite) => favorite.id === nextOffer.id)
           );
@@ -112,12 +113,12 @@ export default function OfferDetailScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [id, session]);
+  }, [id, sessionToken]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadOffer(offer === null);
-    }, [loadOffer, offer])
+      void loadOffer(false);
+    }, [loadOffer])
   );
 
   async function handleReserve() {
