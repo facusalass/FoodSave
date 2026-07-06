@@ -709,6 +709,7 @@ function createStyles(theme: AppColors) {
   },
   imageBox: {
     alignItems: "center",
+    alignSelf: "center",
     aspectRatio: 4 / 3,
     backgroundColor: theme.card,
     borderColor: theme.border,
@@ -721,6 +722,7 @@ function createStyles(theme: AppColors) {
     minHeight: 170,
     overflow: "hidden",
     padding: spacing.lg,
+    maxWidth: 560,
     width: "100%"
   },
   imageBoxDisabled: {
