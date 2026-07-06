@@ -48,6 +48,7 @@ export default function BusinessOrdersScreen() {
   const [searchText, setSearchText] = useState("");
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionState, setActionState] = useState<{
     id: string;
@@ -64,15 +65,20 @@ export default function BusinessOrdersScreen() {
     return () => clearInterval(intervalId);
   }, []);
 
-  const loadReservations = useCallback(async () => {
+  const loadReservations = useCallback(async (showLoader = true) => {
     if (!session) {
       setIsLoading(false);
+      setIsRefreshing(false);
       return;
     }
 
     try {
       setError(null);
-      setIsLoading(true);
+      if (showLoader) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       const nextReservations = await getReservations(session.token);
       setReservations(nextReservations);
     } catch (loadError) {
@@ -83,6 +89,7 @@ export default function BusinessOrdersScreen() {
       setError(message);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, [session]);
 
@@ -129,19 +136,12 @@ export default function BusinessOrdersScreen() {
 
     try {
       setActionState({ id: reservation.id, type: action });
-      const updatedReservation = await updateReservationStatus(
+      await updateReservationStatus(
         session.token,
         reservation.id,
         status
       );
-
-      setReservations((currentReservations) =>
-        currentReservations.map((currentReservation) =>
-          currentReservation.id === updatedReservation.id
-            ? updatedReservation
-            : currentReservation
-        )
-      );
+      await loadReservations(false);
 
       if (status === "confirmed_paid") {
         setActiveTab("confirmed");
@@ -177,7 +177,13 @@ export default function BusinessOrdersScreen() {
   }
 
   return (
-    <ScreenContainer contentStyle={styles.content}>
+    <ScreenContainer
+      contentStyle={styles.content}
+      onRefresh={() => {
+        void loadReservations(false);
+      }}
+      refreshing={isRefreshing}
+    >
       <View style={styles.topBar}>
         <BusinessMenuButton />
         <Text style={styles.topBarTitle}>Pedidos Activos</Text>

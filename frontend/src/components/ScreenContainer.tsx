@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import {
+  RefreshControl,
   ScrollView,
   StyleSheet,
   type ViewStyle,
@@ -16,6 +17,8 @@ type ScreenContainerProps = PropsWithChildren<{
   includeBottomSafeArea?: boolean;
   scroll?: boolean;
   contentStyle?: ViewStyle;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }>;
 
 const CONTENT_SAFE_AREA_EDGES: Edge[] = ["top", "left", "right"];
@@ -25,7 +28,9 @@ export function ScreenContainer({
   children,
   includeBottomSafeArea = false,
   scroll = true,
-  contentStyle
+  contentStyle,
+  onRefresh,
+  refreshing = false
 }: ScreenContainerProps) {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -45,6 +50,15 @@ export function ScreenContainer({
     <SafeAreaView edges={safeAreaEdges} style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={[styles.scrollContent, contentStyle]}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              onRefresh={onRefresh}
+              refreshing={refreshing}
+              tintColor={theme.primary}
+            />
+          ) : undefined
+        }
         showsVerticalScrollIndicator={false}
       >
         {children}

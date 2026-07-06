@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
   Clock,
@@ -6,7 +6,7 @@ import {
   MapPin,
   PackageCheck
 } from "lucide-react-native";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -51,6 +51,7 @@ export default function OfferDetailScreen() {
   const styles = createStyles(theme);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReserving, setIsReserving] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -67,44 +68,57 @@ export default function OfferDetailScreen() {
   const [imageFailed, setImageFailed] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
 
-  useEffect(() => {
-    async function loadOffer() {
-      if (!id) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const nextOffer = await getOfferById(id);
-        setOffer(nextOffer);
-        setImageFailed(false);
-        setLogoFailed(false);
-
-        if (session) {
-          try {
-            const favorites = await getFavorites(session.token);
-            setIsFavorite(
-              favorites.some((favorite) => favorite.id === nextOffer.id)
-            );
-          } catch {
-            setFavoriteError(
-              "No pudimos cargar favoritos por ahora. La oferta sigue disponible."
-            );
-          }
-        }
-      } catch (loadError) {
-        const message =
-          loadError instanceof Error
-            ? loadError.message
-            : "No pudimos cargar la oferta.";
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
+  const loadOffer = useCallback(async (showLoader = true) => {
+    if (!id) {
+      setIsLoading(false);
+      setIsRefreshing(false);
+      return;
     }
 
-    loadOffer();
+    try {
+      setError(null);
+
+      if (showLoader) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+
+      const nextOffer = await getOfferById(id);
+      setOffer(nextOffer);
+      setImageFailed(false);
+      setLogoFailed(false);
+
+      if (session) {
+        try {
+          setFavoriteError(null);
+          const favorites = await getFavorites(session.token);
+          setIsFavorite(
+            favorites.some((favorite) => favorite.id === nextOffer.id)
+          );
+        } catch {
+          setFavoriteError(
+            "No pudimos cargar favoritos por ahora. La oferta sigue disponible."
+          );
+        }
+      }
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "No pudimos cargar la oferta.";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   }, [id, session]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadOffer(offer === null);
+    }, [loadOffer, offer])
+  );
 
   async function handleReserve() {
     if (!session) {
@@ -270,7 +284,12 @@ export default function OfferDetailScreen() {
   const discountPercentage = getDiscountPercentage(offer.oldPrice, offer.newPrice);
 
   return (
-    <ScreenContainer>
+    <ScreenContainer
+      onRefresh={() => {
+        void loadOffer(false);
+      }}
+      refreshing={isRefreshing}
+    >
       <View style={styles.topActions}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft color={theme.text} size={20} />

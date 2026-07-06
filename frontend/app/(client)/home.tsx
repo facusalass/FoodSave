@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import * as Location from "expo-location";
 import { Check, MapPin, Search, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -61,6 +61,7 @@ export default function ClientHomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [locationHint, setLocationHint] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +71,24 @@ export default function ClientHomeScreen() {
     const nextOffers = await getOffers({ city });
     setOffers(sortOffersByStock(nextOffers));
   }, []);
+
+  const loadFavorites = useCallback(async () => {
+    if (!session) {
+      setFavoriteIds(new Set());
+      setFavoriteError(null);
+      return;
+    }
+
+    try {
+      setFavoriteError(null);
+      const favorites = await getFavorites(session.token);
+      setFavoriteIds(getFavoriteIds(favorites));
+    } catch {
+      setFavoriteError(
+        "No pudimos cargar tus favoritos por ahora. Las ofertas siguen disponibles."
+      );
+    }
+  }, [session]);
 
   useEffect(() => {
     let isMounted = true;
@@ -90,24 +109,14 @@ export default function ClientHomeScreen() {
         setSelectedCity(initialCity);
         setLocationHint(null);
 
-        const [nextOffers, favorites] = await Promise.all([
-          getOffers({ city: initialCity }),
-          session ? getFavorites(session.token).catch(() => null) : null
-        ]);
+        const nextOffers = await getOffers({ city: initialCity });
 
         if (!isMounted) {
           return;
         }
 
         setOffers(sortOffersByStock(nextOffers));
-
-        if (favorites) {
-          setFavoriteIds(getFavoriteIds(favorites));
-        } else if (session) {
-          setFavoriteError(
-            "No pudimos cargar tus favoritos por ahora. Las ofertas siguen disponibles."
-          );
-        }
+        await loadFavorites();
       } catch (loadError) {
         const message =
           loadError instanceof Error
@@ -129,7 +138,42 @@ export default function ClientHomeScreen() {
     return () => {
       isMounted = false;
     };
-  }, [session]);
+  }, [loadFavorites]);
+
+  const refreshHomeData = useCallback(async () => {
+    if (!selectedCity) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await Promise.all([
+        loadOffersForCity(selectedCity),
+        loadFavorites()
+      ]);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "No pudimos actualizar las ofertas.";
+      setError(message);
+    }
+  }, [loadFavorites, loadOffersForCity, selectedCity]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshHomeData();
+    }, [refreshHomeData])
+  );
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      setIsRefreshing(true);
+      await refreshHomeData();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refreshHomeData]);
 
   const filteredOffers = useMemo(() => {
     const normalizedSearch = normalize(searchQuery);
@@ -324,7 +368,13 @@ export default function ClientHomeScreen() {
   }
 
   return (
-    <ScreenContainer contentStyle={styles.content}>
+    <ScreenContainer
+      contentStyle={styles.content}
+      onRefresh={() => {
+        void handleRefresh();
+      }}
+      refreshing={isRefreshing}
+    >
       <ClientTopBar onMenuPress={() => setIsMenuVisible(true)} />
       <ClientSideMenu
         onClose={() => setIsMenuVisible(false)}

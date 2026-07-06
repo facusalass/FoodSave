@@ -35,6 +35,7 @@ export default function ClientReservationsScreen() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [cancellingReservationId, setCancellingReservationId] = useState<
     string | null
   >(null);
@@ -45,15 +46,20 @@ export default function ClientReservationsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const loadReservations = useCallback(async () => {
+  const loadReservations = useCallback(async (showLoader = true) => {
       if (!session) {
         setIsLoading(false);
+        setIsRefreshing(false);
         return;
       }
 
       try {
         setError(null);
-        setIsLoading(true);
+        if (showLoader) {
+          setIsLoading(true);
+        } else {
+          setIsRefreshing(true);
+        }
         const nextReservations = await getReservations(session.token);
         setReservations(nextReservations);
       } catch (loadError) {
@@ -64,6 +70,7 @@ export default function ClientReservationsScreen() {
         setError(message);
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
   }, [session]);
 
@@ -142,18 +149,12 @@ export default function ClientReservationsScreen() {
     try {
       setActionError(null);
       setCancellingReservationId(reservation.id);
-      const updatedReservation = await updateReservationStatus(
+      await updateReservationStatus(
         session.token,
         reservation.id,
         "cancelled"
       );
-      setReservations((currentReservations) =>
-        currentReservations.map((currentReservation) =>
-          currentReservation.id === updatedReservation.id
-            ? updatedReservation
-            : currentReservation
-        )
-      );
+      await loadReservations(false);
       setReservationToCancel(null);
     } catch (cancelError) {
       const message =
@@ -167,7 +168,13 @@ export default function ClientReservationsScreen() {
   }
 
   return (
-    <ScreenContainer contentStyle={styles.content}>
+    <ScreenContainer
+      contentStyle={styles.content}
+      onRefresh={() => {
+        void loadReservations(false);
+      }}
+      refreshing={isRefreshing}
+    >
       <ClientTopBar onMenuPress={() => setIsMenuVisible(true)} />
       <ClientSideMenu
         onClose={() => setIsMenuVisible(false)}

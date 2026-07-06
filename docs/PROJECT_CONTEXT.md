@@ -242,6 +242,8 @@ npx expo start -c
 - `Mi local` carga y guarda datos del comercio con `GET /business/profile` y `PUT /business/profile`, incluyendo `paymentInfo` y `logoUrl`; el logo se selecciona con `expo-image-picker`, se sube con `POST /upload/image` y se guarda como `logoUrl`.
 - `GET /business/profile` puede incluir `isActive`; si viene en `false`, el frontend muestra un banner informativo de comercio suspendido en las pantallas principales del panel comercio. `PUT /business/profile` no envia `isActive`.
 - `Mi local > Publicaciones` lista ofertas del comercio con `GET /business/offers`, oculta/muestra usando `PATCH /business/offers/:id/visibility` y edita publicaciones desde `frontend/app/(business)/edit-offer/[id].tsx` con `PUT /business/offers/:id`.
+- Las listas principales del frontend se refrescan al volver a foco de pantalla y tambien permiten pull-to-refresh en pantallas con `ScrollView`: Home cliente, Mis reservas, Pedidos del comercio y Mi local/Publicaciones.
+- Despues de acciones criticas se fuerza recarga de la lista correspondiente para evitar datos viejos: publicar oferta, editar oferta, ocultar/mostrar publicacion, reservar, cancelar reserva y confirmar pago.
 - `Estadisticas` calcula el mes actual con datos reales de `GET /reservations` y `GET /business/offers`: ingresos, cajas vendidas, cancelados, ventas por semana y top publicaciones; comida salvada queda en `-- KG` si las ofertas no tienen `estimatedWeightInKg`.
 - La campanita del comercio abre un modal conectado a `GET /notifications`. La pantalla completa y marcar leidas del comercio quedan pendientes hasta definir endpoints business-specific.
 - La pantalla `frontend/app/(business)/orders.tsx` muestra una lista basica de pedidos usando reservas existentes.

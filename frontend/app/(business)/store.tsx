@@ -63,6 +63,7 @@ export default function BusinessStoreScreen() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingOffers, setIsLoadingOffers] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [offersError, setOffersError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -82,7 +83,7 @@ export default function BusinessStoreScreen() {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoPreviewUri, setLogoPreviewUri] = useState("");
 
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async (showLoader = true) => {
     if (!session) {
       setIsLoadingProfile(false);
       return;
@@ -90,7 +91,9 @@ export default function BusinessStoreScreen() {
 
     try {
       setProfileError(null);
-      setIsLoadingProfile(true);
+      if (showLoader) {
+        setIsLoadingProfile(true);
+      }
       const business = await getBusinessProfile(session.token);
       setBusinessName(business.name ?? "");
       setCategory(business.category ?? DEFAULT_CATEGORY);
@@ -113,7 +116,7 @@ export default function BusinessStoreScreen() {
     }
   }, [session]);
 
-  const loadOffers = useCallback(async () => {
+  const loadOffers = useCallback(async (showLoader = true) => {
     if (!session) {
       setIsLoadingOffers(false);
       return;
@@ -121,7 +124,9 @@ export default function BusinessStoreScreen() {
 
     try {
       setOffersError(null);
-      setIsLoadingOffers(true);
+      if (showLoader) {
+        setIsLoadingOffers(true);
+      }
       const nextOffers = await getBusinessOffers(session.token);
       setOffers(sortOffersByStock(nextOffers));
     } catch (loadError) {
@@ -134,6 +139,18 @@ export default function BusinessStoreScreen() {
       setIsLoadingOffers(false);
     }
   }, [session]);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      setIsRefreshing(true);
+      await Promise.all([
+        loadProfile(false),
+        loadOffers(false)
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadOffers, loadProfile]);
 
   useFocusEffect(
     useCallback(() => {
@@ -312,21 +329,12 @@ export default function BusinessStoreScreen() {
 
     try {
       setVisibilityLoadingId(offer.id);
-      const updatedOffer = await updateBusinessOfferVisibility(
+      await updateBusinessOfferVisibility(
         session.token,
         offer.id,
         nextVisibility
       );
-
-      setOffers((currentOffers) =>
-        sortOffersByStock(
-          currentOffers.map((currentOffer) =>
-            currentOffer.id === offer.id
-              ? { ...currentOffer, ...updatedOffer }
-              : currentOffer
-          )
-        )
-      );
+      await loadOffers(false);
     } catch (visibilityError) {
       const message =
         visibilityError instanceof Error
@@ -342,7 +350,13 @@ export default function BusinessStoreScreen() {
   const hiddenCount = offers.filter((offer) => offer.isVisible === false).length;
 
   return (
-    <ScreenContainer contentStyle={styles.content}>
+    <ScreenContainer
+      contentStyle={styles.content}
+      onRefresh={() => {
+        void handleRefresh();
+      }}
+      refreshing={isRefreshing}
+    >
       <View style={styles.topBar}>
         <BusinessMenuButton />
         <Text style={styles.topBarTitle}>Mi Local</Text>

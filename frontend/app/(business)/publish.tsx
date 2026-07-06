@@ -5,6 +5,7 @@ import {
   Minus,
   Plus
 } from "lucide-react-native";
+import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
@@ -41,6 +42,7 @@ import {
 const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
 export default function BusinessPublishScreen() {
+  const router = useRouter();
   const { session } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -179,7 +181,16 @@ export default function BusinessPublishScreen() {
         type
       });
 
-      Alert.alert("Oferta publicada", "El excedente se publico correctamente.");
+      Alert.alert("Oferta publicada", "El excedente se publico correctamente.", [
+        {
+          onPress: () =>
+            router.replace({
+              pathname: "/(business)/store",
+              params: { tab: "publications" }
+            }),
+          text: "OK"
+        }
+      ]);
       resetForm();
     } catch (publishError) {
       const message =
@@ -712,7 +723,9 @@ function createStyles(theme: AppColors) {
   imageOverlay: {
     alignItems: "center",
     gap: spacing.sm,
-    justifyContent: "center"
+    justifyContent: "center",
+    minHeight: 170,
+    width: "100%"
   },
   imageOverlayWithPreview: {
     backgroundColor: theme.overlay,
@@ -729,7 +742,8 @@ function createStyles(theme: AppColors) {
   imageText: {
     color: theme.text,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "800",
+    textAlign: "center"
   },
   imageTextWithPreview: {
     color: "#FFFFFF"
