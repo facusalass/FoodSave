@@ -347,7 +347,7 @@ export default function ClientHomeScreen() {
       const detectedCity = await detectCurrentCity(cities);
 
       if (!detectedCity.city) {
-        setLocationHint(detectedCity.hint);
+        setLocationHint(selectedCity ? null : detectedCity.hint);
         return;
       }
 
