@@ -158,6 +158,7 @@ export default function OfferDetailScreen() {
           ? reserveErrorValue.message
           : "No pudimos crear la reserva.";
       setReserveError(message);
+    } finally {
       setIsReserving(false);
     }
   }

@@ -685,6 +685,7 @@ function createStyles(theme: AppColors) {
     },
     imageBox: {
       alignItems: "center",
+      aspectRatio: 4 / 3,
       backgroundColor: theme.card,
       borderColor: theme.border,
       borderRadius: radii.md,
@@ -692,9 +693,11 @@ function createStyles(theme: AppColors) {
       borderWidth: 1.5,
       gap: spacing.sm,
       justifyContent: "center",
-      minHeight: 182,
+      maxHeight: 240,
+      minHeight: 170,
       overflow: "hidden",
-      padding: spacing.lg
+      padding: spacing.lg,
+      width: "100%"
     },
     imageBoxDisabled: {
       opacity: 0.72
@@ -715,7 +718,9 @@ function createStyles(theme: AppColors) {
     imageOverlay: {
       alignItems: "center",
       gap: spacing.sm,
-      justifyContent: "center"
+      justifyContent: "center",
+      minHeight: 170,
+      width: "100%"
     },
     imageOverlayWithPreview: {
       backgroundColor: theme.overlay,

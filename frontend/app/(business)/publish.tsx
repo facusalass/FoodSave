@@ -720,7 +720,8 @@ function createStyles(theme: AppColors) {
     maxHeight: 220,
     minHeight: 170,
     overflow: "hidden",
-    padding: spacing.lg
+    padding: spacing.lg,
+    width: "100%"
   },
   imageBoxDisabled: {
     opacity: 0.72
