@@ -106,7 +106,9 @@ export default function BusinessOrdersScreen() {
   const confirmedReservations = useMemo(
     () =>
       reservations.filter(
-        (reservation) => reservation.status === "confirmed_paid"
+        (reservation) =>
+          reservation.status === "confirmed_paid" ||
+          reservation.status === "picked_up"
       ),
     [reservations]
   );
