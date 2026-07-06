@@ -23,6 +23,7 @@ Tablas creadas: `users`, `businesses`, `offers`, `reservations`, `favorites`.
 | 5 | `05_storage.sql` | Bucket de imágenes `offers` en Storage |
 | 6 | `06_city_column.sql` | Agrega columna `city` a la tabla `businesses` |
 | 8 | `08_demo_media_fallbacks.sql` | Opcional demo/dev: completa imagenes/logos faltantes en registros seed conocidos |
+| 10 | `10_demo_more_businesses_offers.sql` | Opcional demo/dev: agrega comercios y ofertas activas en Resistencia y Corrientes |
 
 ---
 
