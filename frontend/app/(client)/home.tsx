@@ -50,6 +50,7 @@ export default function ClientHomeScreen() {
   const { logout, session } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const sessionToken = session?.token;
   const [offers, setOffers] = useState<Offer[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [cities, setCities] = useState<string[]>([]);
@@ -73,7 +74,7 @@ export default function ClientHomeScreen() {
   }, []);
 
   const loadFavorites = useCallback(async () => {
-    if (!session) {
+    if (!sessionToken) {
       setFavoriteIds(new Set());
       setFavoriteError(null);
       return;
@@ -81,14 +82,14 @@ export default function ClientHomeScreen() {
 
     try {
       setFavoriteError(null);
-      const favorites = await getFavorites(session.token);
+      const favorites = await getFavorites(sessionToken);
       setFavoriteIds(getFavoriteIds(favorites));
     } catch {
       setFavoriteError(
         "No pudimos cargar tus favoritos por ahora. Las ofertas siguen disponibles."
       );
     }
-  }, [session]);
+  }, [sessionToken]);
 
   useEffect(() => {
     let isMounted = true;
@@ -116,7 +117,26 @@ export default function ClientHomeScreen() {
         }
 
         setOffers(sortOffersByStock(nextOffers));
-        await loadFavorites();
+
+        if (sessionToken) {
+          try {
+            const favorites = await getFavorites(sessionToken);
+
+            if (isMounted) {
+              setFavoriteIds(getFavoriteIds(favorites));
+              setFavoriteError(null);
+            }
+          } catch {
+            if (isMounted) {
+              setFavoriteError(
+                "No pudimos cargar tus favoritos por ahora. Las ofertas siguen disponibles."
+              );
+            }
+          }
+        } else {
+          setFavoriteIds(new Set());
+          setFavoriteError(null);
+        }
       } catch (loadError) {
         const message =
           loadError instanceof Error
@@ -138,7 +158,7 @@ export default function ClientHomeScreen() {
     return () => {
       isMounted = false;
     };
-  }, [loadFavorites]);
+  }, [sessionToken]);
 
   const refreshHomeData = useCallback(async () => {
     if (!selectedCity) {

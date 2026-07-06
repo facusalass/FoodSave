@@ -61,6 +61,7 @@ export default function BusinessPublishScreen() {
     null
   );
   const [businessLogoUrl, setBusinessLogoUrl] = useState<string | null>(null);
+  const [businessCity, setBusinessCity] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -79,11 +80,13 @@ export default function BusinessPublishScreen() {
         if (isMounted) {
           setBusinessClosingTime(normalizeClosingTime(business.closingTime));
           setBusinessLogoUrl(business.logoUrl ?? "");
+          setBusinessCity(business.city ?? "");
         }
       } catch {
         if (isMounted) {
           setBusinessClosingTime(null);
           setBusinessLogoUrl("");
+          setBusinessCity("");
         }
       }
     }
@@ -114,11 +117,26 @@ export default function BusinessPublishScreen() {
     const weightWasCompleted = weight.trim().length > 0;
     const pickupLimit = normalizeClosingTime(businessClosingTime);
     const pickupLimitLabel = formatClosingTimeDisplay(pickupLimit);
+    const cleanBusinessCity = businessCity.trim();
 
     if (!cleanTitle) {
       showFormError(
         "Agrega un nombre para la publicacion. Ejemplo: Caja Panaderia."
       );
+      return;
+    }
+
+    if (!cleanBusinessCity) {
+      const message =
+        "Completa la ciudad de tu local en Mi Local para que la oferta aparezca en el Home cliente.";
+      showFormError(message);
+      Alert.alert("Falta la ciudad del local", message, [
+        {
+          onPress: () => router.push("/(business)/store"),
+          text: "Ir a Mi Local"
+        },
+        { text: "Volver" }
+      ]);
       return;
     }
 

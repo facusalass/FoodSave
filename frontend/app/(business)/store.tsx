@@ -2,6 +2,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import {
   ChevronDown,
+  Check,
   Clock,
   CreditCard,
   Eye,
@@ -10,13 +11,16 @@ import {
   Pencil,
   Plus,
   Sun,
-  Upload
+  Upload,
+  X
 } from "lucide-react-native";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -37,6 +41,7 @@ import {
   updateBusinessProfile,
   uploadImage
 } from "../../src/services/offerService";
+import { getCities } from "../../src/services/cityService";
 import type { Offer } from "../../src/types/offer";
 import {
   formatClosingTimeDisplay,
@@ -51,6 +56,7 @@ type StoreTab = "settings" | "publications";
 
 const DEFAULT_CLOSING_TIME = "";
 const DEFAULT_CATEGORY = "Panaderia / Pasteleria";
+const DEFAULT_CITY = "Resistencia, Chaco";
 const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
 
 export default function BusinessStoreScreen() {
@@ -68,6 +74,7 @@ export default function BusinessStoreScreen() {
   const [offersError, setOffersError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isCityModalVisible, setIsCityModalVisible] = useState(false);
   const [visibilityLoadingId, setVisibilityLoadingId] = useState<string | null>(
     null
   );
@@ -75,6 +82,9 @@ export default function BusinessStoreScreen() {
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [description, setDescription] = useState("");
+  const [cities, setCities] = useState<string[]>([DEFAULT_CITY]);
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
   const [closingTime, setClosingTime] = useState(DEFAULT_CLOSING_TIME);
   const [closingTimeError, setClosingTimeError] = useState<string | null>(null);
   const [holderName, setHolderName] = useState("");
@@ -98,6 +108,8 @@ export default function BusinessStoreScreen() {
       setBusinessName(business.name ?? "");
       setCategory(business.category ?? DEFAULT_CATEGORY);
       setDescription(business.description ?? "");
+      setCity(business.city ?? "");
+      setAddress(business.address ?? "");
       setClosingTime(normalizeClosingTime(business.closingTime) ?? DEFAULT_CLOSING_TIME);
       setClosingTimeError(null);
       setLogoUrl(business.logoUrl ?? "");
@@ -115,6 +127,15 @@ export default function BusinessStoreScreen() {
       setIsLoadingProfile(false);
     }
   }, [session]);
+
+  const loadCities = useCallback(async () => {
+    try {
+      const nextCities = await getCities();
+      setCities(nextCities);
+    } catch {
+      setCities([]);
+    }
+  }, []);
 
   const loadOffers = useCallback(async (showLoader = true) => {
     if (!session) {
@@ -144,13 +165,14 @@ export default function BusinessStoreScreen() {
     try {
       setIsRefreshing(true);
       await Promise.all([
+        loadCities(),
         loadProfile(false),
         loadOffers(false)
       ]);
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadOffers, loadProfile]);
+  }, [loadCities, loadOffers, loadProfile]);
 
   useFocusEffect(
     useCallback(() => {
@@ -158,9 +180,15 @@ export default function BusinessStoreScreen() {
         setActiveTab("publications");
       }
 
+      void loadCities();
       void loadProfile();
       void loadOffers();
-    }, [loadOffers, loadProfile, tab])
+    }, [loadCities, loadOffers, loadProfile, tab])
+  );
+
+  const availableCities = useMemo(
+    () => buildCityOptions(cities, city),
+    [cities, city]
   );
 
   async function handleSave() {
@@ -170,6 +198,8 @@ export default function BusinessStoreScreen() {
 
     const cleanName = businessName.trim();
     const cleanCategory = category.trim();
+    const cleanCity = city.trim();
+    const cleanAddress = address.trim();
     const cleanClosingTime = normalizeClosingTime(closingTime);
     const cleanHolderName = holderName.trim();
     const cleanCvu = cvu.trim();
@@ -185,6 +215,22 @@ export default function BusinessStoreScreen() {
       return;
     }
 
+    if (!cleanCity) {
+      Alert.alert(
+        "Revisemos la ciudad",
+        "La ciudad del local es requerida para que tus ofertas aparezcan en el Home cliente."
+      );
+      return;
+    }
+
+    if (!cleanAddress) {
+      Alert.alert(
+        "Revisemos la direccion",
+        "La direccion del local es requerida para que los clientes puedan retirar sus reservas."
+      );
+      return;
+    }
+
     if (!cleanClosingTime || !isValidClosingTime(cleanClosingTime)) {
       setClosingTimeError(
         "Carga un horario valido en formato HH:mm. Ejemplo: 22:00."
@@ -197,6 +243,8 @@ export default function BusinessStoreScreen() {
       setIsSaving(true);
       await updateBusinessProfile(session.token, {
         category: cleanCategory,
+        address: cleanAddress,
+        city: cleanCity,
         closingTime: cleanClosingTime,
         description: description.trim(),
         logoUrl: logoUrl.trim() || undefined,
@@ -481,6 +529,33 @@ export default function BusinessStoreScreen() {
             value={description}
           />
 
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Ciudad</Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setIsCityModalVisible(true)}
+              style={styles.selectLike}
+            >
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.selectValue,
+                  city ? null : styles.selectPlaceholder
+                ]}
+              >
+                {city || "Elegir ciudad"}
+              </Text>
+              <ChevronDown color={theme.text} size={18} />
+            </TouchableOpacity>
+          </View>
+
+          <InputField
+            label="Direccion del local"
+            onChangeText={setAddress}
+            placeholder="Ej: Av. San Martin 123"
+            value={address}
+          />
+
           <View style={styles.closingCard}>
             <View style={styles.closingCopy}>
               <View style={styles.closingHeaderRow}>
@@ -612,6 +687,16 @@ export default function BusinessStoreScreen() {
               <Text style={styles.saveButtonText}>Guardar Cambios</Text>
             )}
           </TouchableOpacity>
+          <CitySelectorModal
+            cities={availableCities}
+            onClose={() => setIsCityModalVisible(false)}
+            onSelect={(selectedCity) => {
+              setCity(selectedCity);
+              setIsCityModalVisible(false);
+            }}
+            selectedCity={city}
+            visible={isCityModalVisible}
+          />
         </View>
       ) : (
         <View style={styles.publicationsBlock}>
@@ -662,6 +747,94 @@ export default function BusinessStoreScreen() {
       )}
     </ScreenContainer>
   );
+}
+
+function CitySelectorModal({
+  cities,
+  onClose,
+  onSelect,
+  selectedCity,
+  visible
+}: {
+  cities: string[];
+  onClose: () => void;
+  onSelect: (city: string) => void;
+  selectedCity: string;
+  visible: boolean;
+}) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
+  return (
+    <Modal
+      animationType="fade"
+      onRequestClose={onClose}
+      transparent
+      visible={visible}
+    >
+      <View style={styles.modalOverlay}>
+        <Pressable style={styles.modalBackdrop} onPress={onClose} />
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Elegir ciudad del local</Text>
+            <TouchableOpacity
+              accessibilityLabel="Cerrar selector de ciudad"
+              accessibilityRole="button"
+              activeOpacity={0.85}
+              onPress={onClose}
+              style={styles.modalCloseButton}
+            >
+              <X color={theme.text} size={22} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.cityList}>
+            {cities.map((cityOption) => {
+              const isSelected = cityOption === selectedCity;
+
+              return (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  key={cityOption}
+                  onPress={() => onSelect(cityOption)}
+                  style={[
+                    styles.cityOption,
+                    isSelected ? styles.cityOptionActive : null
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.cityOptionText,
+                      isSelected ? styles.cityOptionTextActive : null
+                    ]}
+                  >
+                    {cityOption}
+                  </Text>
+                  {isSelected ? (
+                    <Check color={theme.secondaryDark} size={18} />
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function buildCityOptions(cities: string[], selectedCity: string) {
+  const cityOptions = new Set<string>();
+
+  [selectedCity, DEFAULT_CITY, ...cities].forEach((cityOption) => {
+    const cleanCity = cityOption.trim();
+
+    if (cleanCity) {
+      cityOptions.add(cleanCity);
+    }
+  });
+
+  return Array.from(cityOptions);
 }
 
 function validateClosingTimeValue(value: string) {
@@ -918,6 +1091,33 @@ function createStyles(theme: AppColors) {
     flexDirection: "row",
     gap: spacing.sm
   },
+  cityList: {
+    gap: spacing.sm
+  },
+  cityOption: {
+    alignItems: "center",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 48,
+    paddingHorizontal: spacing.md
+  },
+  cityOptionActive: {
+    backgroundColor: `${theme.secondary}1A`,
+    borderColor: `${theme.secondary}55`
+  },
+  cityOptionText: {
+    color: theme.text,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  cityOptionTextActive: {
+    color: theme.secondaryDark
+  },
   clockBox: {
     alignItems: "center",
     backgroundColor: `${theme.primary}14`,
@@ -1120,6 +1320,38 @@ function createStyles(theme: AppColors) {
   logoTextWithPreview: {
     color: "#FFFFFF"
   },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject
+  },
+  modalCard: {
+    backgroundColor: theme.card,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    gap: spacing.md,
+    padding: spacing.lg
+  },
+  modalCloseButton: {
+    alignItems: "center",
+    height: 40,
+    justifyContent: "center",
+    width: 40
+  },
+  modalHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  modalOverlay: {
+    backgroundColor: theme.overlay,
+    flex: 1,
+    justifyContent: "flex-end"
+  },
+  modalTitle: {
+    color: theme.text,
+    flex: 1,
+    fontSize: 20,
+    fontWeight: "900"
+  },
   newButton: {
     alignItems: "center",
     backgroundColor: theme.primary,
@@ -1285,6 +1517,9 @@ function createStyles(theme: AppColors) {
     minHeight: 48,
     padding: 0
   },
+  selectPlaceholder: {
+    color: theme.placeholder
+  },
   selectLike: {
     alignItems: "center",
     backgroundColor: theme.input,
@@ -1299,6 +1534,12 @@ function createStyles(theme: AppColors) {
     shadowOffset: { height: 1, width: 0 },
     shadowOpacity: 0.06,
     shadowRadius: 4
+  },
+  selectValue: {
+    color: theme.text,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "800"
   },
   segmentButton: {
     alignItems: "center",
