@@ -26,3 +26,17 @@ export async function markAllNotificationsAsRead(token: string) {
     token
   });
 }
+
+export async function deleteNotification(token: string, notificationId: string) {
+  await apiRequest(`/notifications/${notificationId}`, {
+    method: "DELETE",
+    token
+  });
+}
+
+export async function deleteAllNotifications(token: string) {
+  await apiRequest("/notifications", {
+    method: "DELETE",
+    token
+  });
+}

@@ -1,4 +1,4 @@
-import { createNotification, listNotificationsByUser, markAllNotificationsRead, markNotificationRead } from "./repository.js";
+import { createNotification, deleteNotificationByUser, deleteNotificationsByUser, listNotificationsByUser, markAllNotificationsRead, markNotificationRead } from "./repository.js";
 const templates = {
     reservation_created: {
         title: "Reserva creada",
@@ -108,4 +108,10 @@ export async function markRead(id, userId) {
 }
 export async function markAllRead(userId) {
     return markAllNotificationsRead(userId);
+}
+export async function deleteNotification(id, userId) {
+    return deleteNotificationByUser(id, userId);
+}
+export async function deleteAllNotifications(userId) {
+    return deleteNotificationsByUser(userId);
 }

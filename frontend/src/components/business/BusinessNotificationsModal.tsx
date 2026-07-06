@@ -3,11 +3,13 @@ import {
   CheckCircle2,
   Clock,
   PackageCheck,
+  Trash2,
   X
 } from "lucide-react-native";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   StyleSheet,
   Text,
@@ -35,8 +37,10 @@ export function BusinessNotificationsModal({
   const { session } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  const { error, isLoading, notifications, refresh } =
+  const { deleteAll, deleteById, error, isLoading, notifications, refresh } =
     useBusinessNotifications({ enabled: visible });
+  const [deletingNotificationId, setDeletingNotificationId] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   useEffect(() => {
     if (visible && session) {
@@ -44,21 +48,76 @@ export function BusinessNotificationsModal({
     }
   }, [refresh, session, visible]);
 
+  async function handleDeleteNotification(notificationId: string) {
+    try {
+      setDeletingNotificationId(notificationId);
+      await deleteById(notificationId);
+    } catch {
+      Alert.alert("No pudimos borrar la notificacion", "Proba de nuevo en unos segundos.");
+    } finally {
+      setDeletingNotificationId(null);
+    }
+  }
+
+  function handleDeleteAllNotifications() {
+    Alert.alert(
+      "Borrar notificaciones",
+      "Se van a eliminar todas las notificaciones del panel.",
+      [
+        { style: "cancel", text: "Cancelar" },
+        {
+          onPress: () => {
+            void deleteAllNotifications();
+          },
+          style: "destructive",
+          text: "Borrar"
+        }
+      ]
+    );
+  }
+
+  async function deleteAllNotifications() {
+    try {
+      setIsDeletingAll(true);
+      await deleteAll();
+    } catch {
+      Alert.alert("No pudimos borrar las notificaciones", "Proba de nuevo en unos segundos.");
+    } finally {
+      setIsDeletingAll(false);
+    }
+  }
+
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
         <View style={styles.panel}>
           <View style={styles.header}>
             <Text style={styles.title}>NOTIFICACIONES</Text>
-            <TouchableOpacity
-              accessibilityLabel="Cerrar notificaciones"
-              accessibilityRole="button"
-              activeOpacity={0.85}
-              onPress={onClose}
-              style={styles.closeButton}
-            >
-              <X color={theme.text} size={22} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              {notifications.length > 0 ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  disabled={isDeletingAll}
+                  onPress={handleDeleteAllNotifications}
+                  style={[styles.clearButton, isDeletingAll ? styles.disabledButton : null]}
+                >
+                  {isDeletingAll ? (
+                    <ActivityIndicator color={theme.danger} size="small" />
+                  ) : (
+                    <Text style={styles.clearButtonText}>Borrar todas</Text>
+                  )}
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                accessibilityLabel="Cerrar notificaciones"
+                accessibilityRole="button"
+                activeOpacity={0.85}
+                onPress={onClose}
+                style={styles.closeButton}
+              >
+                <X color={theme.text} size={22} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.list}>
@@ -83,7 +142,11 @@ export function BusinessNotificationsModal({
               notifications.slice(0, 3).map((notification) => (
                 <NotificationRow
                   key={notification.id}
+                  isDeleting={deletingNotificationId === notification.id}
                   notification={notification}
+                  onDelete={() => {
+                    void handleDeleteNotification(notification.id);
+                  }}
                   theme={theme}
                   styles={styles}
                 />
@@ -98,11 +161,15 @@ export function BusinessNotificationsModal({
 }
 
 function NotificationRow({
+  isDeleting,
   notification,
+  onDelete,
   styles,
   theme
 }: {
+  isDeleting: boolean;
   notification: AppNotification;
+  onDelete: () => void;
   styles: ReturnType<typeof createStyles>;
   theme: AppColors;
 }) {
@@ -113,6 +180,20 @@ function NotificationRow({
         {notification.title || notification.message}
       </Text>
       {!notification.read ? <View style={styles.unreadDot} /> : null}
+      <TouchableOpacity
+        accessibilityLabel="Borrar notificacion"
+        accessibilityRole="button"
+        activeOpacity={0.85}
+        disabled={isDeleting}
+        onPress={onDelete}
+        style={styles.deleteButton}
+      >
+        {isDeleting ? (
+          <ActivityIndicator color={theme.danger} size="small" />
+        ) : (
+          <Trash2 color={theme.danger} size={18} />
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -145,6 +226,31 @@ function createStyles(theme: AppColors) {
     justifyContent: "center",
     width: 44
   },
+  clearButton: {
+    alignItems: "center",
+    borderColor: `${theme.danger}4D`,
+    borderRadius: 999,
+    borderWidth: 1,
+    minHeight: 32,
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  clearButtonText: {
+    color: theme.danger,
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  deleteButton: {
+    alignItems: "center",
+    borderRadius: 18,
+    height: 34,
+    justifyContent: "center",
+    width: 34
+  },
+  disabledButton: {
+    opacity: 0.64
+  },
   emptyBlock: {
     gap: spacing.xs,
     padding: spacing.md
@@ -168,6 +274,13 @@ function createStyles(theme: AppColors) {
     minHeight: 62,
     paddingLeft: spacing.md,
     paddingRight: spacing.xs
+  },
+  headerActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 1,
+    gap: spacing.xs,
+    justifyContent: "flex-end"
   },
   iconBox: {
     alignItems: "center",
@@ -217,6 +330,7 @@ function createStyles(theme: AppColors) {
   },
   title: {
     color: theme.text,
+    flex: 1,
     fontSize: 15,
     fontWeight: "900"
   },

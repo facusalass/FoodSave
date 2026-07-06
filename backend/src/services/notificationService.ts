@@ -1,5 +1,7 @@
 import {
   createNotification,
+  deleteNotificationByUser,
+  deleteNotificationsByUser,
   listNotificationsByUser,
   markAllNotificationsRead,
   markNotificationRead,
@@ -127,4 +129,12 @@ export async function markRead(id: string, userId: string) {
 
 export async function markAllRead(userId: string) {
   return markAllNotificationsRead(userId);
+}
+
+export async function deleteNotification(id: string, userId: string) {
+  return deleteNotificationByUser(id, userId);
+}
+
+export async function deleteAllNotifications(userId: string) {
+  return deleteNotificationsByUser(userId);
 }

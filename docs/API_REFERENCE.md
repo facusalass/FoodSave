@@ -222,6 +222,8 @@ Authorization: Bearer <token>
 | POST | `/favorites/:offerId` | ✅ | client |
 | DELETE | `/favorites/:offerId` | ✅ | client |
 | GET | `/notifications` | ✅ | cualquiera |
+| DELETE | `/notifications` | ✅ | cualquiera |
 | PATCH | `/notifications/:id/read` | ✅ | cualquiera |
+| DELETE | `/notifications/:id` | ✅ | cualquiera |
 | PATCH | `/notifications/read-all` | ✅ | cualquiera |
 | POST | `/upload/image` | ✅ | business |

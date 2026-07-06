@@ -160,3 +160,11 @@ export async function markAllNotificationsRead(userId) {
     const { error } = await supabase.from("notifications").update({ read: true }).eq("userId", userId).eq("read", false);
     return !error;
 }
+export async function deleteNotificationByUser(id, userId) {
+    const { error } = await supabase.from("notifications").delete().eq("id", id).eq("userId", userId);
+    return !error;
+}
+export async function deleteNotificationsByUser(userId) {
+    const { error } = await supabase.from("notifications").delete().eq("userId", userId);
+    return !error;
+}

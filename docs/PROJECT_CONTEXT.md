@@ -203,6 +203,7 @@ npx expo start -c
 - Por ahora no hay push notifications reales, permisos del sistema ni Expo Notifications.
 - Las notificaciones cliente vienen del backend con `GET /notifications`.
 - El estado leida/no leida lo maneja backend con `PATCH /notifications/:id/read` y `PATCH /notifications/read-all`.
+- Las notificaciones se pueden borrar individualmente con `DELETE /notifications/:id` o limpiar todas con `DELETE /notifications`.
 - Ya no se derivan notificaciones desde reservas ni se guarda read/unread en SecureStore.
 - Como evolucion futura se pueden agregar Expo Push Notifications.
 
@@ -246,7 +247,7 @@ npx expo start -c
 - Despues de acciones criticas se fuerza recarga de la lista correspondiente para evitar datos viejos: publicar oferta, editar oferta, ocultar/mostrar publicacion, reservar, cancelar reserva y confirmar pago.
 - En Pedidos del comercio, una reserva `confirmed_paid` puede marcarse como entregada usando el estado backend existente `picked_up`; la UI muestra ese estado como `Entregado` o `Retirado`.
 - `Estadisticas` calcula el mes actual con datos reales de `GET /reservations` y `GET /business/offers`: ingresos, cajas vendidas, cancelados, ventas por semana y top publicaciones; comida salvada queda en `-- KG` si las ofertas no tienen `estimatedWeightInKg`.
-- La campanita del comercio abre un modal conectado a `GET /notifications`. La pantalla completa y marcar leidas del comercio quedan pendientes hasta definir endpoints business-specific.
+- La campanita del comercio abre un modal conectado a `GET /notifications` y permite borrar una notificacion o limpiar todas.
 - La pantalla `frontend/app/(business)/orders.tsx` muestra una lista basica de pedidos usando reservas existentes.
 - No se toca backend para esta fase.
 

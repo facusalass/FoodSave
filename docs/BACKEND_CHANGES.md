@@ -134,7 +134,9 @@ Todos los endpoints siguen devolviendo:
 | Método | Ruta | Auth | Notas |
 |---|---|---|---|
 | GET | `/notifications` | ✅ | Lista todas las del usuario, ordenadas por fecha |
+| DELETE | `/notifications` | ✅ | Elimina todas las notificaciones del usuario autenticado |
 | PATCH | `/notifications/:id/read` | ✅ | Marca una como leída |
+| DELETE | `/notifications/:id` | ✅ | Elimina una notificación propia |
 | PATCH | `/notifications/read-all` | ✅ | Marca todas como leídas |
 
 **Notificaciones automáticas:** se generan al crear una reserva (`reservation_created`), al confirmar pago (`payment_confirmed` + `pickup_reminder`), y al detectar vencimiento (`reservation_expired`). ID estable: `${reservationId}-${type}`.

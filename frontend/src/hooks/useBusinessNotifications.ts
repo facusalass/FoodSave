@@ -2,6 +2,8 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
+  deleteAllNotifications,
+  deleteNotification,
   getNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead
@@ -95,7 +97,64 @@ export function useBusinessNotifications({
     await markAllNotificationsAsRead(session.token);
   }, [session]);
 
+  const deleteById = useCallback(
+    async (notificationId: string) => {
+      if (!session) {
+        return;
+      }
+
+      let previousNotifications: AppNotification[] = [];
+
+      setNotifications((currentNotifications) => {
+        previousNotifications = currentNotifications;
+        return currentNotifications.filter(
+          (notification) => notification.id !== notificationId
+        );
+      });
+
+      try {
+        await deleteNotification(session.token, notificationId);
+      } catch (deleteError) {
+        setNotifications(previousNotifications);
+        setError(
+          deleteError instanceof Error
+            ? deleteError.message
+            : "No pudimos borrar la notificacion."
+        );
+        throw deleteError;
+      }
+    },
+    [session]
+  );
+
+  const deleteAll = useCallback(async () => {
+    if (!session) {
+      return;
+    }
+
+    let previousNotifications: AppNotification[] = [];
+
+    setNotifications((currentNotifications) => {
+      previousNotifications = currentNotifications;
+      return [];
+    });
+
+    try {
+      await deleteAllNotifications(session.token);
+    } catch (deleteError) {
+      setNotifications(previousNotifications);
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "No pudimos borrar las notificaciones."
+      );
+      throw deleteError;
+    }
+  }, [session]);
+
   return {
+    deleteAll,
+    deleteById,
     error,
     isLoading,
     markAllAsRead,
