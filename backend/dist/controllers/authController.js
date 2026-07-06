@@ -46,55 +46,42 @@ export async function registerController(request, response) {
 }
 export async function googleLoginController(request, response) {
     const { idToken } = request.body;
-    if (!idToken?.trim())
-        return fail(response, 400, "idToken es requerido.");
+    if (!idToken)
+        return fail(response, 400, "El idToken de Google es requerido.");
     handleRegisterResult(await googleLogin(idToken), response, 200);
-}
-export function meController(request, response) {
-    response.json({ success: true, data: { user: request.user } });
 }
 export async function registerBusinessController(request, response) {
     const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName, ownerPhone } = request.body;
     if (!email || !password || !businessName || !businessAddress || !businessCategory || !ownerName) {
         return fail(response, 400, "Faltan campos requeridos: email, password, businessName, businessAddress, businessCategory, ownerName.");
     }
-    if (password.length < 6)
-        return fail(response, 400, "La contrasena debe tener al menos 6 caracteres.");
-    try {
-        handleRegisterResult(await registerBusiness({
-            email, password, businessName, businessAddress, businessCategory, businessCity, ownerName, ownerPhone
-        }), response, 201);
-    }
-    catch (err) {
-        fail(response, 500, "Error interno al crear el comercio. Revisá los logs del servidor.");
-    }
+    handleRegisterResult(await registerBusiness({
+        email, password, businessName, businessAddress, businessCategory, businessCity, ownerName, ownerPhone
+    }), response, 201);
 }
 export async function toggleBusinessActiveController(request, response) {
-    const { businessId, isActive } = request.body;
-    if (!businessId || typeof isActive !== "boolean") {
-        return fail(response, 400, "businessId e isActive (true/false) son requeridos.");
+    const { email, isActive } = request.body;
+    if (!email)
+        return fail(response, 400, "El email del comercio es requerido.");
+    if (typeof isActive !== "boolean")
+        return fail(response, 400, "isActive (boolean) es requerido.");
+    const user = await findUserByEmail(email.toLowerCase());
+    if (!user || user.role !== "business" || !user.businessId) {
+        return fail(response, 404, "No se encontro un comercio con ese email.");
     }
-    const ok = await setBusinessActive(businessId, isActive);
+    const ok = await setBusinessActive(user.businessId, isActive);
     if (!ok)
-        return fail(response, 404, "Comercio no encontrado.");
-    response.json({ success: true, data: { businessId, isActive, message: isActive ? "Comercio reactivado." : "Comercio suspendido." } });
+        return fail(response, 500, "No se pudo actualizar el estado del comercio.");
+    response.json({ success: true, data: { businessId: user.businessId, isActive } });
 }
 export async function resetPasswordController(request, response) {
     const { email } = request.body;
     const normalizedEmail = email?.trim().toLowerCase();
-    if (!normalizedEmail)
-        return fail(response, 400, "El correo electrónico es requerido.");
-    const user = await findUserByEmail(normalizedEmail);
-    if (!user)
-        return fail(response, 404, "No encontramos una cuenta registrada con ese correo.");
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: "foodsave://reset-password" });
-    if (error) {
-        const status = error.status === 429 ? 429 : 500;
-        const message = error.status === 429
-            ? "Se enviaron demasiados correos. Esperá unos minutos y volvé a intentar."
-            : "No se pudo enviar el correo de recuperación.";
-        return fail(response, status, message);
-    }
+    if (!email)
+        return fail(response, 400, "El email es requerido.");
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: "foodsave://reset-password"
+    });
     response.json({ success: true, data: { message: "Te enviamos un email con instrucciones para recuperar tu contraseña." } });
 }
 function isValidEmail(email) {
