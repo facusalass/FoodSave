@@ -14,9 +14,11 @@ export const OFFER_CATEGORIES = [
 
 export type OfferCategory = (typeof OFFER_CATEGORIES)[number];
 
+export const ALL_OFFERS_FILTER_LABEL = "Todos";
 export const MYSTERY_BOX_FILTER_LABEL = "Mystery Box";
 
 export type OfferCategoryFilter =
+  | { label: typeof ALL_OFFERS_FILTER_LABEL; type: "all"; value: string }
   | { label: OfferCategory; type: "category"; value: OfferCategory }
   | { label: typeof MYSTERY_BOX_FILTER_LABEL; type: "type"; value: OfferType };
 
