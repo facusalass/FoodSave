@@ -31,7 +31,7 @@ import {
 } from "../../src/utils/reservationStatus";
 
 type OrdersTab = "pending" | "confirmed";
-type OrderAction = "cancel" | "confirm";
+type OrderAction = "cancel" | "confirm" | "deliver";
 type OrderDialog =
   | { type: "cancel"; reservation: Reservation }
   | { message: string; title: string; type: "error" | "success" }
@@ -150,6 +150,12 @@ export default function BusinessOrdersScreen() {
           title: "Pago realizado",
           type: "success"
         });
+      } else if (status === "picked_up") {
+        setDialog({
+          message: "El pedido quedo marcado como entregado.",
+          title: "Pedido entregado",
+          type: "success"
+        });
       } else {
         setDialog({
           message: "El pedido fue cancelado y ya no aparece en activos.",
@@ -242,6 +248,13 @@ export default function BusinessOrdersScreen() {
                   "confirm"
                 );
               }}
+              onMarkDelivered={(nextReservation) => {
+                void handleUpdateReservation(
+                  nextReservation,
+                  "picked_up",
+                  "deliver"
+                );
+              }}
               reservation={reservation}
             />
           ))}
@@ -293,12 +306,14 @@ function OrderCard({
   currentTimestamp,
   onCancel,
   onConfirmPayment,
+  onMarkDelivered,
   reservation
 }: {
   actionState: { id: string; type: OrderAction } | null;
   currentTimestamp: number;
   onCancel: (reservation: Reservation) => void;
   onConfirmPayment: (reservation: Reservation) => void;
+  onMarkDelivered: (reservation: Reservation) => void;
   reservation: Reservation;
 }) {
   const { theme } = useTheme();
@@ -313,9 +328,11 @@ function OrderCard({
     remainingMilliseconds <= LOW_TIME_THRESHOLD_MS;
   const isExpired = remainingMilliseconds === 0;
   const isPending = reservation.status === "pending";
+  const isConfirmed = reservation.status === "confirmed_paid";
   const isActionLoading = actionState?.id === reservation.id;
   const isCancelling = isActionLoading && actionState?.type === "cancel";
   const isConfirming = isActionLoading && actionState?.type === "confirm";
+  const isDelivering = isActionLoading && actionState?.type === "deliver";
 
   return (
     <View style={styles.orderCard}>
@@ -323,7 +340,7 @@ function OrderCard({
         <Text style={styles.code}>#{getReservationCode(reservation)}</Text>
         <View style={styles.statusBadge}>
           <Text style={styles.statusText}>
-            {isPending ? "Pendiente" : "Confirmado"}
+            {getOrderStatusLabel(reservation.status)}
           </Text>
         </View>
       </View>
@@ -387,9 +404,44 @@ function OrderCard({
             )}
           </TouchableOpacity>
         </View>
+      ) : isConfirmed ? (
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={isActionLoading}
+            onPress={() => onMarkDelivered(reservation)}
+            style={[
+              styles.orderActionButton,
+              styles.deliverButton,
+              isActionLoading ? styles.actionButtonDisabled : null
+            ]}
+          >
+            {isDelivering ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.deliverButtonText}>Marcar como entregado</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       ) : null}
     </View>
   );
+}
+
+function getOrderStatusLabel(status: ReservationStatus) {
+  if (status === "pending") {
+    return "Pendiente";
+  }
+
+  if (status === "confirmed_paid") {
+    return "Confirmado";
+  }
+
+  if (status === "picked_up") {
+    return "Entregado";
+  }
+
+  return "Cancelado";
 }
 
 function getRemainingMillisecondsAt(
@@ -528,6 +580,14 @@ function createStyles(theme: AppColors) {
     backgroundColor: theme.primary
   },
   confirmButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  deliverButton: {
+    backgroundColor: theme.secondary
+  },
+  deliverButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "900"

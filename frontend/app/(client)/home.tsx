@@ -840,15 +840,20 @@ function createStyles(theme: AppColors) {
   },
   categoryChip: {
     alignItems: "center",
-    backgroundColor: theme.card,
-    borderColor: theme.border,
-    borderRadius: radii.sm,
+    backgroundColor: theme.background,
+    borderColor: `${theme.border}DD`,
+    borderRadius: radii.md,
     borderWidth: 1,
+    elevation: 1,
     justifyContent: "center",
     minHeight: 40,
     minWidth: 84,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.sm,
+    shadowColor: "#000000",
+    shadowOffset: { height: 1, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3
   },
   categoryDropdown: {
     backgroundColor: theme.card,
@@ -1053,25 +1058,32 @@ function createStyles(theme: AppColors) {
   },
   moreCategoryChip: {
     alignItems: "center",
-    backgroundColor: `${theme.primary}14`,
-    borderColor: `${theme.primary}55`,
-    borderRadius: radii.sm,
+    backgroundColor: theme.background,
+    borderColor: theme.border,
+    borderRadius: radii.md,
+    borderStyle: "dashed",
     borderWidth: 1,
+    elevation: 0,
     flexDirection: "row",
     gap: spacing.xs,
     justifyContent: "center",
     minHeight: 40,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.sm,
+    shadowColor: "#000000",
+    shadowOffset: { height: 1, width: 0 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2
   },
   moreCategoryChipActive: {
-    backgroundColor: `${theme.primary}22`
+    backgroundColor: `${theme.primary}0F`,
+    borderColor: `${theme.primary}66`
   },
   moreCategoryIconExpanded: {
     transform: [{ rotate: "180deg" }]
   },
   moreCategoryText: {
-    color: theme.primary,
+    color: theme.mutedText,
     fontSize: 12,
     fontWeight: "900"
   },
