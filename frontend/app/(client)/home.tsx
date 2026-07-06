@@ -395,7 +395,7 @@ export default function ClientHomeScreen() {
         ) : null}
 
         <View style={styles.categoryRow}>
-          {visibleCategoryFilters.map((filter) => {
+          {visibleCategoryFilters.map((filter, index) => {
             const isActive =
               filter.type === "all"
                 ? activeCategory === null
@@ -404,7 +404,7 @@ export default function ClientHomeScreen() {
             return (
               <TouchableOpacity
                 activeOpacity={0.85}
-                key={filter.label}
+                key={`${filter.type}-${filter.value}-${index}`}
                 onPress={() => handleCategorySelect(filter)}
                 style={[
                   styles.categoryChip,
@@ -475,10 +475,10 @@ export default function ClientHomeScreen() {
         />
       ) : (
         <View style={styles.list}>
-          {filteredOffers.map((offer) => (
+          {filteredOffers.map((offer, index) => (
             <OfferCard
               isFavorite={favoriteIds.has(offer.id)}
-              key={offer.id}
+              key={`${offer.id || offer.title}-${index}`}
               offer={offer}
               onFavoritePress={() => {
                 void handleFavoritePress(offer);
@@ -547,13 +547,13 @@ function CitySelectorModal({
             </Text>
           ) : (
             <View style={styles.cityList}>
-              {cities.map((city) => {
+              {cities.map((city, index) => {
                 const isSelected = city === selectedCity;
 
                 return (
                   <TouchableOpacity
                     activeOpacity={0.85}
-                    key={city}
+                    key={`${city}-${index}`}
                     onPress={() => onSelect(city)}
                     style={[
                       styles.cityOption,
