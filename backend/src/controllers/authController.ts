@@ -27,6 +27,10 @@ export async function loginController(request: Request, response: Response) {
   if (!email || !password) return fail(response, 400, "Email y contraseña son requeridos.");
 
   const session = await login(email, password);
+  if (session && "reason" in session && session.reason === "email_not_confirmed") {
+    return fail(response, 403, session.error);
+  }
+
   if (!session) return fail(response, 401, "Credenciales invalidas.");
 
   response.json({ success: true, data: session });

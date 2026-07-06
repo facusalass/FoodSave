@@ -31,6 +31,15 @@ function buildUserFromAuth(authUser: { id: string; email?: string | null; user_m
 export type RegisterResult = AuthSession & { user: PublicUser };
 export type RegisterError = { error: string };
 export type EmailConfirmationPending = { emailConfirmationRequired: true; message: string };
+export type LoginResult = AuthSession | { error: string; reason: "email_not_confirmed" } | null;
+
+function isEmailNotConfirmedError(message: string | undefined) {
+  const normalizedMessage = (message ?? "").toLowerCase();
+  return (
+    normalizedMessage.includes("email not confirmed") ||
+    normalizedMessage.includes("not confirmed")
+  );
+}
 
 export async function registerClient(params: {
   email: string;
@@ -76,7 +85,7 @@ export async function registerClient(params: {
 export async function login(
   email: string,
   password: string
-): Promise<AuthSession | null> {
+): Promise<LoginResult> {
   const normalizedEmail = email.trim().toLowerCase();
 
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -89,6 +98,13 @@ export async function login(
     return {
       token: data.session.access_token,
       user: user ? toPublicUser(user) : buildUserFromAuth(data.user, email, "client")
+    };
+  }
+
+  if (isEmailNotConfirmedError(error?.message)) {
+    return {
+      error: "Tu correo electronico todavia no esta verificado. Revisá tu email para confirmar la cuenta antes de iniciar sesión.",
+      reason: "email_not_confirmed"
     };
   }
 

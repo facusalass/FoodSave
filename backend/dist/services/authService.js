@@ -27,6 +27,11 @@ function buildUserFromAuth(authUser, fallbackName, fallbackRole) {
         createdAt: authUser.created_at ?? new Date().toISOString()
     };
 }
+function isEmailNotConfirmedError(message) {
+    const normalizedMessage = (message ?? "").toLowerCase();
+    return (normalizedMessage.includes("email not confirmed") ||
+        normalizedMessage.includes("not confirmed"));
+}
 export async function registerClient(params) {
     const { email, password } = params;
     const already = await findUserByEmail(email.toLowerCase());
@@ -67,6 +72,12 @@ export async function login(email, password) {
         return {
             token: data.session.access_token,
             user: user ? toPublicUser(user) : buildUserFromAuth(data.user, email, "client")
+        };
+    }
+    if (isEmailNotConfirmedError(error?.message)) {
+        return {
+            error: "Tu correo electronico todavia no esta verificado. Revisá tu email para confirmar la cuenta antes de iniciar sesión.",
+            reason: "email_not_confirmed"
         };
     }
     const user = await findUserByEmail(normalizedEmail);
