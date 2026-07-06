@@ -4,7 +4,9 @@ import {
   Clock,
   Heart,
   MapPin,
-  PackageCheck
+  Minus,
+  PackageCheck,
+  Plus
 } from "lucide-react-native";
 import { useCallback, useState, type ReactNode } from "react";
 import {
@@ -68,6 +70,7 @@ export default function OfferDetailScreen() {
     useState<ClientProfileValidationErrors>({});
   const [imageFailed, setImageFailed] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
 
   const loadOffer = useCallback(async (showLoader = true) => {
     if (!id) {
@@ -87,6 +90,9 @@ export default function OfferDetailScreen() {
 
       const nextOffer = await getOfferById(id);
       setOffer(nextOffer);
+      setSelectedQuantity((currentQuantity) =>
+        clampQuantity(currentQuantity, nextOffer.stock)
+      );
       setImageFailed(false);
       setLogoFailed(false);
 
@@ -168,7 +174,12 @@ export default function OfferDetailScreen() {
       return;
     }
 
-    const nextReservation = await createReservation(session.token, offer.id);
+    const quantity = clampQuantity(selectedQuantity, offer.stock);
+    const nextReservation = await createReservation(
+      session.token,
+      offer.id,
+      quantity
+    );
     router.replace({
       pathname: "/(client)/reservation-confirmed",
       params: { reservationId: nextReservation.id }
@@ -284,6 +295,9 @@ export default function OfferDetailScreen() {
   const showImage = Boolean(imageUri && !imageFailed);
   const showLogo = Boolean(logoUri && !logoFailed);
   const discountPercentage = getDiscountPercentage(offer.oldPrice, offer.newPrice);
+  const selectedTotal = offer.newPrice * selectedQuantity;
+  const canDecreaseQuantity = selectedQuantity > 1 && !isReserving;
+  const canIncreaseQuantity = selectedQuantity < offer.stock && !isReserving;
 
   return (
     <ScreenContainer
@@ -387,6 +401,58 @@ export default function OfferDetailScreen() {
         />
       </View>
 
+      <View style={styles.quantityCard}>
+        <View style={styles.quantityTextBlock}>
+          <Text style={styles.quantityTitle}>Cantidad</Text>
+          <Text style={styles.quantitySubtitle}>
+            Elegí hasta {offer.stock} disponibles
+          </Text>
+        </View>
+        <View style={styles.quantityControl}>
+          <TouchableOpacity
+            accessibilityLabel="Restar cantidad"
+            accessibilityRole="button"
+            activeOpacity={0.85}
+            disabled={!canDecreaseQuantity}
+            onPress={() => {
+              setSelectedQuantity((currentQuantity) =>
+                Math.max(1, currentQuantity - 1)
+              );
+            }}
+            style={[
+              styles.quantityButton,
+              !canDecreaseQuantity ? styles.quantityButtonDisabled : null
+            ]}
+          >
+            <Minus color={theme.text} size={18} />
+          </TouchableOpacity>
+          <Text style={styles.quantityValue}>{selectedQuantity}</Text>
+          <TouchableOpacity
+            accessibilityLabel="Sumar cantidad"
+            accessibilityRole="button"
+            activeOpacity={0.85}
+            disabled={!canIncreaseQuantity}
+            onPress={() => {
+              setSelectedQuantity((currentQuantity) =>
+                Math.min(offer.stock, currentQuantity + 1)
+              );
+            }}
+            style={[
+              styles.quantityButton,
+              !canIncreaseQuantity ? styles.quantityButtonDisabled : null
+            ]}
+          >
+            <Plus color={theme.text} size={18} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.quantityTotalRow}>
+          <Text style={styles.quantityTotalLabel}>Total</Text>
+          <Text style={styles.quantityTotalValue}>
+            {formatCurrency(selectedTotal)}
+          </Text>
+        </View>
+      </View>
+
       <View style={styles.allergensCard}>
         <Text style={styles.infoLabel}>Alergenos</Text>
         <Text style={styles.infoValue}>
@@ -448,7 +514,11 @@ export default function OfferDetailScreen() {
       <PrimaryButton
         disabled={offer.stock < 1 || profilePromptVisible}
         isLoading={isReserving}
-        label={offer.stock < 1 ? "SIN CUPOS" : "RESERVAR"}
+        label={
+          offer.stock < 1
+            ? "SIN CUPOS"
+            : `RESERVAR ${selectedQuantity} ${selectedQuantity === 1 ? "UNIDAD" : "UNIDADES"}`
+        }
         onPress={handleReserve}
       />
     </ScreenContainer>
@@ -478,6 +548,14 @@ function getDiscountPercentage(oldPrice: number, newPrice: number) {
   }
 
   return Math.round(((oldPrice - newPrice) / oldPrice) * 100);
+}
+
+function clampQuantity(quantity: number, stock: number) {
+  if (stock < 1) {
+    return 1;
+  }
+
+  return Math.min(Math.max(1, quantity), stock);
 }
 
 function InfoItem({
@@ -669,6 +747,71 @@ function createStyles(theme: AppColors) {
     flexDirection: "row",
     gap: spacing.md,
     marginBottom: spacing.md
+  },
+  quantityButton: {
+    alignItems: "center",
+    backgroundColor: theme.subtleSurface,
+    borderColor: theme.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    height: 38,
+    justifyContent: "center",
+    width: 38
+  },
+  quantityButtonDisabled: {
+    opacity: 0.42
+  },
+  quantityCard: {
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md
+  },
+  quantityControl: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md
+  },
+  quantitySubtitle: {
+    color: theme.mutedText,
+    fontSize: 13,
+    fontWeight: "700"
+  },
+  quantityTextBlock: {
+    gap: spacing.xs
+  },
+  quantityTitle: {
+    color: theme.text,
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  quantityTotalLabel: {
+    color: theme.mutedText,
+    fontSize: 13,
+    fontWeight: "800"
+  },
+  quantityTotalRow: {
+    alignItems: "center",
+    borderTopColor: theme.border,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingTop: spacing.md
+  },
+  quantityTotalValue: {
+    color: theme.primary,
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  quantityValue: {
+    color: theme.text,
+    fontSize: 20,
+    fontWeight: "900",
+    minWidth: 34,
+    textAlign: "center"
   },
   profilePrompt: {
     backgroundColor: theme.card,

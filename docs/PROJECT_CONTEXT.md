@@ -160,7 +160,7 @@ npx expo start -c
 - `Explorar` consume `GET /offers` mediante `frontend/src/services/offerService.ts`.
 - Las cards y el detalle de oferta muestran `logoUrl` del comercio cuando el backend lo incluye en las ofertas enriquecidas.
 - `Mis reservas` consume `GET /reservations` mediante `frontend/src/services/reservationService.ts` usando el token de sesion.
-- El detalle de oferta permite crear una reserva real con `POST /reservations`; la reserva queda en estado `pending`, descuenta un cupo de la oferta y luego aparece en `Mis reservas`.
+- El detalle de oferta permite elegir cantidad segun stock disponible y crear una reserva real con `POST /reservations`; la reserva queda en estado `pending`, descuenta los cupos reservados y luego aparece en `Mis reservas`.
 - El menu lateral cliente esta en `ClientSideMenu` y deja disponible `Cerrar sesion`, `Favoritos` y `Ayuda`.
 - `Perfil` consume `GET /client/profile` y guarda cambios con `PUT /client/profile`. El cliente puede editar `name`, `phone`, `city` y `address`; el email queda solo lectura y no se permite editar role, password ni datos sensibles desde la app.
 
@@ -247,7 +247,7 @@ npx expo start -c
 - Despues de acciones criticas se fuerza recarga de la lista correspondiente para evitar datos viejos: publicar oferta, editar oferta, ocultar/mostrar publicacion, reservar, cancelar reserva y confirmar pago.
 - En Pedidos del comercio, una reserva `confirmed_paid` puede marcarse como entregada usando el estado backend existente `picked_up`; la UI muestra ese estado como `Entregado` o `Retirado`.
 - `Estadisticas` calcula el mes actual con datos reales de `GET /reservations` y `GET /business/offers`: ingresos, cajas vendidas, cancelados, ventas por semana y top publicaciones; comida salvada queda en `-- KG` si las ofertas no tienen `estimatedWeightInKg`.
-- La campanita del comercio abre un modal conectado a `GET /notifications` y permite borrar una notificacion o limpiar todas.
+- La campanita del comercio abre un modal conectado a `GET /notifications`, muestra la lista completa con scroll y permite borrar una notificacion o limpiar todas.
 - La pantalla `frontend/app/(business)/orders.tsx` muestra una lista basica de pedidos usando reservas existentes.
 - No se toca backend para esta fase.
 

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -139,18 +140,23 @@ export function BusinessNotificationsModal({
                 </Text>
               </View>
             ) : (
-              notifications.slice(0, 3).map((notification) => (
-                <NotificationRow
-                  key={notification.id}
-                  isDeleting={deletingNotificationId === notification.id}
-                  notification={notification}
-                  onDelete={() => {
-                    void handleDeleteNotification(notification.id);
-                  }}
-                  theme={theme}
-                  styles={styles}
-                />
-              ))
+              <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {notifications.map((notification) => (
+                  <NotificationRow
+                    key={notification.id}
+                    isDeleting={deletingNotificationId === notification.id}
+                    notification={notification}
+                    onDelete={() => {
+                      void handleDeleteNotification(notification.id);
+                    }}
+                    theme={theme}
+                    styles={styles}
+                  />
+                ))}
+              </ScrollView>
             )}
           </View>
 
@@ -327,6 +333,9 @@ function createStyles(theme: AppColors) {
     gap: spacing.md,
     minHeight: 69,
     paddingHorizontal: spacing.md
+  },
+  scrollContent: {
+    paddingBottom: spacing.lg
   },
   title: {
     color: theme.text,
