@@ -409,6 +409,22 @@ function OrderCard({
           <TouchableOpacity
             activeOpacity={0.85}
             disabled={isActionLoading}
+            onPress={() => onCancel(reservation)}
+            style={[
+              styles.orderActionButton,
+              styles.cancelButton,
+              isActionLoading ? styles.actionButtonDisabled : null
+            ]}
+          >
+            {isCancelling ? (
+              <ActivityIndicator color={theme.text} />
+            ) : (
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={isActionLoading}
             onPress={() => onMarkDelivered(reservation)}
             style={[
               styles.orderActionButton,
