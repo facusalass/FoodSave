@@ -183,12 +183,19 @@ export default function BusinessDashboardScreen() {
               accent="primary"
               icon={<BarChart3 color={theme.primary} size={22} />}
               label="Ofertas Activas"
+              onPress={() =>
+                router.push({
+                  pathname: "/(business)/store",
+                  params: { tab: "publications" }
+                })
+              }
               value={String(activeOffersCount)}
             />
             <MetricCard
               accent="secondary"
               icon={<Store color={theme.secondaryDark} size={22} />}
               label="Reservas Hoy"
+              onPress={() => router.push("/(business)/orders")}
               value={String(todayReservationsCount)}
             />
           </View>
@@ -241,11 +248,13 @@ function MetricCard({
   accent,
   icon,
   label,
+  onPress,
   value
 }: {
   accent: "primary" | "secondary";
   icon: ReactNode;
   label: string;
+  onPress: () => void;
   value: string;
 }) {
   const { theme } = useTheme();
@@ -254,7 +263,12 @@ function MetricCard({
     accent === "primary" ? theme.primary : theme.secondaryDark;
 
   return (
-    <View style={styles.metricCard}>
+    <TouchableOpacity
+      accessibilityRole="button"
+      activeOpacity={0.86}
+      onPress={onPress}
+      style={styles.metricCard}
+    >
       <View
         style={[
           styles.metricIcon,
@@ -265,7 +279,7 @@ function MetricCard({
       </View>
       <Text style={styles.metricLabel}>{label}</Text>
       <Text style={styles.metricValue}>{value}</Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
