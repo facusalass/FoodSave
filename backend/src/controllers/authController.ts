@@ -63,6 +63,11 @@ export async function googleLoginController(request: Request, response: Response
   handleRegisterResult(await googleLogin(idToken), response, 200);
 }
 
+// isAuth valida el token antes de llegar aqui y deja el usuario en request.user.
+export function meController(request: Request, response: Response) {
+  response.json({ success: true, data: { user: request.user } });
+}
+
 export async function registerBusinessController(request: Request, response: Response) {
   const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName, ownerPhone } = request.body as {
     email?: string; password?: string; businessName?: string; businessAddress?: string;
@@ -103,7 +108,7 @@ export async function resetPasswordController(request: Request, response: Respon
   const { email } = request.body as { email?: string };
   const normalizedEmail = email?.trim().toLowerCase();
 
-  if (!email) return fail(response, 400, "El email es requerido.");
+  if (!normalizedEmail) return fail(response, 400, "El email es requerido.");
 
   const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
     redirectTo: "foodsave://reset-password"
