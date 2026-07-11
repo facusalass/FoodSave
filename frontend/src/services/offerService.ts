@@ -116,6 +116,13 @@ export async function updateBusinessOffer(
   return response.offer;
 }
 
+export async function deleteBusinessOffer(token: string, offerId: string) {
+  await apiRequest<{ message: string }>(`/business/offers/${offerId}`, {
+    method: "DELETE",
+    token
+  });
+}
+
 export async function getBusinessProfile(token: string) {
   const response = await apiRequest<{ business: BusinessProfile }>(
     "/business/profile",

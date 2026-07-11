@@ -11,6 +11,7 @@ import {
   Pencil,
   Plus,
   Sun,
+  Trash2,
   Upload,
   X
 } from "lucide-react-native";
@@ -35,6 +36,7 @@ import { type AppColors, radii, spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import {
+  deleteBusinessOffer,
   getBusinessOffers,
   getBusinessProfile,
   updateBusinessOfferVisibility,
@@ -78,6 +80,7 @@ export default function BusinessStoreScreen() {
   const [visibilityLoadingId, setVisibilityLoadingId] = useState<string | null>(
     null
   );
+  const [deletingOfferId, setDeletingOfferId] = useState<string | null>(null);
 
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
@@ -369,7 +372,7 @@ export default function BusinessStoreScreen() {
   }
 
   async function handleToggleVisibility(offer: Offer) {
-    if (!session || visibilityLoadingId) {
+    if (!session || visibilityLoadingId || deletingOfferId) {
       return;
     }
 
@@ -391,6 +394,47 @@ export default function BusinessStoreScreen() {
       Alert.alert("No pudimos actualizar", message);
     } finally {
       setVisibilityLoadingId(null);
+    }
+  }
+
+  function confirmDeleteOffer(offer: Offer) {
+    if (!session || deletingOfferId || visibilityLoadingId) {
+      return;
+    }
+
+    Alert.alert(
+      "Eliminar publicacion",
+      `Vas a eliminar "${offer.title}" de forma permanente.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => {
+            void handleDeleteOffer(offer);
+          }
+        }
+      ]
+    );
+  }
+
+  async function handleDeleteOffer(offer: Offer) {
+    if (!session) {
+      return;
+    }
+
+    try {
+      setDeletingOfferId(offer.id);
+      await deleteBusinessOffer(session.token, offer.id);
+      await loadOffers(false);
+    } catch (deleteError) {
+      const message =
+        deleteError instanceof Error
+          ? deleteError.message
+          : "No pudimos eliminar la publicacion.";
+      Alert.alert("No pudimos eliminar", message);
+    } finally {
+      setDeletingOfferId(null);
     }
   }
 
@@ -730,8 +774,10 @@ export default function BusinessStoreScreen() {
               {sortOffersByStock(offers).map((offer) => (
                 <PublicationCard
                   key={offer.id}
+                  isDeleting={deletingOfferId === offer.id}
                   isUpdatingVisibility={visibilityLoadingId === offer.id}
                   offer={offer}
+                  onDeletePress={confirmDeleteOffer}
                   onEditPress={(selectedOffer) =>
                     router.push({
                       pathname: "/(business)/edit-offer/[id]",
@@ -924,13 +970,17 @@ function Chip({ accent, label }: { accent?: "primary"; label: string }) {
 }
 
 function PublicationCard({
+  isDeleting,
   isUpdatingVisibility,
   offer,
+  onDeletePress,
   onEditPress,
   onToggleVisibility
 }: {
+  isDeleting: boolean;
   isUpdatingVisibility: boolean;
   offer: Offer;
+  onDeletePress: (offer: Offer) => void;
   onEditPress: (offer: Offer) => void;
   onToggleVisibility: (offer: Offer) => void;
 }) {
@@ -987,11 +1037,14 @@ function PublicationCard({
       </View>
       <View style={styles.publicationActions}>
         <IconButton
+          accessibilityLabel="Editar publicacion"
+          disabled={isDeleting || isUpdatingVisibility}
           icon={<Pencil color={theme.text} size={20} />}
           onPress={() => onEditPress(offer)}
         />
         <IconButton
-          disabled={isUpdatingVisibility}
+          accessibilityLabel={isHidden ? "Mostrar publicacion" : "Ocultar publicacion"}
+          disabled={isDeleting || isUpdatingVisibility}
           icon={
             isUpdatingVisibility ? (
               <ActivityIndicator color={theme.primary} size="small" />
@@ -1003,16 +1056,30 @@ function PublicationCard({
           }
           onPress={() => onToggleVisibility(offer)}
         />
+        <IconButton
+          accessibilityLabel="Eliminar publicacion"
+          disabled={isDeleting || isUpdatingVisibility}
+          icon={
+            isDeleting ? (
+              <ActivityIndicator color={theme.danger} size="small" />
+            ) : (
+              <Trash2 color={theme.danger} size={20} />
+            )
+          }
+          onPress={() => onDeletePress(offer)}
+        />
       </View>
     </View>
   );
 }
 
 function IconButton({
+  accessibilityLabel,
   disabled,
   icon,
   onPress
 }: {
+  accessibilityLabel?: string;
   disabled?: boolean;
   icon: ReactNode;
   onPress: () => void;
@@ -1022,6 +1089,8 @@ function IconButton({
 
   return (
     <TouchableOpacity
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
       activeOpacity={0.85}
       disabled={disabled}
       onPress={onPress}
