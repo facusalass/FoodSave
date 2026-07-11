@@ -15,6 +15,7 @@ export const authRoutes = Router();
 
 authRoutes.post("/google", googleLoginController);
 authRoutes.post("/register", registerController);
+// Recibe POST /auth/login y lo deriva al controller de login.
 authRoutes.post("/login", loginController);
 authRoutes.post("/register-business", requireApiKey, registerBusinessController);
 authRoutes.patch("/register-business/toggle-active", requireApiKey, toggleBusinessActiveController);

@@ -27,6 +27,7 @@ app.use((_req, res, next) => {
   }
   next();
 });
+// Permite leer el JSON enviado por el frontend en request.body.
 app.use(express.json());
 
 app.get("/health", (_request, response) => {
@@ -37,6 +38,7 @@ app.get("/", (_request, response) => {
   response.json({ success: true, data: { message: "FoodSave API corriendo", docs: "/health", version: "1.0.0" } });
 });
 
+// POST /auth/login entra aqui y continua en authRoutes.
 app.use("/auth", authRoutes);
 app.use("/client/profile", clientProfileRoutes);
 app.use("/offers", offerRoutes);

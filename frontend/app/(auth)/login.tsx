@@ -26,17 +26,23 @@ import { useTheme } from "../../src/context/ThemeContext";
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
+  // Router permite navegar despues de iniciar sesion.
   const router = useRouter();
+  // Traemos acciones y estado global de auth desde AuthContext.
   const { login, loginWithGoogle, session, isLoading } = useAuth();
   const { isDark, theme } = useTheme();
   const styles = createStyles(theme, isDark);
+  // Estados del formulario de email y password.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Errores visibles debajo de los inputs o del formulario.
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Loadings separados para login normal y login con Google.
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  // Prepara el flujo de Google y devuelve la respuesta cuando el usuario termina.
   const [googleRequest, googleResponse, promptGoogleAuth] =
     Google.useIdTokenAuthRequest({
       androidClientId: googleAuthConfig.androidClientId,
@@ -48,15 +54,18 @@ export default function LoginScreen() {
 
   useEffect(() => {
     async function finishGoogleLogin() {
+      // Si Google todavia no respondio, no hacemos nada.
       if (!googleResponse) {
         return;
       }
 
+      // Si el usuario cancela o falla Google, apagamos el loading.
       if (googleResponse.type !== "success") {
         setIsGoogleSubmitting(false);
         return;
       }
 
+      // Google devuelve un idToken; nuestro backend lo valida despues.
       const idToken = googleResponse.params.id_token;
 
       if (!idToken) {
@@ -66,7 +75,9 @@ export default function LoginScreen() {
       }
 
       try {
+        // AuthContext manda el idToken al backend y guarda la sesion recibida.
         const nextSession = await loginWithGoogle(idToken);
+        // Redirigimos segun el rol que vino en la sesion.
         router.replace(getHomeRoute(nextSession.user.role));
       } catch (googleError) {
         const message =
@@ -78,14 +89,16 @@ export default function LoginScreen() {
         setIsGoogleSubmitting(false);
       }
     }
-
+  // Llamamos a finishGoogleLogin cada vez que googleResponse cambia.
     void finishGoogleLogin();
   }, [googleResponse, loginWithGoogle, router]);
 
+  // Mientras AuthContext restaura sesion, mostramos splash.
   if (isLoading) {
     return <SplashLoading />;
   }
 
+  // Si ya hay sesion, no dejamos al usuario en la pantalla de login.
   if (session?.user.role === "client") {
     return <Redirect href="/(client)/home" />;
   }
@@ -94,27 +107,36 @@ export default function LoginScreen() {
     return <Redirect href="/(business)/dashboard" />;
   }
 
+  // Flujo de login, sin google.
   async function handleLogin() {
+    // Limpiamos errores anteriores antes de validar de nuevo.
     setError(null);
     setEmailError(null);
     setPasswordError(null);
 
+    // Normalizamos y validamos campos antes de llamar al backend.
     const nextEmail = email.trim();
     const nextEmailError = getEmailError(nextEmail);
     const nextPasswordError = password ? null : "Ingresá tu contraseña.";
 
+    //Solo se setea si hay un error, si no queda null
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
 
+    // Si el formulario esta incompleto, cortamos aca.
     if (nextEmailError || nextPasswordError) {
       return;
     }
 
     setIsSubmitting(true);
 
+    //Intenta loguear
     try {
+      // AuthContext hace el login, valida la sesion y la guarda.
       const nextSession = await login(nextEmail, password);
+      // Despues del login, entramos al home correspondiente al rol.
       router.replace(getHomeRoute(nextSession.user.role));
+      //Si algo fallo dentro del try
     } catch (loginError) {
       const message =
         loginError instanceof Error
@@ -127,23 +149,28 @@ export default function LoginScreen() {
   }
 
   async function handleGoogleLogin() {
+    // Limpiamos errores antes de iniciar el flujo externo de Google.
     setError(null);
     setEmailError(null);
     setPasswordError(null);
 
+    // Si faltan client IDs, Google Login no puede arrancar.
     if (!hasGoogleClientId()) {
       setError("Google Login no esta configurado en la app.");
       return;
     }
 
+    // googleRequest puede tardar un poco en prepararse.
     if (!googleRequest) {
       setError("Google Login todavia se esta preparando. Intenta de nuevo.");
       return;
     }
 
     setIsGoogleSubmitting(true);
+    // Abre el flujo de Google; la respuesta se procesa en el useEffect.
     const result = await promptGoogleAuth();
 
+    // Si no fue exitoso, no habra sesion para guardar.
     if (result.type !== "success") {
       setIsGoogleSubmitting(false);
     }

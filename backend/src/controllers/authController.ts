@@ -21,11 +21,16 @@ function handleRegisterResult(result: object, response: Response, successStatus:
   response.status(successStatus).json({ success: true, data: result });
 }
 
+// Recibe email/password, delega la validacion y devuelve la sesion al frontend.
 export async function loginController(request: Request, response: Response) {
+  // Datos que llegaron desde el frontend en el body JSON.
   const { email, password } = request.body as { email?: string; password?: string };
+
+  // Si falta algun campo, respondemos 400 sin consultar Supabase.
 
   if (!email || !password) return fail(response, 400, "Email y contraseña son requeridos.");
 
+  // El service valida las credenciales con Supabase y devuelve sesion o null.
   const session = await login(email, password);
   if (session && "reason" in session && session.reason === "email_not_confirmed") {
     return fail(response, 403, session.error);
@@ -33,6 +38,7 @@ export async function loginController(request: Request, response: Response) {
 
   if (!session) return fail(response, 401, "Credenciales invalidas.");
 
+  // Respuesta exitosa: { success, data: { token, user } }.
   response.json({ success: true, data: session });
 }
 
