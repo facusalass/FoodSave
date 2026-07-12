@@ -1,9 +1,11 @@
+// apiRequest agrega headers, token y realiza la request HTTP al backend.
 import { apiRequest } from "./apiClient";
 import type {
   Reservation,
   ReservationStatus
 } from "../types/reservation";
 
+// Forma flexible de respuesta: el backend puede devolver una lista directa o paginada.
 type ReservationsResponse = {
   reservations?:
     | Reservation[]
@@ -17,6 +19,7 @@ type ReservationsResponse = {
   items?: Reservation[];
 };
 
+// Parametros opcionales para pedir una pagina concreta de reservas.
 type GetReservationsOptions = {
   page?: number;
   limit?: number;
@@ -30,15 +33,18 @@ export type ReservationsPage = {
   totalPages: number;
 };
 
+// READ: trae todas las reservas disponibles para el usuario autenticado.
 export async function getReservations(
   token: string,
   options: GetReservationsOptions = {}
 ) {
+  // GET /reservations con el token del cliente o comercio.
   const response = await apiRequest<ReservationsResponse>(
     buildReservationsPath(options),
     { token }
   );
 
+  // Adaptamos las distintas formas de respuesta a una sola lista para las pantallas.
   if (Array.isArray(response.reservations)) {
     return response.reservations;
   }
@@ -54,6 +60,7 @@ export async function getReservations(
   return [];
 }
 
+// READ paginado: devuelve items y metadatos como pagina, total y limite.
 export async function getReservationsPage(
   token: string,
   options: GetReservationsOptions = {}
@@ -103,6 +110,7 @@ export async function getReservationsPage(
 }
 
 function buildReservationsPath(options: GetReservationsOptions) {
+  // Convierte page y limit en query params: /reservations?page=1&limit=20.
   const queryParams = new URLSearchParams();
 
   if (options.page) {
@@ -118,6 +126,7 @@ function buildReservationsPath(options: GetReservationsOptions) {
     : "/reservations";
 }
 
+// CREATE: crea una reserva para una oferta y una cantidad elegida por el cliente.
 export async function createReservation(
   token: string,
   offerId: string,
@@ -126,6 +135,7 @@ export async function createReservation(
   const response = await apiRequest<{ reservation: Reservation }>(
     "/reservations",
     {
+      // El backend valida stock y crea la reserva con estos dos datos.
       body: JSON.stringify({ offerId, quantity }),
       method: "POST",
       token
@@ -135,6 +145,7 @@ export async function createReservation(
   return response.reservation;
 }
 
+// UPDATE parcial: el comercio cambia el estado de una reserva existente.
 export async function updateReservationStatus(
   token: string,
   reservationId: string,

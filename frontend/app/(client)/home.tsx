@@ -47,10 +47,12 @@ const COLLAPSED_CATEGORY_CHIP_COUNT = 5;
 
 export default function ClientHomeScreen() {
   const router = useRouter();
+  // La sesion aporta el token para favoritos y logout; las ofertas publicas no lo necesitan.
   const { logout, session } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const sessionToken = session?.token;
+  // Lista base que llega del backend antes de aplicar busqueda o categoria en pantalla.
   const [offers, setOffers] = useState<Offer[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [cities, setCities] = useState<string[]>([]);
@@ -68,11 +70,13 @@ export default function ClientHomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
 
+  // READ publico: offerService -> apiClient -> GET /offers?city=... -> backend.
   const loadOffersForCity = useCallback(async (city: string | null) => {
     const nextOffers = await getOffers({ city });
     setOffers(sortOffersByStock(nextOffers));
   }, []);
 
+  // Los favoritos requieren sesion porque pertenecen al cliente que inicio sesion.
   const loadFavorites = useCallback(async () => {
     if (!sessionToken) {
       setFavoriteIds(new Set());
@@ -91,6 +95,7 @@ export default function ClientHomeScreen() {
     }
   }, [sessionToken]);
 
+  // Al abrir Home cargamos las ciudades, elegimos una por defecto y pedimos sus ofertas.
   useEffect(() => {
     let isMounted = true;
 
@@ -98,6 +103,7 @@ export default function ClientHomeScreen() {
       try {
         setError(null);
         setIsLoading(true);
+        // cityService trae las ciudades disponibles desde el backend.
         const nextCities = await getCities();
 
         if (!isMounted) {
@@ -106,10 +112,12 @@ export default function ClientHomeScreen() {
 
         setCities(nextCities);
 
+        // Si existe Resistencia se usa primero; si no, usamos la primera ciudad disponible.
         const initialCity = getFallbackCity(nextCities);
         setSelectedCity(initialCity);
         setLocationHint(null);
 
+        // getOffers devuelve las ofertas publicas visibles para la ciudad seleccionada.
         const nextOffers = await getOffers({ city: initialCity });
 
         if (!isMounted) {
@@ -160,6 +168,7 @@ export default function ClientHomeScreen() {
     };
   }, [sessionToken]);
 
+  // Recarga ofertas y favoritos juntos al volver a Home o al deslizar para actualizar.
   const refreshHomeData = useCallback(async () => {
     if (!selectedCity) {
       return;
@@ -180,6 +189,7 @@ export default function ClientHomeScreen() {
     }
   }, [loadFavorites, loadOffersForCity, selectedCity]);
 
+  // La pantalla se actualiza al recibir el foco, por ejemplo al volver desde el detalle.
   useFocusEffect(
     useCallback(() => {
       void refreshHomeData();
@@ -195,6 +205,7 @@ export default function ClientHomeScreen() {
     }
   }, [refreshHomeData]);
 
+  // Filtro local: no vuelve a pedir al backend cuando el usuario busca o elige categoria.
   const filteredOffers = useMemo(() => {
     const normalizedSearch = normalize(searchQuery);
 
@@ -211,6 +222,7 @@ export default function ClientHomeScreen() {
     }));
   }, [activeCategory, offers, searchQuery]);
 
+  // Mostramos solo categorias que tienen al menos una oferta con stock en esta ciudad.
   const availableCategoryFilters = useMemo<OfferCategoryFilter[]>(() => {
     const inStockOffers = offers.filter((offer) => offer.stock > 0);
     const availableCategories = new Set<OfferCategory>();
@@ -318,6 +330,7 @@ export default function ClientHomeScreen() {
     router.replace("/(auth)/login");
   }
 
+  // Al elegir otra ciudad, actualizamos el estado y pedimos sus ofertas al backend.
   async function handleCitySelect(city: string) {
     setIsCityModalVisible(false);
     setSelectedCity(city);
@@ -339,6 +352,7 @@ export default function ClientHomeScreen() {
     }
   }
 
+  // Usa GPS para relacionar la ubicacion del celular con una ciudad disponible en la app.
   async function handleUseLocationPress() {
     try {
       setError(null);
@@ -367,6 +381,7 @@ export default function ClientHomeScreen() {
     }
   }
 
+  // Actualiza el corazon primero en pantalla y luego confirma el cambio con el backend.
   async function handleFavoritePress(offer: Offer) {
     if (!session) {
       setFavoriteError("Necesitas iniciar sesion para guardar favoritos.");
@@ -386,6 +401,7 @@ export default function ClientHomeScreen() {
         await removeFavorite(session.token, offer.id);
       }
     } catch {
+      // Si falla, revertimos el cambio local para que la pantalla siga siendo consistente.
       setFavoriteIds((currentFavoriteIds) =>
         toggleFavoriteId(currentFavoriteIds, offer.id, !nextIsFavorite)
       );
@@ -615,6 +631,7 @@ export default function ClientHomeScreen() {
               onFavoritePress={() => {
                 void handleFavoritePress(offer);
               }}
+              // El id identifica la oferta que se abre en la pantalla de detalle.
               onPress={() => router.push(`/(client)/offer/${offer.id}`)}
             />
           ))}
@@ -720,6 +737,7 @@ async function detectCurrentCity(cities: string[]) {
   }
 
   try {
+    // El celular pide permiso antes de acceder a la ubicacion actual del usuario.
     const permission = await Location.requestForegroundPermissionsAsync();
 
     if (permission.status !== "granted") {
@@ -732,6 +750,7 @@ async function detectCurrentCity(cities: string[]) {
     const position = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced
     });
+    // Convierte coordenadas GPS en una ciudad y la compara con las ciudades disponibles.
     const geocodeResults = await Location.reverseGeocodeAsync({
       latitude: position.coords.latitude,
       longitude: position.coords.longitude

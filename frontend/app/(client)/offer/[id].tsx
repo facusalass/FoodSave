@@ -47,7 +47,9 @@ import {
 
 export default function OfferDetailScreen() {
   const router = useRouter();
+  // El id viene desde Home: /(client)/offer/[id]. Identifica la oferta a mostrar.
   const { id } = useLocalSearchParams<{ id: string }>();
+  // La sesion aporta el token para reservar, favoritos y actualizar el perfil del cliente.
   const { session, updateSessionUser } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -72,6 +74,7 @@ export default function OfferDetailScreen() {
   const [logoFailed, setLogoFailed] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
 
+  // READ publico: busca una sola oferta con GET /offers/:id.
   const loadOffer = useCallback(async (showLoader = true) => {
     if (!id) {
       setIsLoading(false);
@@ -88,8 +91,10 @@ export default function OfferDetailScreen() {
         setIsRefreshing(true);
       }
 
+      // offerService -> apiClient -> backend. La respuesta completa los datos de la pantalla.
       const nextOffer = await getOfferById(id);
       setOffer(nextOffer);
+      // Si el stock cambio, ajustamos la cantidad seleccionada para no superar el disponible.
       setSelectedQuantity((currentQuantity) =>
         clampQuantity(currentQuantity, nextOffer.stock)
       );
@@ -121,6 +126,7 @@ export default function OfferDetailScreen() {
     }
   }, [id, sessionToken]);
 
+  // Al volver a esta pantalla, recargamos la oferta para tener stock y favoritos actualizados.
   useFocusEffect(
     useCallback(() => {
       void loadOffer(false);
@@ -146,6 +152,7 @@ export default function OfferDetailScreen() {
     try {
       setReserveError(null);
       setIsReserving(true);
+      // Antes de reservar verificamos que el cliente tenga ciudad y direccion en su perfil.
       const profile = await getClientProfile(session.token);
 
       if (!hasValidReservationProfile(profile)) {
@@ -157,6 +164,7 @@ export default function OfferDetailScreen() {
         return;
       }
 
+      // Con el perfil completo, continuamos con la creacion de la reserva.
       await reserveOffer();
     } catch (reserveErrorValue) {
       const message =
@@ -174,12 +182,15 @@ export default function OfferDetailScreen() {
       return;
     }
 
+    // clampQuantity mantiene la cantidad entre 1 y el stock actual de la oferta.
     const quantity = clampQuantity(selectedQuantity, offer.stock);
+    // CREATE: reservationService -> apiClient -> POST /reservations -> backend.
     const nextReservation = await createReservation(
       session.token,
       offer.id,
       quantity
     );
+    // Reemplazamos la pantalla actual por la confirmacion y mandamos el id de la reserva creada.
     router.replace({
       pathname: "/(client)/reservation-confirmed",
       params: { reservationId: nextReservation.id }
@@ -191,6 +202,7 @@ export default function OfferDetailScreen() {
       return;
     }
 
+    // Validamos los datos obligatorios antes de guardarlos en el backend.
     const nextErrors = validateClientProfile(
       {
         address: profileAddress,
@@ -216,6 +228,7 @@ export default function OfferDetailScreen() {
 
     try {
       setIsSavingProfile(true);
+      // Guardamos ciudad y direccion para que la reserva tenga datos de retiro completos.
       const user = await updateClientProfile(session.token, {
         address: profileAddress.trim(),
         city: profileCity.trim(),
@@ -223,6 +236,7 @@ export default function OfferDetailScreen() {
         phone: profileForReservation?.phone ?? session.user.phone ?? ""
       });
 
+      // Actualizamos tambien el usuario que esta guardado en AuthContext.
       await updateSessionUser(user);
       setProfilePromptVisible(false);
       setProfileForReservation(user);
@@ -250,6 +264,7 @@ export default function OfferDetailScreen() {
       return;
     }
 
+    // Actualizamos el corazon primero y luego confirmamos el cambio con el backend.
     const nextIsFavorite = !isFavorite;
     setFavoriteError(null);
     setIsFavorite(nextIsFavorite);
@@ -261,6 +276,7 @@ export default function OfferDetailScreen() {
         await removeFavorite(session.token, offer.id);
       }
     } catch {
+      // Si el backend falla, devolvemos el corazon a su estado anterior.
       setIsFavorite(!nextIsFavorite);
       setFavoriteError(
         "No pudimos actualizar tus favoritos. Intenta de nuevo en unos segundos."
