@@ -62,14 +62,18 @@ export async function registerClient(params) {
     };
 }
 export async function login(email, password) {
+    // Normalizamos el email antes de enviarlo al proveedor de autenticacion.
     const normalizedEmail = email.trim().toLowerCase();
+    // Supabase revisa si email y password son credenciales validas.
     const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password
     });
     if (!error && data.session && data.user) {
+        // Buscamos datos propios de FoodSave, como role y businessId.
         const user = await findUserById(data.user.id);
         return {
+            // Devolvemos al frontend el token de Supabase y el usuario publico.
             token: data.session.access_token,
             user: user ? toPublicUser(user) : buildUserFromAuth(data.user, email, "client")
         };
@@ -80,6 +84,8 @@ export async function login(email, password) {
             reason: "email_not_confirmed"
         };
     }
+    // Fallback para usuarios demo guardados en el repositorio local.
+    // Fallback para usuarios demo guardados en el repositorio local.
     const user = await findUserByEmail(normalizedEmail);
     if (!user || user.password !== password)
         return null;

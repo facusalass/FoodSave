@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 
 const BUCKET = "offers";
 
@@ -15,7 +15,7 @@ export async function uploadImageController(request: Request, response: Response
 
   const path = `${request.user!.businessId}/${Date.now()}-${file.originalname}`;
 
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabaseAdmin.storage
     .from(BUCKET)
     .upload(path, file.buffer, {
       contentType: file.mimetype,

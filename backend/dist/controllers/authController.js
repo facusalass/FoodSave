@@ -16,16 +16,21 @@ function handleRegisterResult(result, response, successStatus) {
     }
     response.status(successStatus).json({ success: true, data: result });
 }
+// Recibe email/password, delega la validacion y devuelve la sesion al frontend.
 export async function loginController(request, response) {
+    // Datos que llegaron desde el frontend en el body JSON.
     const { email, password } = request.body;
+    // Si falta algun campo, respondemos 400 sin consultar Supabase.
     if (!email || !password)
         return fail(response, 400, "Email y contraseña son requeridos.");
+    // El service valida las credenciales con Supabase y devuelve sesion o null.
     const session = await login(email, password);
     if (session && "reason" in session && session.reason === "email_not_confirmed") {
         return fail(response, 403, session.error);
     }
     if (!session)
         return fail(response, 401, "Credenciales invalidas.");
+    // Respuesta exitosa: { success, data: { token, user } }.
     response.json({ success: true, data: session });
 }
 export async function registerController(request, response) {
@@ -49,6 +54,10 @@ export async function googleLoginController(request, response) {
     if (!idToken)
         return fail(response, 400, "El idToken de Google es requerido.");
     handleRegisterResult(await googleLogin(idToken), response, 200);
+}
+// isAuth valida el token antes de llegar aqui y deja el usuario en request.user.
+export function meController(request, response) {
+    response.json({ success: true, data: { user: request.user } });
 }
 export async function registerBusinessController(request, response) {
     const { email, password, businessName, businessAddress, businessCategory, businessCity, ownerName, ownerPhone } = request.body;
@@ -77,7 +86,7 @@ export async function toggleBusinessActiveController(request, response) {
 export async function resetPasswordController(request, response) {
     const { email } = request.body;
     const normalizedEmail = email?.trim().toLowerCase();
-    if (!email)
+    if (!normalizedEmail)
         return fail(response, 400, "El email es requerido.");
     const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo: "foodsave://reset-password"

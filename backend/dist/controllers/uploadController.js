@@ -1,4 +1,4 @@
-import { supabase } from "../config/supabase.js";
+import { supabase, supabaseAdmin } from "../config/supabase.js";
 const BUCKET = "offers";
 export async function uploadImageController(request, response) {
     const file = request.file;
@@ -10,7 +10,7 @@ export async function uploadImageController(request, response) {
         return;
     }
     const path = `${request.user.businessId}/${Date.now()}-${file.originalname}`;
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseAdmin.storage
         .from(BUCKET)
         .upload(path, file.buffer, {
         contentType: file.mimetype,
