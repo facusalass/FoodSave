@@ -1,4 +1,4 @@
-import { Clock, Heart } from "lucide-react-native";
+import { Clock, Heart, Sparkles } from "lucide-react-native";
 import { useState } from "react";
 import {
   Image,
@@ -35,9 +35,10 @@ export function OfferCard({
   const showImage = Boolean(imageUri && !imageFailed);
   const showLogo = Boolean(logoUri && !logoFailed);
   const discountPercentage = getDiscountPercentage(offer.oldPrice, offer.newPrice);
+  const isMysteryBox = offer.type === "mystery_box";
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isMysteryBox ? styles.mysteryCard : null]}>
       <View style={styles.imageFrame}>
         {showImage ? (
           <Image
@@ -56,6 +57,12 @@ export function OfferCard({
         {discountPercentage ? (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>{discountPercentage}% OFF</Text>
+          </View>
+        ) : null}
+        {isMysteryBox ? (
+          <View style={styles.mysteryBadge}>
+            <Sparkles color="#FFFFFF" size={14} />
+            <Text style={styles.mysteryBadgeText}>Mystery Box</Text>
           </View>
         ) : null}
       </View>
@@ -124,9 +131,11 @@ export function OfferCard({
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={onPress}
-            style={styles.ctaButton}
+            style={[styles.ctaButton, isMysteryBox ? styles.ctaButtonMystery : null]}
           >
-            <Text style={styles.ctaText}>Ver oferta</Text>
+            <Text style={[styles.ctaText, isMysteryBox ? styles.ctaTextMystery : null]}>
+              Ver oferta
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -165,6 +174,13 @@ function createStyles(theme: AppColors) {
     shadowOpacity: 0.08,
     shadowRadius: 5
   },
+  mysteryCard: {
+    borderColor: `${theme.primary}AA`,
+    elevation: 4,
+    shadowColor: theme.primary,
+    shadowOpacity: 0.18,
+    shadowRadius: 8
+  },
   content: {
     gap: spacing.sm,
     padding: spacing.md
@@ -178,10 +194,17 @@ function createStyles(theme: AppColors) {
     justifyContent: "center",
     paddingHorizontal: spacing.sm
   },
+  ctaButtonMystery: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary
+  },
   ctaText: {
     color: theme.secondaryDark,
     fontSize: 12,
     fontWeight: "800"
+  },
+  ctaTextMystery: {
+    color: "#FFFFFF"
   },
   description: {
     color: theme.mutedText,
@@ -238,6 +261,26 @@ function createStyles(theme: AppColors) {
     height: 152,
     position: "relative",
     width: "100%"
+  },
+  mysteryBadge: {
+    alignItems: "center",
+    backgroundColor: theme.primary,
+    borderColor: "#FFFFFF66",
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    position: "absolute",
+    right: spacing.md,
+    top: spacing.md
+  },
+  mysteryBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase"
   },
   discountBadge: {
     backgroundColor: theme.primary,
