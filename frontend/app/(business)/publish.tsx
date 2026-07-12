@@ -43,6 +43,7 @@ const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
 export default function BusinessPublishScreen() {
   const router = useRouter();
+  // La sesion aporta el token: el backend verifica con el que comercio publica.
   const { session } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -55,7 +56,9 @@ export default function BusinessPublishScreen() {
   const [stock, setStock] = useState(5);
   const [weight, setWeight] = useState("");
   const [allergens, setAllergens] = useState("");
+  // URL final que devuelve el servidor; esta es la que se guarda en la oferta.
   const [imageUrl, setImageUrl] = useState("");
+  // URI local solo para mostrar una vista previa mientras se sube la imagen.
   const [imagePreviewUri, setImagePreviewUri] = useState("");
   const [businessClosingTime, setBusinessClosingTime] = useState<string | null>(
     null
@@ -66,6 +69,7 @@ export default function BusinessPublishScreen() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+  // Al entrar, obtenemos datos del local para completar el limite de retiro y validar la ciudad.
   useEffect(() => {
     let isMounted = true;
 
@@ -75,6 +79,7 @@ export default function BusinessPublishScreen() {
       }
 
       try {
+        // offerService -> apiClient -> GET /business/profile -> backend.
         const business = await getBusinessProfile(session.token);
 
         if (isMounted) {
@@ -99,6 +104,7 @@ export default function BusinessPublishScreen() {
   }, [session]);
 
   async function handlePublish() {
+    // Evita enviar dos publicaciones o publicar mientras la imagen aun se esta subiendo.
     if (isPublishing || isUploadingImage) {
       return;
     }
@@ -110,6 +116,7 @@ export default function BusinessPublishScreen() {
       return;
     }
 
+    // Preparamos los textos y numeros antes de validarlos y enviarlos al backend.
     const cleanTitle = title.trim();
     const parsedOldPrice = parsePrice(oldPrice);
     const parsedNewPrice = parsePrice(newPrice);
@@ -165,6 +172,7 @@ export default function BusinessPublishScreen() {
       return;
     }
 
+    // La vista previa no alcanza: necesitamos la URL que devolvio el servidor al subir la imagen.
     if (!imageUrl) {
       showFormError("Subí una imagen del producto antes de publicar.");
       return;
@@ -180,6 +188,7 @@ export default function BusinessPublishScreen() {
     try {
       setFormError(null);
       setIsPublishing(true);
+      // CREATE: crea la oferta del comercio autenticado con POST /business/offers.
       await createBusinessOffer(session.token, {
         allergens: parseAllergens(allergens),
         category: selectedCategory,
@@ -199,6 +208,7 @@ export default function BusinessPublishScreen() {
         type
       });
 
+      // Si salio bien, volvemos al panel en la pestana donde se ve la nueva oferta.
       Alert.alert("Oferta publicada", "El excedente se publico correctamente.", [
         {
           onPress: () =>
@@ -251,9 +261,11 @@ export default function BusinessPublishScreen() {
       return;
     }
 
+    // La conservamos para no perder la imagen anterior si falla la nueva subida.
     const previousImageUrl = imageUrl;
 
     try {
+      // El celular pide permiso antes de abrir la galeria.
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (!permission.granted) {
@@ -261,6 +273,7 @@ export default function BusinessPublishScreen() {
         return;
       }
 
+      // El usuario elige y puede recortar una imagen desde su dispositivo.
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true,
         aspect: [4, 3],
@@ -292,10 +305,12 @@ export default function BusinessPublishScreen() {
         return;
       }
 
+      // Mostramos la imagen local de inmediato, pero esperamos la URL real del servidor.
       setFormError(null);
       setImageUrl("");
       setImagePreviewUri(image.uri);
       setIsUploadingImage(true);
+      // uploadImage envia el archivo al backend; al terminar devuelve la URL publica.
       const uploadedUrl = await uploadImage(session.token, {
         name: fileName,
         type: mimeType,

@@ -41,7 +41,9 @@ const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
 export default function BusinessEditOfferScreen() {
   const router = useRouter();
+  // Expo Router toma el id desde la ruta /edit-offer/[id].
   const { id } = useLocalSearchParams<{ id?: string }>();
+  // Usamos el token de la sesion para leer y actualizar solo ofertas de este comercio.
   const { session } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -62,6 +64,7 @@ export default function BusinessEditOfferScreen() {
   const [imageUrl, setImageUrl] = useState("");
   const [imagePreviewUri, setImagePreviewUri] = useState("");
 
+  // READ: carga la oferta existente para completar el formulario con sus datos actuales.
   const loadOffer = useCallback(async () => {
     if (!session) {
       setLoadError("Necesitas iniciar sesion como comercio.");
@@ -78,7 +81,9 @@ export default function BusinessEditOfferScreen() {
     try {
       setLoadError(null);
       setIsLoading(true);
+      // offerService -> apiClient -> GET /business/offers -> backend.
       const offers = await getBusinessOffers(session.token);
+      // De todas las ofertas del comercio, buscamos la que coincide con el id de la ruta.
       const offer = offers.find((candidate) => candidate.id === id);
 
       if (!offer) {
@@ -98,6 +103,7 @@ export default function BusinessEditOfferScreen() {
     }
   }, [id, session]);
 
+  // Se vuelve a cargar cada vez que esta pantalla recibe el foco.
   useFocusEffect(
     useCallback(() => {
       void loadOffer();
@@ -105,6 +111,7 @@ export default function BusinessEditOfferScreen() {
   );
 
   function fillForm(offer: Offer) {
+    // Copia la oferta recibida a los estados que controlan cada campo del formulario.
     setTitle(offer.title ?? "");
     setDescription(offer.description ?? "");
     setCategory(getCanonicalOfferCategory(offer.category));
@@ -120,6 +127,7 @@ export default function BusinessEditOfferScreen() {
   }
 
   async function handleSave() {
+    // Evita guardar dos veces o guardar mientras se esta subiendo una nueva imagen.
     if (isSaving || isUploadingImage) {
       return;
     }
@@ -171,6 +179,7 @@ export default function BusinessEditOfferScreen() {
       return;
     }
 
+    // Armamos solo los datos editables que espera el endpoint de actualizacion.
     const payload: UpdateBusinessOfferPayload = {
       allergens: parseAllergens(allergens),
       category,
@@ -186,6 +195,7 @@ export default function BusinessEditOfferScreen() {
       payload.estimatedWeightInKg = parsedWeight;
     }
 
+    // Si hay una URL valida, mandamos tambien la imagen nueva o la imagen que ya tenia.
     if (imageUrl) {
       payload.imageUrl = imageUrl;
     }
@@ -193,7 +203,9 @@ export default function BusinessEditOfferScreen() {
     try {
       setFormError(null);
       setIsSaving(true);
+      // UPDATE: actualiza esta oferta con PUT /business/offers/:id.
       await updateBusinessOffer(session.token, id, payload);
+      // Al guardar, regresamos a Mis publicaciones para ver el resultado.
       Alert.alert("Cambios guardados", "Actualizamos la publicacion.", [
         {
           onPress: () =>
@@ -221,9 +233,11 @@ export default function BusinessEditOfferScreen() {
       return;
     }
 
+    // Si la subida falla, restauramos la URL anterior de la oferta.
     const previousImageUrl = imageUrl;
 
     try {
+      // Pedimos acceso a la galeria antes de permitir que el comercio elija la imagen.
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (!permission.granted) {
@@ -262,10 +276,12 @@ export default function BusinessEditOfferScreen() {
         return;
       }
 
+      // La URI local permite ver el cambio enseguida; imageUrl se completa al terminar la subida.
       setFormError(null);
       setImageUrl("");
       setImagePreviewUri(image.uri);
       setIsUploadingImage(true);
+      // Envía el archivo al backend y guarda la URL que este devuelve.
       const uploadedUrl = await uploadImage(session.token, {
         name: fileName,
         type: mimeType,

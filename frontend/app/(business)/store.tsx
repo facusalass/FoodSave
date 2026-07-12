@@ -64,10 +64,13 @@ const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
 export default function BusinessStoreScreen() {
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
+  // session aporta el token que se manda en las requests del comercio.
   const { session } = useAuth();
   const { setThemeMode, theme, themeMode } = useTheme();
   const styles = createStyles(theme);
+  // Controla si Mi Local muestra configuracion o publicaciones.
   const [activeTab, setActiveTab] = useState<StoreTab>("settings");
+  // Guarda las ofertas que vuelven desde GET /business/offers.
   const [offers, setOffers] = useState<Offer[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingOffers, setIsLoadingOffers] = useState(true);
@@ -77,6 +80,7 @@ export default function BusinessStoreScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isCityModalVisible, setIsCityModalVisible] = useState(false);
+  // Identifica la oferta que se esta ocultando/mostrando o eliminando.
   const [visibilityLoadingId, setVisibilityLoadingId] = useState<string | null>(
     null
   );
@@ -96,6 +100,7 @@ export default function BusinessStoreScreen() {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoPreviewUri, setLogoPreviewUri] = useState("");
 
+  // Carga los datos del comercio autenticado para completar el formulario de Mi Local.
   const loadProfile = useCallback(async (showLoader = true) => {
     if (!session) {
       setIsLoadingProfile(false);
@@ -140,6 +145,7 @@ export default function BusinessStoreScreen() {
     }
   }, []);
 
+  // READ: pide al backend las publicaciones que pertenecen a este comercio.
   const loadOffers = useCallback(async (showLoader = true) => {
     if (!session) {
       setIsLoadingOffers(false);
@@ -151,7 +157,9 @@ export default function BusinessStoreScreen() {
       if (showLoader) {
         setIsLoadingOffers(true);
       }
+      // offerService -> apiClient -> GET /business/offers -> backend.
       const nextOffers = await getBusinessOffers(session.token);
+      // Guardamos las ofertas ordenadas para mostrarlas en PublicationCard.
       setOffers(sortOffersByStock(nextOffers));
     } catch (loadError) {
       const message =
@@ -376,10 +384,12 @@ export default function BusinessStoreScreen() {
       return;
     }
 
+    // Si estaba oculta la mostramos; si estaba visible la ocultamos.
     const nextVisibility = offer.isVisible === false;
 
     try {
       setVisibilityLoadingId(offer.id);
+      // UPDATE parcial: cambia solo isVisible de la oferta seleccionada.
       await updateBusinessOfferVisibility(
         session.token,
         offer.id,
@@ -402,6 +412,7 @@ export default function BusinessStoreScreen() {
       return;
     }
 
+    // DELETE es permanente, por eso pedimos confirmacion antes de llamar al backend.
     Alert.alert(
       "Eliminar publicacion",
       `Vas a eliminar "${offer.title}" de forma permanente.`,
@@ -425,7 +436,9 @@ export default function BusinessStoreScreen() {
 
     try {
       setDeletingOfferId(offer.id);
+      // DELETE /business/offers/:id elimina la oferta del comercio autenticado.
       await deleteBusinessOffer(session.token, offer.id);
+      // Volvemos a cargar la lista para quitar la oferta eliminada de pantalla.
       await loadOffers(false);
     } catch (deleteError) {
       const message =
@@ -771,6 +784,7 @@ export default function BusinessStoreScreen() {
             <EmptyState title="Todavia no hay publicaciones para este local." />
           ) : (
             <View style={styles.offerList}>
+              {/* Cada oferta se muestra en una tarjeta con editar, ocultar y eliminar. */}
               {sortOffersByStock(offers).map((offer) => (
                 <PublicationCard
                   key={offer.id}
@@ -1036,12 +1050,14 @@ function PublicationCard({
         </Text>
       </View>
       <View style={styles.publicationActions}>
+        {/* UPDATE: abre la pantalla de edicion de la oferta. */}
         <IconButton
           accessibilityLabel="Editar publicacion"
           disabled={isDeleting || isUpdatingVisibility}
           icon={<Pencil color={theme.text} size={20} />}
           onPress={() => onEditPress(offer)}
         />
+        {/* UPDATE parcial: alterna entre mostrar u ocultar para clientes. */}
         <IconButton
           accessibilityLabel={isHidden ? "Mostrar publicacion" : "Ocultar publicacion"}
           disabled={isDeleting || isUpdatingVisibility}
@@ -1056,6 +1072,7 @@ function PublicationCard({
           }
           onPress={() => onToggleVisibility(offer)}
         />
+        {/* DELETE: pide confirmacion y elimina la oferta seleccionada. */}
         <IconButton
           accessibilityLabel="Eliminar publicacion"
           disabled={isDeleting || isUpdatingVisibility}
