@@ -1,4 +1,4 @@
-import { Clock, Heart, Sparkles } from "lucide-react-native";
+import { Clock, Sparkles, Star } from "lucide-react-native";
 import { useState } from "react";
 import {
   Image,
@@ -99,7 +99,7 @@ export function OfferCard({
                 isFavorite ? styles.favoriteButtonActive : null
               ]}
             >
-              <Heart
+              <Star
                 color={isFavorite ? theme.primary : theme.mutedText}
                 fill={isFavorite ? theme.primary : "transparent"}
                 size={18}
