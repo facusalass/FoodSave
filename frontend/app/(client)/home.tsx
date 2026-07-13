@@ -40,7 +40,6 @@ import {
 import { getOffers } from "../../src/services/offerService";
 import type { Offer } from "../../src/types/offer";
 import { getFavoriteIds, toggleFavoriteId } from "../../src/utils/favorites";
-import { sortOffersByStock } from "../../src/utils/offerStock";
 
 const DEFAULT_CITY = "Resistencia, Chaco";
 const COLLAPSED_CATEGORY_CHIP_COUNT = 5;
@@ -73,7 +72,7 @@ export default function ClientHomeScreen() {
   // READ publico: offerService -> apiClient -> GET /offers?city=... -> backend.
   const loadOffersForCity = useCallback(async (city: string | null) => {
     const nextOffers = await getOffers({ city });
-    setOffers(sortOffersByStock(nextOffers));
+    setOffers(nextOffers);
   }, []);
 
   // Los favoritos requieren sesion porque pertenecen al cliente que inicio sesion.
@@ -124,7 +123,7 @@ export default function ClientHomeScreen() {
           return;
         }
 
-        setOffers(sortOffersByStock(nextOffers));
+        setOffers(nextOffers);
 
         if (sessionToken) {
           try {
@@ -209,7 +208,7 @@ export default function ClientHomeScreen() {
   const filteredOffers = useMemo(() => {
     const normalizedSearch = normalize(searchQuery);
 
-    return sortOffersByStock(offers.filter((offer) => {
+    return offers.filter((offer) => {
       const matchesSearch =
         !normalizedSearch ||
         normalize(offer.storeName).includes(normalizedSearch) ||
@@ -219,15 +218,14 @@ export default function ClientHomeScreen() {
         !activeCategory || matchesCategory(offer, activeCategory);
 
       return matchesSearch && matchesActiveCategory;
-    }));
+    });
   }, [activeCategory, offers, searchQuery]);
 
-  // Mostramos solo categorias que tienen al menos una oferta con stock en esta ciudad.
+  // Las categorias se calculan con las ofertas publicas disponibles de esta ciudad.
   const availableCategoryFilters = useMemo<OfferCategoryFilter[]>(() => {
-    const inStockOffers = offers.filter((offer) => offer.stock > 0);
     const availableCategories = new Set<OfferCategory>();
 
-    inStockOffers.forEach((offer) => {
+    offers.forEach((offer) => {
       const category = getCanonicalOfferCategory(offer.category);
 
       if (category) {
@@ -253,7 +251,7 @@ export default function ClientHomeScreen() {
       }
     });
 
-    if (inStockOffers.some((offer) => offer.type === "mystery_box")) {
+    if (offers.some((offer) => offer.type === "mystery_box")) {
       filters.push({
         label: MYSTERY_BOX_FILTER_LABEL,
         type: "type",

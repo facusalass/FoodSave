@@ -38,7 +38,7 @@ const faqs = [
   },
   {
     answer:
-      "Tenes 15 minutos desde que creas la reserva para avisar el pago.",
+      "Tenes 25 minutos desde que creas la reserva para avisar el pago.",
     question: "¿Cuanto tiempo tengo para avisar el pago?"
   },
   {

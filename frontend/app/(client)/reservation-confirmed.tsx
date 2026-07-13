@@ -210,7 +210,7 @@ export default function ReservationConfirmedScreen() {
         <Text style={styles.timerTitle}>
           {visualState.isExpired
             ? "El tiempo para confirmar esta reserva termino."
-            : "Tenes 15 minutos para avisar el pago."}
+            : "Tenes 25 minutos para avisar el pago."}
         </Text>
         {remainingMilliseconds !== null && !visualState.isExpired ? (
           <Text style={styles.timerText}>
