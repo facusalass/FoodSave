@@ -1,91 +1,492 @@
 # FoodSave
 
-FoodSave es una app mobile para reducir el desperdicio de comida conectando comercios gastronomicos con clientes que compran excedentes, productos del dia o Mystery Boxes con descuento.
+FoodSave es una app móvil para reducir el desperdicio de comida conectando comercios gastronómicos con clientes que compran excedentes, productos del día o Mystery Boxes con descuento.
 
-El proyecto esta organizado como monorepo con frontend mobile en Expo/React Native y backend REST en Node.js/Express conectado a Supabase.
+---
 
-## Stack Tecnico
+## Stack Tecnológico
 
-**Frontend**
+### Frontend (mobile)
 
-- Expo SDK 54
-- React Native 0.81
-- React 19
-- Expo Router
-- TypeScript
-- SecureStore para persistencia de sesion y tema
-- `expo-auth-session` para Google Login
-- `expo-image-picker` para subir imagenes de ofertas/logos
-- `expo-location` para detectar ciudad
+| Tecnología | Uso |
+|---|---|
+| Expo SDK 54 + React Native 0.81 + React 19 | Framework mobile cross-platform |
+| Expo Router | Navegación por archivos con grupos de rutas |
+| TypeScript | Tipado estricto en todo el frontend |
+| `expo-secure-store` | Persistencia de sesión y tema |
+| `expo-auth-session` | Google Login |
+| `expo-image-picker` | Subir imágenes de ofertas/logos |
+| `expo-location` | Detectar ciudad del usuario |
+| `lucide-react-native` | Iconos |
+| `react-native-reanimated` | Animaciones |
 
-**Backend**
+### Backend (API REST)
 
-- Node.js
-- Express 5
-- TypeScript
-- Supabase JS
-- Supabase Auth + tablas propias
-- Multer para upload de imagenes
-- Google Auth Library para validar Google Login
+| Tecnología | Uso |
+|---|---|
+| Node.js + Express 5 | Servidor HTTP |
+| TypeScript | Tipado estricto |
+| `@supabase/supabase-js` | Cliente Supabase (anon + admin con service_role) |
+| Supabase Auth | Registro, login, JWT, Google OAuth |
+| Supabase Storage | Imágenes de ofertas (bucket `offers`) |
+| `multer` | Recepción de archivos multipart |
+| `google-auth-library` | Validación de Google idToken |
 
-**Base de datos**
+### Base de datos
 
-- Supabase Postgres
-- Supabase Storage bucket `offers`
-- Tablas principales: `users`, `businesses`, `offers`, `reservations`, `favorites`, `notifications`
+| Componente | Detalle |
+|---|---|
+| Motor | PostgreSQL vía Supabase |
+| Esquemas | `auth.users` (Supabase Auth) + `public.users`, `public.businesses`, `public.offers`, `public.reservations`, `public.favorites`, `public.notifications` |
+| Storage | Bucket público `offers` para imágenes |
+| Migraciones | 5 SQL scripts secuenciales en `backend/sql/` |
 
-## Estructura
+---
 
-```text
+## Estructura del Proyecto
+
+```
 FoodSave/
-  frontend/                 App mobile Expo
-    app/                    Rutas Expo Router
-    src/components/         Componentes reutilizables
-    src/context/            AuthContext y ThemeContext
-    src/services/           Clientes API por dominio
-    src/types/              Tipos TypeScript frontend
-    src/utils/              Helpers de UI, reservas, favoritos, tema
-
-  backend/                  API REST
-    src/app.ts              Registro de middlewares y rutas
-    src/controllers/        Controllers HTTP
-    src/routes/             Definicion de endpoints
-    src/services/           Reglas de negocio y repositorio Supabase
-    src/middlewares/        Auth, roles, API key y errores
-    src/types/              Tipos backend
-    sql/                    Schema, seed y scripts de Supabase
-
-  docs/                     Documentacion interna del proyecto
+├── docs/                           Documentación interna
+│   ├── BACKEND_CONTEXT.md          Explicación completa del backend
+│   ├── PROJECT_CONTEXT.md          Contexto funcional del proyecto
+│   └── CODEX_RULES.md              Reglas internas de desarrollo
+│
+├── frontend/                       App mobile Expo
+│   ├── app/                        Rutas Expo Router
+│   │   ├── (auth)/                 Pantallas de login, registro
+│   │   ├── (client)/               Pantallas de cliente (home, reservas, perfil)
+│   │   └── (business)/             Pantallas de comercio (dashboard, publicar, pedidos)
+│   ├── src/
+│   │   ├── components/             Componentes reutilizables
+│   │   ├── constants/              Temas, categorías, tipos
+│   │   ├── context/                AuthContext, ThemeContext
+│   │   ├── services/               Clientes API por dominio (auth, offers, reservations...)
+│   │   ├── types/                  Tipos TypeScript del frontend
+│   │   └── utils/                  Helpers
+│   └── .env                        Variables de entorno (no subir)
+│
+├── backend/                        API REST
+│   ├── src/
+│   │   ├── app.ts                  Middlewares globales + montaje de 10 rutas
+│   │   ├── server.ts               Entry point
+│   │   ├── config/                 env.ts, supabase.ts (client anon + admin)
+│   │   ├── controllers/            Handlers HTTP
+│   │   ├── routes/                 Definición de endpoints
+│   │   ├── services/               Lógica de negocio + repository.ts
+│   │   ├── middlewares/            guards.ts (auth/roles), apiKey.ts, errorHandler.ts
+│   │   ├── types/                  auth.ts, offer.ts, reservation.ts, statistics.ts, express.ts
+│   │   └── utils/                  pagination.ts, publicUser.ts
+│   ├── sql/                        Migraciones SQL (5 archivos)
+│   ├── dist/                       Código compilado (pre-commiteado para Render)
+│   └── .env                        Variables de entorno (no subir)
+│
+├── package.json                    Monorepo con workspaces: ["frontend", "backend"]
+├── .npmrc                          workspace=false (para Render)
+└── README.md                       Este archivo
 ```
 
-## Requisitos
+---
 
-- Node.js compatible con Expo SDK 54
-- npm
-- Expo Go para probar en Android/iOS
-- Cuenta/proyecto Supabase configurado para backend local o deploy
+## Arquitectura del Backend
 
-## Instalacion
+### Capas
 
-Desde la raiz:
-
-```bash
-npm install
+```
+Ruta (route) → Middleware → Controller → Service → Repository → Supabase
 ```
 
-El repo usa npm workspaces:
+Cada capa tiene una responsabilidad única:
+
+| Capa | Responsabilidad | Archivo ejemplo |
+|---|---|---|
+| **Route** | Define verbo HTTP + path + middlewares + controller | `routes/offerBusinessRoutes.ts` |
+| **Middleware** | Valida token JWT, rol, API Key | `middlewares/guards.ts` |
+| **Controller** | Valida request body/params, llama al service, arma response | `controllers/offerBusinessController.ts` |
+| **Service** | Lógica de negocio, reglas, armado de DTOs | `services/offerService.ts` |
+| **Repository** | Único que hace queries a Supabase (209 líneas, ~30 funciones) | `services/repository.ts` |
+| **Supabase** | PostgreSQL + Auth + Storage | — |
+
+### Middlewares de autenticación y roles
+
+Definidos en `backend/src/middlewares/guards.ts`:
+
+| Middleware | Requisito | Error si falla |
+|---|---|---|
+| `isAuth` | Token Bearer válido (JWT real o mock-token) | 401 |
+| `isClient` | `isAuth` + `role === "client"` | 403 |
+| `isBusinessOwner` | `isAuth` + `role === "business"` + `businessId !== undefined` | 403 |
+| `requireApiKey` | Header `X-API-Key` coincide con `env.apiKey` | 401 |
+
+### Estrategia de validación de tokens
+
+En `services/authStrategy.ts`, función `validateToken()`:
+
+1. **JWT real de Supabase:** llama a `supabase.auth.getUser(token)`. Si el token está firmado por Supabase Auth y es válido, devuelve los datos del usuario.
+2. **Fallback mock-token:** si el token tiene formato `mock-token-{userId}`, busca al usuario en `public.users` por ID. Esto existe únicamente para los usuarios del seed de desarrollo que no existen en `auth.users`.
+
+---
+
+## Autenticación (flujo completo)
+
+### Registro de cliente (`POST /auth/register`)
+
+```
+registerController (valida campos) → authService.registerClient()
+```
+
+1. Verifica que el email no exista en `public.users` mediante `findUserByEmail()` del repositorio.
+2. Llama a `supabase.auth.signUp({ email, password, options: { data: { name, phone, role: "client" } } })`.
+3. Supabase Auth crea el usuario en `auth.users` (donde se almacena la contraseña hasheada).
+4. Un **trigger de base de datos** (`04_auth_trigger.sql`) detecta el INSERT en `auth.users` y copia automáticamente los datos a `public.users`:
+   - Toma `id`, `email` y `raw_user_meta_data` (name, phone, role, businessId) del usuario recién creado.
+5. Si Supabase tiene **email confirmation** activado, `data.session` será `null` y se responde que el usuario debe revisar su correo.
+6. Si no tiene confirmación, se devuelve el JWT (`data.session.access_token`) y los datos del usuario.
+
+### Login (`POST /auth/login`)
+
+```
+loginController → authService.login()
+```
+
+1. Intenta `supabase.auth.signInWithPassword({ email, password })` — valida contra Supabase Auth.
+2. Si funciona → devuelve JWT real + datos del usuario.
+3. Si falla por "email not confirmed" → error 403.
+4. **Fallback para seed:** busca en `public.users` por email + password (texto plano). Solo funciona con los 5 usuarios del demo que tienen contraseña en la columna `password`. Devuelve `mock-token-{userId}`.
+
+### Google Login (`POST /auth/google`)
+
+```
+googleLoginController → authService.googleLogin()
+```
+
+1. El frontend envía un `idToken` obtenido de Google Sign-In.
+2. El backend valida el token con `google-auth-library` (verifica firma, audiencia, expiración).
+3. Si el email ya existe → login inmediato (mock-token).
+4. Si no existe → `supabase.auth.signUp()` con contraseña aleatoria y `user_metadata` completo.
+
+### Registro de comercio desde .NET (`POST /auth/register-business`)
+
+```
+registerBusinessController (requiere X-API-Key) → authService.registerBusiness()
+```
+
+Este endpoint está protegido por el middleware `requireApiKey`. Fue diseñado para que la landing page en .NET pueda dar de alta comercios sin exponer Supabase Auth.
+
+1. Genera un `businessId` con formato `business-{timestamp}`.
+2. Crea el usuario en Supabase Auth mediante el admin client: `supabaseAdmin.auth.admin.createUser()` con `email_confirm: true`. Esto evita que el usuario tenga que confirmar su email.
+3. El trigger copia el usuario a `public.users`.
+4. Inserta el comercio en la tabla `businesses` con `createBusinessRepo()`.
+5. Hace login inmediato con `signInWithPassword()` para devolver un JWT real.
+
+### Suspender/activar comercio (`PATCH /auth/register-business/toggle-active`)
+
+```
+toggleBusinessActiveController (requiere X-API-Key)
+```
+
+1. Recibe `{ email, isActive }`.
+2. Busca al usuario por email, verifica que sea `role: "business"` y tenga `businessId`.
+3. Llama a `setBusinessActive(businessId, isActive)` del repositorio.
+4. Cuando `isActive: false`, el comercio deja de aparecer en `GET /offers` público.
+
+---
+
+## Endpoints completos (30)
+
+### Auth
+
+| Método | Ruta | Auth | Body / Notas |
+|---|---|---|---|
+| `POST` | `/auth/register` | ❌ | `{ email, password, name, phone }`. Crea cliente. |
+| `POST` | `/auth/login` | ❌ | `{ email, password }`. Devuelve JWT real o mock-token según el usuario. |
+| `POST` | `/auth/google` | ❌ | `{ idToken }`. Google idToken validado con google-auth-library. |
+| `POST` | `/auth/reset-password` | ❌ | `{ email }`. Envía mail de recuperación vía Supabase Auth. |
+| `POST` | `/auth/register-business` | `X-API-Key` | `{ email, password, businessName, businessAddress, businessCategory, ownerName, businessCity?, ownerPhone? }`. Crea comercio desde .NET. |
+| `PATCH` | `/auth/register-business/toggle-active` | `X-API-Key` | `{ email, isActive }`. Suspende o reactiva un comercio. |
+| `GET` | `/auth/me` | `isAuth` | Devuelve el perfil del usuario autenticado desde `public.users`. |
+
+### Ofertas públicas
+
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| `GET` | `/offers` | ❌ | `?category=Panadería&type=mystery_box&city=Resistencia, Chaco&page=1&limit=20`. Filtros: `isVisible=true`, `stock>0`, negocio activo. Paginado. DTO incluye `storeName`, `storeAddress`, `logoUrl`. |
+| `GET` | `/offers/:id` | ❌ | Detalle de oferta con datos del comercio. 404 si no existe. |
+| `GET` | `/cities` | ❌ | Ciudades únicas extraídas de `businesses` (ej: `["Corrientes, Corrientes", "Resistencia, Chaco"]`). |
+
+### Gestión del comercio
+
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| `GET` | `/business/profile` | `isBusinessOwner` | Datos completos del comercio (name, category, city, address, closingTime, logoUrl, isActive, paymentInfo). |
+| `PUT` | `/business/profile` | `isBusinessOwner` | Editar perfil. Acepta `{ name?, category?, description?, city?, address?, closingTime?, logoUrl?, paymentInfo? }`. Incluye datos bancarios (CVU + alias). |
+| `GET` | `/business/offers` | `isBusinessOwner` | Lista solo las ofertas del comercio autenticado. |
+| `POST` | `/business/offers` | `isBusinessOwner` | Crear oferta. Valida campos requeridos y `type` (mystery_box/standard). Genera ID y defaults. |
+| `PUT` | `/business/offers/:id` | `isBusinessOwner` | Editar oferta. Usa doble condición: `.eq("id", offerId).eq("businessId", businessId)` para evitar editar ofertas de otro. |
+| `PATCH` | `/business/offers/:id/visibility` | `isBusinessOwner` | Ocultar/mostrar oferta. Body: `{ isVisible: boolean }`. |
+| `DELETE` | `/business/offers/:id` | `isBusinessOwner` | Eliminar oferta. Misma doble condición. |
+| `GET` | `/business/stats` | `isBusinessOwner` | Dashboard con `{ totalRevenue, totalSavedKg, totalBoxesSold, totalCancelled, salesByWeek[4], topPublications[] }`. Revenue semanal calculado desde `createdAt`. |
+
+### Reservas
+
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| `GET` | `/reservations` | `isAuth` | Filtrado por rol: cliente → sus reservas, comercio → las de su negocio. Paginado. Expira automáticamente las `pending` vencidas (>25 min). |
+| `POST` | `/reservations` | `isAuth` | `{ offerId, quantity }`. Decrementa stock. Genera código `FS-XXX`. Setea `expiresAt = now + 25 min`. Notifica al cliente y al comercio. |
+| `PATCH` | `/reservations/:id/status` | `isAuth` | Transiciones por rol: cliente solo cancela su `pending`; comercio cambia a cualquier estado. Restaura stock al cancelar. |
+
+### Perfil cliente
+
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| `GET` | `/client/profile` | `isClient` | Perfil del cliente autenticado |
+| `PUT` | `/client/profile` | `isClient` | Editar. Body: `{ name, phone?, city?, address? }`. Protegido: no permite editar `email`, `role`, `id`, `password`. |
+
+### Favoritos
+
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| `GET` | `/favorites` | `isClient` | Lista de ofertas favoritas con DTO enriquecido |
+| `POST` | `/favorites/:offerId` | `isClient` | Agregar. No duplica (UNIQUE userId + offerId) |
+| `DELETE` | `/favorites/:offerId` | `isClient` | Quitar |
+
+### Notificaciones
+
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| `GET` | `/notifications` | `isAuth` | Todas las del usuario, ordenadas por fecha descendente |
+| `DELETE` | `/notifications` | `isAuth` | Eliminar todas |
+| `PATCH` | `/notifications/read-all` | `isAuth` | Marcar todas como leídas |
+| `PATCH` | `/notifications/:id/read` | `isAuth` | Marcar una como leída |
+| `DELETE` | `/notifications/:id` | `isAuth` | Eliminar una notificación |
+
+Se generan automáticamente al crear reserva, confirmar pago, cancelar o expirar. IDs estables: `${reservationId}-${type}`.
+
+### Upload
+
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| `POST` | `/upload/image` | `isBusinessOwner` | `multipart/form-data`, campo `file`. Usa `supabaseAdmin.storage` (service_role) para bypassear RLS. Devuelve `{ url }` pública en bucket `offers`. |
+
+### Health
+
+| Método | Ruta | Auth | Notas |
+|---|---|---|---|
+| `GET` | `/` | ❌ | `{ success, data: { message, version } }` |
+| `GET` | `/health` | ❌ | `{ success, data: { status: "ok", service: "foodsave-api" } }` |
+
+### Formato de respuesta
+
+Todas las respuestas siguen este contrato exacto:
 
 ```json
-["frontend", "backend"]
+{ "success": true, "data": { ... } }             // Éxito (2xx)
+{ "success": false, "error": { "message": "..." } }  // Error (4xx/5xx)
 ```
+
+Los endpoints autenticados requieren:
+
+```
+Authorization: Bearer <token>
+```
+
+---
+
+## Modelo de Datos (6 tablas)
+
+### `users` — Usuarios
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | TEXT PK | UUID proporcionado por Supabase Auth |
+| `name` | TEXT NOT NULL | Nombre completo |
+| `email` | TEXT UNIQUE NOT NULL | En minúsculas |
+| `password` | TEXT NOT NULL | Solo usada para seed (trigger la copia como `''`) |
+| `role` | ENUM `client` / `business` | Define qué pantallas ve el usuario |
+| `businessId` | TEXT | Si es comercio, ID del negocio asociado |
+| `phone` | TEXT | |
+| `city` | TEXT | |
+| `address` | TEXT | |
+| `createdAt` | TIMESTAMPTZ | Default `now()` |
+
+**Sincronización:** La tabla `public.users` se llena automáticamente mediante un trigger en `auth.users`. Cuando alguien se registra vía `supabase.auth.signUp()`, el trigger copia `id`, `email` y `user_metadata` a `public.users`. El admin client (`supabaseAdmin.auth.admin.createUser()`) también lo activa.
+
+### `businesses` — Comercios
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | TEXT PK | Formato `business-{timestamp}` |
+| `name` | TEXT NOT NULL | Nombre comercial |
+| `ownerId` | TEXT NOT NULL FK → users.id | Dueño del comercio |
+| `category` | TEXT NOT NULL | Ej: "Panadería", "Rotisería" |
+| `description` | TEXT | Default `''` |
+| `city` | TEXT NOT NULL | Para filtrar ofertas por ciudad |
+| `address` | TEXT NOT NULL | |
+| `closingTime` | TEXT | Ej: "22:00" |
+| `logoUrl` | TEXT | Logo del comercio |
+| `isActive` | BOOLEAN | Si `false`, no aparece en ofertas públicas. Usado por toggle-active. |
+| `paymentInfo` | JSONB | `{ ownerName, cvu, alias }`. Información bancaria para transferencias. |
+| `createdAt` | TIMESTAMPTZ | |
+
+### `offers` — Publicaciones
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | TEXT PK | Formato `offer-{timestamp}` |
+| `businessId` | TEXT NOT NULL FK → businesses.id ON DELETE CASCADE | Relación con el comercio |
+| `title` | TEXT NOT NULL | |
+| `description` | TEXT NOT NULL | |
+| `category` | TEXT NOT NULL | Puede no coincidir exactamente con las categorías del frontend (se normaliza luego) |
+| `type` | ENUM `mystery_box` / `standard` | Tipo de oferta |
+| `oldPrice` | INTEGER NOT NULL | Precio original |
+| `newPrice` | INTEGER NOT NULL | Precio con descuento |
+| `stock` | INTEGER | Default 0. Si llega a 0, se oculta del listado público |
+| `pickupWindow` | TEXT | Ventana horaria para retirar |
+| `pickupLimit` | TEXT | Hora límite de retiro |
+| `allergens` | TEXT[] | Array de alérgenos |
+| `imageUrl` | TEXT | URL de la imagen en Supabase Storage |
+| `isVisible` | BOOLEAN | Si `false`, no aparece ni en público ni en el listado del comercio (toggle visibility) |
+| `estimatedWeightInKg` | REAL | Peso estimado opcional |
+| `createdAt` | TIMESTAMPTZ | |
+
+### `reservations` — Reservas
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | TEXT PK | Formato `res-{timestamp}` |
+| `offerId` | TEXT NOT NULL FK → offers.id | Oferta reservada |
+| `businessId` | TEXT NOT NULL FK → businesses.id | Comercio (denormalizado para consultas rápidas) |
+| `userId` | TEXT NOT NULL FK → users.id | Cliente que reservó |
+| `quantity` | INTEGER | Cantidad de unidades |
+| `totalPrice` | INTEGER | Precio total (newPrice * quantity) |
+| `code` | TEXT | Código corto ej: "FS-A4B" |
+| `confirmationCode` | TEXT NOT NULL | Código con # ej: "#FS-A4B" |
+| `expiresAt` | TIMESTAMPTZ | `createdAt + 25 minutos`. Si se vence en pending → cancelación automática |
+| `status` | ENUM `pending / confirmed_paid / picked_up / cancelled` | Estado actual |
+| `createdAt` | TIMESTAMPTZ | |
+
+**DTO enriquecido** al devolver reservas: incluye `customerName`, `customerPhone`, `storeName`, `address`, `offerTitle`, `pickupTime`, `date`, `month`, `code`, `expiresAt`, `paymentAlias`, `bankAlias`, `whatsappPhone`, `paymentInfo`.
+
+### `favorites` — Favoritos
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | BIGINT GENERATED ALWAYS AS IDENTITY PK | Auto-incremental |
+| `userId` | TEXT NOT NULL FK → users.id ON DELETE CASCADE | |
+| `offerId` | TEXT NOT NULL FK → offers.id ON DELETE CASCADE | |
+| `createdAt` | TIMESTAMPTZ | |
+| UNIQUE | (userId, offerId) | Evita duplicados |
+
+### `notifications` — Notificaciones
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | TEXT PK | |
+| `userId` | TEXT NOT NULL FK → users.id ON DELETE CASCADE | Destinatario |
+| `type` | TEXT NOT NULL | `reservation_created`, `payment_confirmed`, `pickup_reminder`, `reservation_expired`, `business_payment_received` |
+| `title` | TEXT NOT NULL | Título legible |
+| `message` | TEXT NOT NULL | Cuerpo de la notificación |
+| `reservationId` | TEXT NOT NULL | Reserva asociada |
+| `read` | BOOLEAN | Default false |
+| `createdAt` | TIMESTAMPTZ | |
+
+---
+
+## Lógica de negocio clave
+
+### Filtros de ofertas públicas (`GET /offers`)
+
+El repositorio (`listOffersRepo`) aplica estos filtros en orden:
+
+1. `isVisible = true` — solo ofertas visibles
+2. `stock > 0` — oculta las agotadas
+3. `isActive = true` del comercio — solo negocios activos (no suspendidos)
+4. Si `?city=`: filtra por comercios en esa ciudad
+5. Si `?category=`: búsqueda parcial (`ilike`)
+6. Si `?type=`: búsqueda exacta (`mystery_box` o `standard`)
+
+Paginación con `page` (default 1), `limit` (default 20, máximo 100).
+
+### Ciclo de vida de una reserva
+
+```
+POST /reservations
+  → decrementa stock
+  → expiresAt = now + 25 min
+  → status = "pending"
+  → notifica cliente + comercio
+
+Al listar (on-demand)
+  → detecta pending vencidas
+  → las cancela automáticamente
+  → restaura stock
+  → notifica expiración
+
+PATCH /reservations/:id/status
+  Cliente: solo puede cancelar SU reserva pending → restaura stock
+  Comercio: puede cambiar a cualquier estado
+    → confirmed_paid → notifica pago + recordatorio pickup
+    → cancelled → restaura stock
+```
+
+**Transiciones permitidas:**
+
+```
+pending ──→ confirmed_paid ──→ picked_up
+   │              │
+   └── cancelled ←┘
+```
+
+### Upload de imágenes
+
+La ruta `POST /upload/image` está protegida por `isBusinessOwner`. Usa `multer` para recibir el archivo y `supabaseAdmin.storage` (con service_role) para subirlo a Supabase Storage. La política RLS del bucket `offers` exige `auth.role() = 'authenticated'` para INSERT, pero el admin client bypassea RLS. La validación real de que es un comercio se hace antes en el middleware.
+
+---
+
+## API Key para .NET (landing page)
+
+El panel web en .NET se comunica con el backend mediante `X-API-Key`:
+
+| Endpoint | Propósito |
+|---|---|
+| `POST /auth/register-business` | Crear comercio desde la landing |
+| `PATCH /auth/register-business/toggle-active` | Suspender o reactivar un comercio |
+
+La API Key se configura en `.env` como `API_KEY`. Por defecto en desarrollo: `foodsave-api-key-dev`. En producción se usa una clave segura.
+
+---
+
+## Migraciones SQL (5 archivos secuenciales)
+
+Todos en `backend/sql/`. Ejecutar en orden para una base nueva:
+
+| # | Archivo | Contenido |
+|---|---|---|
+| 01 | `01_schema.sql` | Enums (`user_role`, `offer_type`, `reservation_status`) + 6 tablas con todas sus columnas + 9 índices |
+| 02 | `02_seed.sql` | Datos demo: 5 usuarios (cliente + 4 comercios), 9 comercios, 10 ofertas, 15 reservas (incluye ventas semanales para dashboard), 2 favoritos |
+| 03 | `03_rls.sql` | Row Level Security: SELECT público en todas las tablas, INSERT/UPDATE/DELETE sin restricción |
+| 04 | `04_auth_trigger.sql` | Función + trigger: copia automáticamente `auth.users` → `public.users` al crear un usuario |
+| 05 | `05_storage.sql` | Crea bucket público `offers`, políticas SELECT público + INSERT solo authenticated |
+
+---
+
+## Usuarios de prueba (seed)
+
+| Email | Password | Rol | Comercio asociado |
+|---|---|---|---|
+| `cliente@foodsave.com` | `123456` | Cliente | — |
+| `comercio@foodsave.com` | `123456` | Business | Panadería La Espiga |
+| `sabor.casero@foodsave.com` | `123456` | Business | Sabor Casero Rotisería |
+| `mercado.fresco@foodsave.com` | `123456` | Business | Mercado Fresco Chaco |
+| `dulce.corrientes@foodsave.com` | `123456` | Business | Dulce Corrientes |
+
+Los comercios están ubicados en **Resistencia, Chaco** y **Corrientes, Corrientes** para probar el filtro por ciudad.
+
+---
 
 ## Variables de Entorno
 
-No subir archivos `.env` con valores reales.
-
-### Frontend
-
-Crear `frontend/.env`:
+### Frontend (`frontend/.env`)
 
 ```env
 EXPO_PUBLIC_API_URL=http://localhost:4000
@@ -96,453 +497,98 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=...
 EXPO_PUBLIC_LANDING_URL=...
 ```
 
-Notas:
+- Para Expo Go en celular, usar IP local: `http://192.168.x.x:4000`
+- `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` es necesario para Google Login en Android con development build.
 
-- Para web puede usarse `http://localhost:4000`.
-- Para Expo Go en celular, usar la IP LAN de la PC, por ejemplo `http://192.168.1.25:4000`.
-- `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` es importante si se prueba Google Login en Android con development build/configuracion nativa.
-
-### Backend
-
-Crear `backend/.env`:
+### Backend (`backend/.env`)
 
 ```env
 PORT=4000
 NODE_ENV=development
 FRONTEND_ORIGIN=http://localhost:8081
-SUPABASE_URL=...
-SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-GOOGLE_CLIENT_ID=...
-API_KEY=...
+SUPABASE_URL=https://lmmkszyrhjgbxzxtjwbm.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_...
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+API_KEY=FsXk9mP2vL7nQ4wR8yT1bD6cJ3aH5gE0
 ```
 
-`GOOGLE_CLIENT_ID` puede aceptar varios IDs separados por coma.
+| Variable | Uso |
+|---|---|
+| `SUPABASE_ANON_KEY` | Cliente público (`supabase`) — lecturas, signUp, signIn, getPublicUrl. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Cliente admin (`supabaseAdmin`) — bypassea RLS. Usado en upload, perfil cliente, registerBusiness. |
+| `GOOGLE_CLIENT_ID` | Acepta varios IDs separados por coma (Android + iOS + Web). |
+| `API_KEY` | Clave compartida con el panel .NET. |
 
-## Comandos
+---
 
-Desde la raiz:
+## Instalación y Ejecución Local
+
+### Requisitos
+
+- Node.js (compatible con Expo SDK 54)
+- npm
+- Expo Go (Android/iOS) o emulador Android Studio
+- Cuenta/proyecto Supabase configurado
+
+### Pasos
 
 ```bash
+# 1. Instalar dependencias (raíz del monorepo)
+npm install
+
+# 2. Configurar variables de entorno
+#    Crear frontend/.env y backend/.env con los valores correspondientes
+
+# 3. Ejecutar migraciones SQL en Supabase Dashboard
+#    backend/sql/01_schema.sql → 02_seed.sql → 03_rls.sql → 04_auth_trigger.sql → 05_storage.sql
+
+# 4. Levantar backend
 npm run dev:backend
-npm run dev:frontend
-npm run typecheck
-npm run build
-```
 
-Frontend:
-
-```bash
-npm run start --workspace frontend
-npm run android --workspace frontend
-npm run ios --workspace frontend
-npm run web --workspace frontend
-npm run typecheck --workspace frontend
-```
-
-Backend:
-
-```bash
-npm run dev --workspace backend
-npm run build --workspace backend
-npm run start --workspace backend
-npm run typecheck --workspace backend
-```
-
-## Ejecucion Local
-
-1. Levantar backend:
-
-```bash
-npm run dev:backend
-```
-
-2. Verificar health check:
-
-```bash
+# 5. Verificar health check
 curl http://localhost:4000/health
+
+# 6. Levantar frontend
+npm run dev:frontend
+
+# 7. Escanear QR con Expo Go o abrir en emulador
 ```
 
-Respuesta esperada:
-
-```json
-{
-  "success": true,
-  "data": {
-    "status": "ok",
-    "service": "foodsave-api"
-  }
-}
-```
-
-3. Configurar `frontend/.env` con `EXPO_PUBLIC_API_URL`.
-
-4. Levantar frontend:
+### Comandos útiles
 
 ```bash
-npm run dev:frontend
+npm run dev:backend          # Backend en modo desarrollo
+npm run dev:frontend         # Frontend en modo desarrollo
+npm run typecheck            # TypeScript check en ambos workspaces
+npm run build                # Build de ambos workspaces
 ```
 
-5. Abrir en Expo Go o web.
-
-Para Expo Go en celular, `localhost` apunta al celular. Usar la IP local de la PC y probar desde el navegador del celular:
-
-```text
-http://IP_DE_LA_PC:4000/health
-```
-
-## Usuarios Demo
-
-```text
-Cliente:
-email: cliente@foodsave.com
-password: 123456
-
-Comercio:
-email: comercio@foodsave.com
-password: 123456
-```
-
-Los usuarios demo pueden devolver tokens mock para mantener compatibilidad con datos seed. Los usuarios registrados por Supabase usan JWT real.
-
-## Flujos Principales
-
-### Cliente
-
-- Login normal y Google Login
-- Registro de cliente
-- Recuperacion de contrasena
-- Home con ofertas por ciudad
-- Busqueda y filtros por categoria
-- Favoritos
-- Detalle de oferta
-- Crear reserva
-- Pantalla de reserva pendiente de pago
-- Mis reservas
-- Perfil
-- Notificaciones
-- Dark mode
-
-### Comercio
-
-- Login comercio
-- Dashboard con metricas
-- Banner si el comercio esta suspendido (`isActive = false`)
-- Publicar excedente con imagen obligatoria
-- Pedidos
-- Confirmar pago/cancelar pedido
-- Historial
-- Estadisticas
-- Mi Local
-- Cargar logo
-- Editar datos bancarios
-- Editar publicaciones
-- Ocultar/mostrar publicaciones
-- Dark mode desde Mi Local
-- Notificaciones
-
-## Contrato API
-
-Todas las respuestas exitosas siguen:
-
-```json
-{
-  "success": true,
-  "data": {}
-}
-```
-
-Todas las respuestas de error siguen:
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Mensaje legible"
-  }
-}
-```
-
-El frontend centraliza el manejo en:
-
-```text
-frontend/src/services/apiClient.ts
-```
-
-Las rutas protegidas envian:
-
-```http
-Authorization: Bearer <token>
-```
-
-## Endpoints Principales
-
-### Auth
-
-- `POST /auth/login`
-- `POST /auth/register`
-- `POST /auth/google`
-- `POST /auth/reset-password`
-- `POST /auth/register-business`
-- `GET /auth/me`
-
-### Ofertas Publicas
-
-- `GET /offers`
-- `GET /offers/:id`
-- `GET /cities`
-
-`GET /offers` soporta filtros:
-
-```text
-?category=
-?type=
-?city=
-?page=
-?limit=
-```
-
-### Comercio
-
-- `GET /business/profile`
-- `PUT /business/profile`
-- `GET /business/offers`
-- `POST /business/offers`
-- `PUT /business/offers/:id`
-- `PATCH /business/offers/:id/visibility`
-- `DELETE /business/offers/:id`
-- `GET /business/stats`
-
-### Reservas
-
-- `GET /reservations`
-- `POST /reservations`
-- `PATCH /reservations/:id/status`
-
-### Favoritos
-
-- `GET /favorites`
-- `POST /favorites/:offerId`
-- `DELETE /favorites/:offerId`
-
-### Notificaciones
-
-- `GET /notifications`
-- `PATCH /notifications/:id/read`
-- `PATCH /notifications/read-all`
-
-### Upload
-
-- `POST /upload/image`
-
-Usa `multipart/form-data` con campo `file` y devuelve una URL publica.
-
-## Base de Datos y SQL
-
-Los scripts viven en:
-
-```text
-backend/sql/
-```
-
-Orden recomendado para una base nueva:
-
-1. `01_schema.sql`
-2. `02_seed.sql`
-3. `03_rls.sql`
-4. `04_auth_trigger.sql`
-5. `05_storage.sql`
-6. `06_city_column.sql`
-7. `07_offer_visibility.sql`
-8. `07_suspend_business.sql`
-9. `08_demo_media_fallbacks.sql` solo si se necesita completar medios demo faltantes
-
-`08_demo_media_fallbacks.sql` es opcional y esta pensado para demo/dev. Solo completa imagenes/logos faltantes en registros seed conocidos; no cambia precios, stock, estados ni `isActive`.
-
-## Modelo de Datos
-
-### `users`
-
-- Usuario cliente o comercio
-- Rol: `client` o `business`
-- Puede vincularse a un negocio mediante `businessId`
-
-### `businesses`
-
-- Datos del comercio
-- Ciudad, direccion, categoria, descripcion
-- Horario de cierre
-- `logoUrl`
-- `isActive`
-- `paymentInfo`
-
-### `offers`
-
-- Publicaciones del comercio
-- Tipo: `mystery_box` o `standard`
-- Precio original y rebajado
-- Stock
-- Horario/limite de retiro
-- Alergenos
-- `imageUrl`
-- `isVisible`
-- Peso estimado opcional
-
-### `reservations`
-
-- Reserva de una oferta por cliente
-- Estados: `pending`, `confirmed_paid`, `picked_up`, `cancelled`
-
-### `favorites`
-
-- Relacion `userId + offerId`
-
-### `notifications`
-
-- Notificaciones internas del usuario
-- Estado leida/no leida
-
-## Arquitectura Frontend
-
-El frontend usa Expo Router con grupos de rutas:
-
-```text
-frontend/app/(auth)
-frontend/app/(client)
-frontend/app/(business)
-```
-
-La sesion se maneja en:
-
-```text
-frontend/src/context/AuthContext.tsx
-```
-
-El tema claro/oscuro se maneja en:
-
-```text
-frontend/src/context/ThemeContext.tsx
-frontend/src/constants/theme.ts
-```
-
-Los servicios por dominio estan en:
-
-```text
-frontend/src/services/
-```
-
-La navegacion inicial redirige por rol:
-
-```text
-client -> /(client)/home
-business -> /(business)/dashboard
-```
-
-## Arquitectura Backend
-
-La API se registra en:
-
-```text
-backend/src/app.ts
-```
-
-Capas principales:
-
-- `routes`: define rutas Express
-- `controllers`: valida request y arma response
-- `services`: reglas de negocio
-- `repository`: acceso centralizado a Supabase
-- `middlewares`: auth, roles, API key y errores
-
-Middlewares principales:
-
-- `isAuth`
-- `isClient`
-- `isBusinessOwner`
-- `requireApiKey`
-
-## Google Login
-
-Frontend:
-
-```text
-frontend/src/config/googleAuth.ts
-```
-
-Backend:
-
-```text
-backend/src/services/authService.ts
-backend/src/controllers/authController.ts
-```
-
-El frontend obtiene un `idToken` y lo envia a:
-
-```text
-POST /auth/google
-```
-
-El backend valida el token con Google y crea/inicia el usuario en Supabase.
-
-## Upload de Imagenes
-
-El comercio puede subir imagenes desde:
-
-- Publicar excedente
-- Editar publicacion
-- Mi Local para logo
-
-El frontend usa `expo-image-picker` y luego llama:
-
-```text
-POST /upload/image
-```
-
-El backend sube el archivo al bucket publico `offers` de Supabase Storage y devuelve `{ url }`.
-
-## Reglas de Seguridad del Proyecto
-
-- No subir `.env` reales.
-- No exponer secretos en documentacion, commits o logs.
-- No tocar produccion directamente salvo que sea intencional.
-- Para actualizar datos demo, preferir API/backend o SQL especifico y acotado.
-- No cambiar contratos de API sin actualizar frontend y documentacion.
+---
 
 ## Checklist de Demo
 
-1. Login cliente.
-2. Ver Home y ofertas.
-3. Filtrar por ciudad/categoria.
-4. Abrir detalle de oferta.
-5. Agregar/quitar favorito.
-6. Crear reserva.
-7. Ver reserva pendiente de pago.
-8. Entrar a Mis reservas.
-9. Login comercio.
-10. Ver Dashboard.
-11. Publicar excedente con imagen.
-12. Ver Pedidos.
-13. Confirmar/cancelar pedido.
-14. Ver Mi Local y Publicaciones.
-15. Probar dark mode.
+1. Login cliente (`cliente@foodsave.com`)
+2. Ver Home con ofertas disponibles
+3. Filtrar por ciudad y categoría
+4. Abrir detalle de oferta
+5. Agregar/quitar favorito
+6. Crear reserva
+7. Ver reserva pendiente de pago
+8. Entrar a Mis reservas
+9. Login comercio (`comercio@foodsave.com`)
+10. Ver Dashboard con métricas
+11. Publicar excedente con imagen
+12. Ver Pedidos
+13. Confirmar/cancelar pedido
+14. Ver Mi Local y Publicaciones
+15. Ocultar/mostrar una publicación
+16. Probar dark mode
 
-## Calidad
+---
 
-Antes de cerrar cambios:
+## Documentación Complementaria
 
-```bash
-npm run typecheck --workspace frontend
-npm run typecheck --workspace backend
-```
-
-Para validar ambos workspaces:
-
-```bash
-npm run typecheck
-```
-
-## Documentacion Complementaria
-
-- `docs/PROJECT_CONTEXT.md`: contexto funcional y decisiones del proyecto
-- `docs/CODEX_RULES.md`: reglas internas de desarrollo
-- `docs/BACKEND_CHANGES.md`: cambios y contratos del backend
+- `docs/BACKEND_CONTEXT.md` — Explicación completa del backend con arquitectura, flujos, endpoints y referencias de archivos.
+- `docs/PROJECT_CONTEXT.md` — Contexto funcional y decisiones del proyecto.
+- `docs/CODEX_RULES.md` — Reglas internas de desarrollo.

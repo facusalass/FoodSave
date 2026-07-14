@@ -113,7 +113,6 @@ export async function login(
   }
 
   // Fallback para usuarios demo guardados en el repositorio local.
-  // Fallback para usuarios demo guardados en el repositorio local.
   const user = await findUserByEmail(normalizedEmail);
   if (!user || user.password !== password) return null;
 
