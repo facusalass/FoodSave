@@ -54,17 +54,20 @@ FoodSave/
 │
 ├── frontend/                       App mobile Expo
 │   ├── app/                        Rutas Expo Router
-│   │   ├── (auth)/                 Pantallas de login, registro
-│   │   ├── (client)/               Pantallas de cliente (home, reservas, perfil)
-│   │   └── (business)/             Pantallas de comercio (dashboard, publicar, pedidos)
+│   │   ├── (auth)/                 Pantallas de login, registro, recuperación
+│   │   ├── (client)/               Pantallas de cliente (home, reservas, perfil, favoritos)
+│   │   └── (business)/             Pantallas de comercio (dashboard, publicar, pedidos, local)
 │   ├── src/
-│   │   ├── components/             Componentes reutilizables
-│   │   ├── constants/              Temas, categorías, tipos
-│   │   ├── context/                AuthContext, ThemeContext
-│   │   ├── services/               Clientes API por dominio (auth, offers, reservations...)
-│   │   ├── types/                  Tipos TypeScript del frontend
-│   │   └── utils/                  Helpers
-│   └── .env                        Variables de entorno (no subir)
+│   │   ├── components/             Componentes reutilizables UI
+│   │   │   └── business/           Subcomponentes de comercio (menú lateral, banner, notificaciones)
+│   │   ├── config/                 Configuración (API base URL, Google Auth, links)
+│   │   ├── constants/              Temas, categorías de ofertas, tipos
+│   │   ├── context/                AuthContext (sesión), ThemeContext (claro/oscuro)
+│   │   ├── hooks/                  Hooks de notificaciones (cliente y comercio)
+│   │   ├── services/               Clientes API por dominio (auth, offers, reservations, favorites, etc.)
+│   │   ├── types/                  Tipos TypeScript (auth, offer, reservation, notification, statistics)
+│   │   └── utils/                  Helpers (sesión, tema, formato, validación, WhatsApp, etc.)
+│   └── .env                        Variables de entorno (API_URL, Google Client IDs, Landing URL)
 │
 ├── backend/                        API REST
 │   ├── src/
@@ -453,6 +456,135 @@ El panel web en .NET se comunica con el backend mediante `X-API-Key`:
 | `PATCH /auth/register-business/toggle-active` | Suspender o reactivar un comercio |
 
 La API Key se configura en `.env` como `API_KEY`. Por defecto en desarrollo: `foodsave-api-key-dev`. En producción se usa una clave segura.
+
+---
+
+## Arquitectura del Frontend
+
+### Navegación por rol (Expo Router)
+
+Expo Router organiza las pantallas en **grupos de rutas**:
+
+```
+app/
+├── _layout.tsx              Root layout: ThemeProvider → AuthProvider → Stack
+├── index.tsx                Entry point: redirige según rol o a login
+├── (auth)/                  Pantallas sin autenticación
+│   ├── login.tsx
+│   ├── register.tsx
+│   ├── forgot-password.tsx
+│   └── check-email.tsx
+├── (client)/                Pantallas de cliente (con tabs)
+│   ├── _layout.tsx          Guard: si no es cliente → redirige
+│   ├── home.tsx             Home con ofertas y filtros
+│   ├── reservations.tsx     Mis reservas
+│   ├── profile.tsx          Perfil
+│   ├── offer/[id].tsx       Detalle de oferta
+│   ├── reservation-confirmed.tsx
+│   ├── favorites.tsx
+│   └── notifications.tsx
+└── (business)/              Pantallas de comercio (con tabs)
+    ├── _layout.tsx          Guard: si no es business → redirige
+    ├── dashboard.tsx        Dashboard con métricas
+    ├── publish.tsx          Publicar oferta
+    ├── orders.tsx           Pedidos recibidos
+    ├── history.tsx          Historial
+    ├── stats.tsx            Estadísticas detalladas
+    ├── store.tsx            Mi Local (perfil del comercio)
+    └── edit-offer/[id].tsx  Editar publicación
+```
+
+El flujo de entrada (`app/index.tsx`):
+1. Si el usuario **no tiene sesión** → `/(auth)/login`
+2. Si es **cliente** (`role === "client"`) → `/(client)/home`
+3. Si es **comercio** (`role === "business"`) → `/(business)/dashboard`
+
+Cada layout de grupo tiene un **guard** que verifica el rol y redirige si no coincide.
+
+### Manejo de sesión (`AuthContext`)
+
+Definido en `src/context/AuthContext.tsx`.
+
+| Función | Qué hace |
+|---|---|
+| `login(email, password)` | Llama a `POST /auth/login`, guarda el token y user en SecureStore, actualiza estado |
+| `register(credentials)` | Llama a `POST /auth/register`. Si requiere confirmación de email, redirige a `check-email` |
+| `loginWithGoogle(idToken)` | Llama a `POST /auth/google`, misma persistencia |
+| `logout()` | Limpia SecureStore y estado |
+| `getMe()` | Llama a `GET /auth/me` para refrescar datos del perfil |
+
+**Persistencia de sesión** (`src/utils/sessionStorage.ts`):
+
+- En **Android/iOS**: usa `expo-secure-store` (almacenamiento encriptado con clave `"foodsave.session"`).
+- En **Web**: usa `localStorage`.
+- Al iniciar la app, AuthContext lee el almacenamiento persistente y restaura la sesión automáticamente (línea 33-49 del AuthContext).
+- El objeto guardado contiene: `{ token, user }`.
+
+### Cliente API (`apiClient.ts`)
+
+Definido en `src/services/apiClient.ts`. Es la capa que conecta el frontend con el backend.
+
+**Cómo funciona:**
+
+1. Toma una ruta (ej: `/auth/login`), opciones (method, body, token) y arma el fetch.
+2. **Adjunta el token**: si `options.token` está presente, lo manda como `Authorization: Bearer <token>`.
+3. **Envía la respuesta**: recibe `{ success, data }` o `{ success, error }`.
+4. Si `success === true` → devuelve `data` directamente.
+5. Si `success === false` → lanza error con `error.message`.
+6. Si el servidor responde con HTTP error (4xx/5xx) → extrae el mensaje y lo lanza.
+
+**Errores comunes traducidos:**
+- 401 con "credenciales" → "Correo o contraseña incorrectos."
+- Mensajes vacíos, `"{}"`, `"[object Object]"` → filtrados automáticamente.
+
+### Servicios por dominio
+
+Cada servicio usa `apiRequest` de `apiClient.ts` y apunta al endpoint correspondiente:
+
+| Archivo | Endpoints base | Funciones principales |
+|---|---|---|
+| `services/authService.ts` | `/auth/` | login, googleLogin, getMe, register, resetPassword |
+| `services/offerService.ts` | `/offers/`, `/business/offers/` | listOffers, getOffer, createOffer, updateOffer, deleteOffer, toggleVisibility, uploadImage, getBusinessProfile, updateBusinessProfile |
+| `services/reservationService.ts` | `/reservations/` | listReservations, createReservation, updateStatus |
+| `services/favoriteService.ts` | `/favorites/` | listFavorites, addFavorite, removeFavorite |
+| `services/clientProfileService.ts` | `/client/profile` | getProfile, updateProfile |
+| `services/cityService.ts` | `/cities` | getCities |
+| `services/notificationService.ts` | `/notifications/` | list, markRead, markAllRead, delete, deleteAll |
+
+### Tema claro/oscuro (`ThemeContext`)
+
+Definido en `src/context/ThemeContext.tsx`. Usa `src/constants/theme.ts` con 22 propiedades de color:
+
+- **Tema claro**: fondos blancos/gris claro, texto oscuro, naranja como color primario.
+- **Tema oscuro**: fondos oscuros (#0F1724), texto blanco, naranja más vibrante.
+- Persiste la preferencia en SecureStore/localStorage con clave `"foodsave.themeMode"`.
+- El usuario puede cambiarlo desde Perfil (cliente) o Mi Local (comercio).
+
+### Google Login
+
+**Frontend** (`login.tsx`):
+1. Usa `expo-auth-session/providers/google` para abrir el sheet de Google Sign-In.
+2. Obtiene un `idToken` de Google.
+3. Lo envía a `POST /auth/google` mediante `authService.loginWithGoogle(idToken)`.
+4. Si el email ya existe en el backend → login directo.
+5. Si no existe → el backend crea el usuario automáticamente.
+
+**Configuración** (`src/config/googleAuth.ts`): lee los client IDs de las variables de entorno (`EXPO_PUBLIC_GOOGLE_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, etc.).
+
+### Componentes principales
+
+| Componente | Ubicación | Uso |
+|---|---|---|
+| `PrimaryButton` | `components/PrimaryButton.tsx` | Botón reutilizable con variantes (primary, secondary, outline, danger) y estado de carga |
+| `ScreenContainer` | `components/ScreenContainer.tsx` | Wrapper base con SafeAreaView, scroll opcional y RefreshControl |
+| `SplashLoading` | `components/SplashLoading.tsx` | Pantalla de carga inicial con logo y branding |
+| `Header` | `components/Header.tsx` | Encabezado de pantalla con título y acción opcional |
+| `TextInputField` | `components/TextInputField.tsx` | Input estilizado con validación y mensaje de error |
+| `OfferCard` | `components/OfferCard.tsx` | Card de oferta con imagen, precio, stock |
+| `ReservationCard` | `components/ReservationCard.tsx` | Card de reserva con estado y detalles |
+| `StatusBadge` | `components/StatusBadge.tsx` | Badge de color para estados |
+| `EmptyState` | `components/EmptyState.tsx` | Placeholder para listas vacías |
+| `AdminMetricCard` | `components/AdminMetricCard.tsx` | Card de métrica para dashboard del comercio |
 
 ---
 
