@@ -28,7 +28,7 @@ type FieldErrors = {
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { isLoading, register, session } = useAuth();
+  const { isLoading, register, session } = useAuth(); //revisa si no hasy una session activa
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const [name, setName] = useState("");

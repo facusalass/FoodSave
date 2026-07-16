@@ -20,8 +20,8 @@ type ApiFailure = {
 type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
 export async function apiRequest<T>(
-  path: string,
-  options: RequestOptions = {}
+  path: string, //recibe la ruta de la API a la que se quiere hacer la request
+  options: RequestOptions = {} // recibe datos extras como el token
 ): Promise<T> {
   // Creamos headers nuevos y conservamos los que hayan llegado por options.
   const headers = new Headers(options.headers);
