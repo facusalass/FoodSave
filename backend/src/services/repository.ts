@@ -76,7 +76,7 @@ export async function listOffersRepo(filters?: { category?: string; type?: strin
 
   let businessIds: string[] | undefined;
   if (filters?.city) {
-    const { data: cityBusinesses } = await supabase.from("businesses").select("id").eq("city", filters.city);
+    const { data: cityBusinesses } = await supabase.from("businesses").select("id").ilike("city", filters.city.trim());
     businessIds = (cityBusinesses ?? []).map((b: { id: string }) => b.id);
   }
 

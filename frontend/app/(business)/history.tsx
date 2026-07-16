@@ -27,6 +27,7 @@ import { getReservationCode } from "../../src/utils/reservationStatus";
 
 type HistoryPeriod = "7" | "30" | "custom" | "all";
 
+// 1. TAMAÑO DE PAGINA: se solicitan hasta 30 reservas por peticion.
 const PAGE_SIZE = 30;
 const DEFAULT_CUSTOM_DAYS = "14";
 const HISTORY_STATUSES: ReservationStatus[] = [
@@ -49,9 +50,11 @@ export default function BusinessHistoryScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 2. ESTADO: guarda la pagina actual y el total informado por la API.
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  // 3. PRIMERA CARGA: reinicia el historial solicitando la pagina 1.
   const loadHistory = useCallback(async () => {
     if (!session) {
       setIsLoading(false);
@@ -61,10 +64,13 @@ export default function BusinessHistoryScreen() {
     try {
       setError(null);
       setIsLoading(true);
+
       const nextPage = await getReservationsPage(session.token, {
         limit: PAGE_SIZE,
         page: 1
       });
+
+      // Al ser una recarga, reemplaza cualquier resultado anterior.
       setReservations(nextPage.items);
       setCurrentPage(nextPage.page);
       setTotalPages(nextPage.totalPages);
@@ -79,7 +85,9 @@ export default function BusinessHistoryScreen() {
     }
   }, [session]);
 
+  // 4. PAGINA SIGUIENTE: agrega nuevos resultados al historial visible.
   const loadMoreHistory = useCallback(async () => {
+    // 5. VALIDACION: evita pedidos duplicados o paginas inexistentes.
     if (!session || isLoadingMore || currentPage >= totalPages) {
       return;
     }
@@ -90,6 +98,8 @@ export default function BusinessHistoryScreen() {
         limit: PAGE_SIZE,
         page: currentPage + 1
       });
+
+      // Conserva las reservas actuales y agrega las recibidas al final.
       setReservations((current) => [...current, ...nextPage.items]);
       setCurrentPage(nextPage.page);
       setTotalPages(nextPage.totalPages);
@@ -278,6 +288,7 @@ export default function BusinessHistoryScreen() {
             ))}
           </View>
 
+          {/* 6. BOTON: solo aparece cuando el backend informa que quedan paginas. */}
           {currentPage < totalPages ? (
             <TouchableOpacity
               activeOpacity={0.85}

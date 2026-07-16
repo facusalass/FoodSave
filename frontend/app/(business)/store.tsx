@@ -43,7 +43,10 @@ import {
   updateBusinessProfile,
   uploadImage
 } from "../../src/services/offerService";
-import { getCities } from "../../src/services/cityService";
+import {
+  getCities,
+  normalizeCityName
+} from "../../src/services/cityService";
 import type { Offer } from "../../src/types/offer";
 import {
   formatClosingTimeDisplay,
@@ -116,7 +119,7 @@ export default function BusinessStoreScreen() {
       setBusinessName(business.name ?? "");
       setCategory(business.category ?? DEFAULT_CATEGORY);
       setDescription(business.description ?? "");
-      setCity(business.city ?? "");
+      setCity(normalizeCityName(business.city ?? ""));
       setAddress(business.address ?? "");
       setClosingTime(normalizeClosingTime(business.closingTime) ?? DEFAULT_CLOSING_TIME);
       setClosingTimeError(null);
@@ -884,17 +887,20 @@ function CitySelectorModal({
 }
 
 function buildCityOptions(cities: string[], selectedCity: string) {
-  const cityOptions = new Set<string>();
+  const cityOptions = new Map<string, string>();
 
   [selectedCity, DEFAULT_CITY, ...cities].forEach((cityOption) => {
-    const cleanCity = cityOption.trim();
+    const normalizedCity = normalizeCityName(cityOption);
 
-    if (cleanCity) {
-      cityOptions.add(cleanCity);
+    if (normalizedCity) {
+      cityOptions.set(
+        normalizedCity.toLocaleLowerCase("es-AR"),
+        normalizedCity
+      );
     }
   });
 
-  return Array.from(cityOptions);
+  return Array.from(cityOptions.values());
 }
 
 function validateClosingTimeValue(value: string) {
